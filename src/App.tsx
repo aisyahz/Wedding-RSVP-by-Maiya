@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate } from 'react-router-dom';
 import { Invitation, RsvpEntry, SystemSettings, ScreenId } from './types';
-import { INITIAL_INVITATIONS, INITIAL_RSVPS, INITIAL_SETTINGS } from './data/mockData';
+import { INITIAL_SETTINGS } from './data/mockData';
 import {
   getInvitations,
   getRsvps,
-  saveInvitationToSupabase,
+  createInvitationWithPin,
+  updateInvitationInSupabase,
   deleteInvitationFromSupabase,
   addRsvpToSupabase,
   deleteRsvpFromSupabase,
+  getInvitationBySlug,
+  logoutAdmin,
   isSupabaseConfigured,
+  supabase,
 } from './lib/supabase';
-import { Database, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Loader2, KeyRound, Copy } from 'lucide-react';
 
 // Layouts
 import { AdminLayout } from './components/layout/AdminLayout';
@@ -33,25 +37,48 @@ import { AdminRsvpScreen } from './components/screens/AdminRsvpScreen';
 import { SettingsScreen } from './components/screens/SettingsScreen';
 
 export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
-  const [invitations, setInvitations] = useState<Invitation[]>(INITIAL_INVITATIONS);
-  const [rsvps, setRsvps] = useState<RsvpEntry[]>(INITIAL_RSVPS);
-  const [selectedInvitationId, setSelectedInvitationId] = useState<string>('inv-001');
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [invitations, setInvitations] = useState<Invitation[]>([]);
+  const [rsvps, setRsvps] = useState<RsvpEntry[]>([]);
+  const [selectedInvitationId, setSelectedInvitationId] = useState<string>('');
   const [editingInvitation, setEditingInvitation] = useState<Invitation | null>(null);
   const [settings, setSettings] = useState<SystemSettings>(INITIAL_SETTINGS);
 
   const [isLoadingData, setIsLoadingData] = useState<boolean>(true);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [createdPinModal, setCreatedPinModal] = useState<{
+    brideName: string;
+    groomName: string;
+    pin: string;
+    slug: string;
+  } | null>(null);
 
-  // Load initial data from Supabase / Storage
+  // Load initial session and DB data
   useEffect(() => {
-    async function loadInitialData() {
+    async function initSystem() {
       setIsLoadingData(true);
+
+      if (isSupabaseConfigured && supabase) {
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (sessionData?.session) {
+          setIsAuthenticated(true);
+        }
+
+        supabase.auth.onAuthStateChange((_event, session) => {
+          setIsAuthenticated(Boolean(session));
+        });
+      } else {
+        // Fallback for development preview without Supabase auth
+        setIsAuthenticated(true);
+      }
+
       const [invRes, rsvpRes] = await Promise.all([getInvitations(), getRsvps()]);
 
-      if (invRes.data && invRes.data.length > 0) {
+      if (invRes.data) {
         setInvitations(invRes.data);
-        setSelectedInvitationId(invRes.data[0].id);
+        if (invRes.data.length > 0) {
+          setSelectedInvitationId(invRes.data[0].id);
+        }
       }
       if (rsvpRes.data) {
         setRsvps(rsvpRes.data);
@@ -59,7 +86,7 @@ export default function App() {
       setIsLoadingData(false);
     }
 
-    loadInitialData();
+    initSystem();
   }, []);
 
   const showToast = (type: 'success' | 'error', message: string) => {
@@ -73,24 +100,38 @@ export default function App() {
     invitations.find((i) => i.id === selectedInvitationId) || invitations[0] || null;
 
   const handleSaveInvitation = async (invData: Partial<Invitation>) => {
-    const isEditing = Boolean(editingInvitation);
-    const targetPayload = isEditing ? { ...editingInvitation, ...invData } : invData;
+    if (editingInvitation) {
+      // EDIT EXISTING INVITATION
+      const { data: updatedInv, error } = await updateInvitationInSupabase(editingInvitation.id, invData);
+      if (error || !updatedInv) {
+        showToast('error', `Gagal mengemas kini kad: ${error || 'Ralat simpan'}`);
+        return;
+      }
 
-    const { data: savedInv, error } = await saveInvitationToSupabase(targetPayload);
-
-    if (error || !savedInv) {
-      showToast('error', `Error saving invitation: ${error || 'Failed'}`);
-      return;
-    }
-
-    if (isEditing) {
-      setInvitations((prev) => prev.map((item) => (item.id === savedInv.id ? savedInv : item)));
+      setInvitations((prev) => prev.map((item) => (item.id === updatedInv.id ? updatedInv : item)));
       setEditingInvitation(null);
       showToast('success', 'Tetapan kad jemputan berjaya dikemas kini!');
     } else {
-      setInvitations((prev) => [savedInv, ...prev]);
-      setSelectedInvitationId(savedInv.id);
-      showToast('success', 'Kad jemputan baharu berjaya dicipta!');
+      // CREATE NEW INVITATION WITH GENERATED PIN RPC
+      const { data, error } = await createInvitationWithPin(invData);
+      if (error || !data) {
+        showToast('error', `Gagal mencipta kad jemputan: ${error || 'Ralat cipta'}`);
+        return;
+      }
+
+      const { invitation: newInv, plainPin } = data;
+      setInvitations((prev) => [newInv, ...prev]);
+      setSelectedInvitationId(newInv.id);
+
+      // Show generated 6-digit PIN modal once after creation
+      setCreatedPinModal({
+        brideName: newInv.brideName,
+        groomName: newInv.groomName,
+        pin: plainPin,
+        slug: newInv.slug,
+      });
+
+      showToast('success', 'Kad jemputan baharu & PIN keselamatan 6-digit berjaya dicipta!');
     }
   };
 
@@ -100,9 +141,10 @@ export default function App() {
   };
 
   const handleDeleteInvitation = async (id: string) => {
-    const { success, error } = await deleteInvitationFromSupabase(id);
+    const targetInv = invitations.find((i) => i.id === id);
+    const { success, error } = await deleteInvitationFromSupabase(id, targetInv?.videoUrl);
     if (!success) {
-      showToast('error', `Failed to delete invitation: ${error}`);
+      showToast('error', `Gagal memadamkan kad jemputan: ${error}`);
       return;
     }
 
@@ -110,7 +152,7 @@ export default function App() {
     if (selectedInvitationId === id && invitations.length > 1) {
       setSelectedInvitationId(invitations.find((i) => i.id !== id)?.id || '');
     }
-    showToast('success', 'Kad jemputan telah dipadam.');
+    showToast('success', 'Kad jemputan & fail video berkaitan telah dipadamkan.');
   };
 
   const handleDuplicateInvitation = async (inv: Invitation) => {
@@ -131,29 +173,36 @@ export default function App() {
       rsvpClosingDate: inv.rsvpClosingDate,
       videoUrl: inv.videoUrl,
       videoFileName: inv.videoFileName,
-      privatePin: inv.privatePin,
       status: 'active',
     };
 
-    const { data: saved, error } = await saveInvitationToSupabase(duplicatedData);
-    if (error || !saved) {
-      showToast('error', `Duplicate error: ${error}`);
+    const { data, error } = await createInvitationWithPin(duplicatedData);
+    if (error || !data) {
+      showToast('error', `Gagal menyalin kad: ${error}`);
       return;
     }
 
-    setInvitations((prev) => [saved, ...prev]);
+    setInvitations((prev) => [data.invitation, ...prev]);
+    setCreatedPinModal({
+      brideName: data.invitation.brideName,
+      groomName: data.invitation.groomName,
+      pin: data.plainPin,
+      slug: data.invitation.slug,
+    });
     showToast('success', 'Salinan kad jemputan berjaya dicipta!');
   };
 
   const handleUpdateVideo = async (videoUrl: string, fileName: string) => {
     if (activeInvitation) {
-      const updatedInv = { ...activeInvitation, videoUrl, videoFileName: fileName };
-      const { data, error } = await saveInvitationToSupabase(updatedInv);
+      const { data, error } = await updateInvitationInSupabase(activeInvitation.id, {
+        videoUrl,
+        videoFileName: fileName,
+      });
       if (data) {
         setInvitations((prev) => prev.map((i) => (i.id === data.id ? data : i)));
         showToast('success', 'Video kad jemputan berjaya dikemas kini!');
       } else if (error) {
-        showToast('error', `Failed to update video: ${error}`);
+        showToast('error', `Gagal memuat naik video: ${error}`);
       }
     }
   };
@@ -172,7 +221,7 @@ export default function App() {
   const handleDeleteRsvp = async (id: string) => {
     const { success, error } = await deleteRsvpFromSupabase(id);
     if (!success) {
-      showToast('error', `Failed to delete RSVP: ${error}`);
+      showToast('error', `Gagal memadam RSVP: ${error}`);
       return;
     }
 
@@ -180,11 +229,12 @@ export default function App() {
     showToast('success', 'Rekod RSVP dipadamkan.');
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await logoutAdmin();
     setIsAuthenticated(false);
   };
 
-  // Helper hook for screens that rely on navigate(ScreenId)
+  // Navigation Helper
   function NavigationAdapter({ children }: { children: (onNavigate: (screen: ScreenId, slugOrId?: string) => void) => React.ReactNode }) {
     const navigate = useNavigate();
 
@@ -297,85 +347,77 @@ export default function App() {
     );
   }
 
-  // Wrapper for Guest Opening Page
-  function GuestOpeningWrapper() {
+  // Public Guest Route Component (Dynamic fetch by slug)
+  function GuestRouteWrapper({
+    renderScreen,
+  }: {
+    renderScreen: (
+      inv: Invitation | null,
+      onNavigate: (screen: ScreenId) => void,
+      loading: boolean,
+      errorMsg?: string
+    ) => React.ReactNode;
+  }) {
     const { slug } = useParams<{ slug: string }>();
-    const inv = invitations.find((i) => i.slug === slug) || activeInvitation;
-    return (
-      <NavigationAdapter>
-        {(onNavigate) => (
-          <GuestOpeningScreen
-            onNavigate={(screen) => onNavigate(screen, inv?.slug)}
-            activeInvitation={inv}
-          />
-        )}
-      </NavigationAdapter>
+    const [fetchedInv, setFetchedInv] = useState<Invitation | null>(
+      invitations.find((i) => i.slug === slug) || null
     );
-  }
+    const [loading, setLoading] = useState<boolean>(!fetchedInv);
+    const [errorMsg, setErrorMsg] = useState<string>('');
 
-  // Wrapper for Guest Details Page
-  function GuestInvitationWrapper() {
-    const { slug } = useParams<{ slug: string }>();
-    const inv = invitations.find((i) => i.slug === slug) || activeInvitation;
+    useEffect(() => {
+      let isMounted = true;
+      async function loadBySlug() {
+        if (!slug) return;
+        const memoryInv = invitations.find((i) => i.slug === slug);
+        if (memoryInv) {
+          setFetchedInv(memoryInv);
+          setLoading(false);
+          return;
+        }
+
+        setLoading(true);
+        const { data, error } = await getInvitationBySlug(slug);
+        if (isMounted) {
+          if (data) {
+            setFetchedInv(data);
+            setErrorMsg('');
+          } else {
+            setErrorMsg(error || 'Kad jemputan tidak dijumpai atau telah tamat tempoh.');
+          }
+          setLoading(false);
+        }
+      }
+
+      loadBySlug();
+      return () => {
+        isMounted = false;
+      };
+    }, [slug, invitations]);
+
     return (
       <NavigationAdapter>
-        {(onNavigate) => (
-          <GuestInvitationScreen
-            onNavigate={(screen) => onNavigate(screen, inv?.slug)}
-            activeInvitation={inv}
-            rsvps={rsvps}
-          />
-        )}
-      </NavigationAdapter>
-    );
-  }
-
-  // Wrapper for Guest RSVP Form Page
-  function GuestRsvpFormWrapper() {
-    const { slug } = useParams<{ slug: string }>();
-    const inv = invitations.find((i) => i.slug === slug) || activeInvitation;
-    return (
-      <NavigationAdapter>
-        {(onNavigate) => (
-          <GuestRsvpFormScreen
-            onNavigate={(screen) => onNavigate(screen, inv?.slug)}
-            activeInvitation={inv}
-            onAddRsvp={handleAddRsvp}
-          />
-        )}
-      </NavigationAdapter>
-    );
-  }
-
-  // Wrapper for Thank You Page
-  function ThankYouWrapper() {
-    const { slug } = useParams<{ slug: string }>();
-    const inv = invitations.find((i) => i.slug === slug) || activeInvitation;
-    return (
-      <NavigationAdapter>
-        {(onNavigate) => (
-          <ThankYouScreen
-            onNavigate={(screen) => onNavigate(screen, inv?.slug)}
-            activeInvitation={inv}
-          />
-        )}
-      </NavigationAdapter>
-    );
-  }
-
-  // Wrapper for Private RSVP Report Page
-  function PrivateRsvpReportWrapper() {
-    const { slug } = useParams<{ slug: string }>();
-    const inv = invitations.find((i) => i.slug === slug) || activeInvitation;
-    return (
-      <NavigationAdapter>
-        {(onNavigate) => (
-          <PrivateRsvpReportScreen
-            onNavigate={(screen) => onNavigate(screen, inv?.slug)}
-            activeInvitation={inv}
-            rsvps={rsvps}
-          />
-        )}
+        {(onNavigate) => {
+          const navHandler = (screen: ScreenId) => onNavigate(screen, slug);
+          if (loading) {
+            return (
+              <div className="min-h-dvh bg-[#1E1E1C] flex flex-col items-center justify-center p-6 text-white text-center space-y-3">
+                <Loader2 className="w-8 h-8 animate-spin text-[#9B7B63]" />
+                <p className="font-serif text-sm">Memuatkan kad jemputan...</p>
+              </div>
+            );
+          }
+          if (errorMsg && !fetchedInv) {
+            return (
+              <div className="min-h-dvh bg-[#1E1E1C] flex flex-col items-center justify-center p-6 text-white text-center space-y-4">
+                <AlertCircle className="w-10 h-10 text-rose-500 mx-auto" />
+                <h1 className="font-title text-xl font-bold">Kad Tidak Dijumpai</h1>
+                <p className="text-xs text-[#D9D2CA] max-w-xs">{errorMsg}</p>
+              </div>
+            );
+          }
+          return <>{renderScreen(fetchedInv, navHandler, loading, errorMsg)}</>;
+        }}
       </NavigationAdapter>
     );
   }
@@ -402,7 +444,61 @@ export default function App() {
         </div>
       )}
 
-      {/* Database Connection Info Banner in Admin Header */}
+      {/* 6-Digit Generated PIN Overlay Modal */}
+      {createdPinModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="card-maiya p-6 max-w-md w-full bg-white space-y-5 text-center shadow-2xl rounded-2xl border border-[#D9D2CA] animate-in zoom-in-95">
+            <div className="w-14 h-14 rounded-2xl bg-[#EFE7DF] text-[#9B7B63] flex items-center justify-center mx-auto border border-[#D9D2CA]">
+              <KeyRound className="w-7 h-7" />
+            </div>
+
+            <div className="space-y-1">
+              <span className="text-[10px] uppercase font-bold text-[#9B7B63] tracking-widest">
+                Card Created Successfully
+              </span>
+              <h2 className="font-title text-xl font-bold text-[#1E1E1C]">
+                Couple Private Security PIN
+              </h2>
+              <p className="text-xs text-[#77736D]">
+                For <strong>{createdPinModal.brideName} & {createdPinModal.groomName}</strong>
+              </p>
+            </div>
+
+            <div className="p-4 bg-[#F7F5F2] rounded-xl border border-[#D9D2CA] space-y-2">
+              <span className="text-xs font-semibold text-[#77736D] block uppercase">
+                6-Digit Generated Security PIN
+              </span>
+              <div className="font-mono text-3xl font-extrabold tracking-[0.4em] text-[#1E1E1C]">
+                {createdPinModal.pin}
+              </div>
+              <p className="text-[11px] text-amber-900 bg-amber-50 p-2.5 rounded-lg border border-amber-200 mt-2 text-left">
+                ⚠️ <strong>PENTING:</strong> Simpan atau catat PIN 6-digit ini. PIN ini dipaparkan <strong>SEKALI SAHAJA</strong> dan tidak disimpan dalam teks biasa untuk keselamatan.
+              </p>
+            </div>
+
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(createdPinModal.pin);
+                  showToast('success', 'PIN 6-digit berjaya disalin!');
+                }}
+                className="flex-1 btn-outline h-11 text-xs gap-1.5 cursor-pointer"
+              >
+                <Copy className="w-4 h-4 text-[#9B7B63]" />
+                <span>Salin PIN</span>
+              </button>
+              <button
+                onClick={() => setCreatedPinModal(null)}
+                className="flex-1 btn-primary h-11 text-xs cursor-pointer"
+              >
+                <span>Selesai</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Database Connection Info Banner */}
       {isLoadingData && (
         <div className="bg-[#1E1E1C] text-white py-1.5 px-4 text-center text-[11px] font-medium flex items-center justify-center gap-2">
           <Loader2 className="w-3.5 h-3.5 animate-spin text-[#9B7B63]" />
@@ -447,6 +543,9 @@ export default function App() {
                     invitations={invitations}
                     rsvps={rsvps}
                     onSelectInvitationForPreview={(id) => setSelectedInvitationId(id)}
+                    onEditInvitation={handleEditInvitation}
+                    onDeleteInvitation={handleDeleteInvitation}
+                    onDuplicateInvitation={handleDuplicateInvitation}
                   />
                 )}
               </NavigationAdapter>
@@ -529,12 +628,78 @@ export default function App() {
 
         {/* Public Guest Invitation Routes */}
         <Route element={<GuestLayout />}>
-          <Route path="/invite/:slug" element={<GuestOpeningWrapper />} />
-          <Route path="/invite/:slug/opening" element={<GuestOpeningWrapper />} />
-          <Route path="/invite/:slug/details" element={<GuestInvitationWrapper />} />
-          <Route path="/invite/:slug/rsvp" element={<GuestRsvpFormWrapper />} />
-          <Route path="/invite/:slug/thank-you" element={<ThankYouWrapper />} />
-          <Route path="/report/:slug" element={<PrivateRsvpReportWrapper />} />
+          <Route
+            path="/invite/:slug"
+            element={
+              <GuestRouteWrapper
+                renderScreen={(inv, onNavigate) => (
+                  <GuestOpeningScreen onNavigate={onNavigate} activeInvitation={inv} />
+                )}
+              />
+            }
+          />
+          <Route
+            path="/invite/:slug/opening"
+            element={
+              <GuestRouteWrapper
+                renderScreen={(inv, onNavigate) => (
+                  <GuestOpeningScreen onNavigate={onNavigate} activeInvitation={inv} />
+                )}
+              />
+            }
+          />
+          <Route
+            path="/invite/:slug/details"
+            element={
+              <GuestRouteWrapper
+                renderScreen={(inv, onNavigate) => (
+                  <GuestInvitationScreen
+                    onNavigate={onNavigate}
+                    activeInvitation={inv}
+                    rsvps={rsvps}
+                  />
+                )}
+              />
+            }
+          />
+          <Route
+            path="/invite/:slug/rsvp"
+            element={
+              <GuestRouteWrapper
+                renderScreen={(inv, onNavigate) => (
+                  <GuestRsvpFormScreen
+                    onNavigate={onNavigate}
+                    activeInvitation={inv}
+                    onAddRsvp={handleAddRsvp}
+                  />
+                )}
+              />
+            }
+          />
+          <Route
+            path="/invite/:slug/thank-you"
+            element={
+              <GuestRouteWrapper
+                renderScreen={(inv, onNavigate) => (
+                  <ThankYouScreen onNavigate={onNavigate} activeInvitation={inv} />
+                )}
+              />
+            }
+          />
+          <Route
+            path="/report/:slug"
+            element={
+              <GuestRouteWrapper
+                renderScreen={(inv, onNavigate) => (
+                  <PrivateRsvpReportScreen
+                    onNavigate={onNavigate}
+                    activeInvitation={inv}
+                    rsvps={rsvps}
+                  />
+                )}
+              />
+            }
+          />
         </Route>
 
         {/* Default Redirects */}
@@ -544,3 +709,4 @@ export default function App() {
     </BrowserRouter>
   );
 }
+

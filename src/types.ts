@@ -21,6 +21,7 @@ export interface BankGiftInfo {
   accountNumber: string;
   accountHolder: string;
   qrCodeUrl?: string;
+  qrCodeKey?: string;
 }
 
 export interface Invitation {
@@ -40,6 +41,10 @@ export interface Invitation {
   bankGift?: BankGiftInfo;
   rsvpClosingDate: string;
   videoUrl: string;
+  videoKey?: string;
+  posterUrl?: string;
+  posterKey?: string;
+  giftQrKey?: string;
   videoFileName: string;
   status: InvitationStatus;
   privatePin: string; // e.g. "1234"

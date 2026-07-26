@@ -29,16 +29,22 @@ export const AdminLoginScreen: React.FC<AdminLoginScreenProps> = ({
       });
 
       if (error) {
-        // If credentials mismatch, try admin sign up or fallback
-        if (error.message.includes('Invalid login credentials')) {
-          // Attempt default sign in fallback for demo
-          setErrorMsg(error.message + ' (Check Supabase Auth users)');
+        // If invalid credentials, attempt sign up or notify user
+        if (error.message.toLowerCase().includes('invalid login credentials')) {
+          const { error: signUpErr } = await supabase.auth.signUp({
+            email,
+            password,
+          });
+          if (signUpErr) {
+            setErrorMsg(`Sign in failed: ${error.message}`);
+            setLoading(false);
+            return;
+          }
+        } else {
+          setErrorMsg(error.message);
           setLoading(false);
           return;
         }
-        setErrorMsg(error.message);
-        setLoading(false);
-        return;
       }
     }
 

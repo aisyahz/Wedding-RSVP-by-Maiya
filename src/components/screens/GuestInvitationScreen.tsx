@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ScreenId, Invitation, RsvpEntry } from '../../types';
 import { Clock, MapPin, Navigation, Phone, Gift, Copy, Lock, Volume2, VolumeX } from 'lucide-react';
 import { BottomGuestNav } from '../common/BottomGuestNav';
@@ -14,8 +14,17 @@ export const GuestInvitationScreen: React.FC<GuestInvitationScreenProps> = ({
   activeInvitation,
   rsvps,
 }) => {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const [isMuted, setIsMuted] = useState(true);
   const [copiedBank, setCopiedBank] = useState(false);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.play().catch((err) => {
+        console.warn('Auto-play fallback notice:', err);
+      });
+    }
+  }, [activeInvitation?.videoUrl, isMuted]);
 
   // Live countdown state
   const targetDateStr = activeInvitation?.weddingDate || '2026-11-28';
@@ -50,10 +59,12 @@ export const GuestInvitationScreen: React.FC<GuestInvitationScreenProps> = ({
   const venueName = activeInvitation?.venueName || 'Glasshouse at Seputeh';
   const venueAddress = activeInvitation?.venueAddress || '17, Jalan Syed Putra, Seputeh, 50460 Kuala Lumpur';
   const videoUrl = activeInvitation?.videoUrl || 'https://assets.mixkit.co/videos/preview/mixkit-wedding-rings-in-a-box-41582-large.mp4';
+  const posterUrl = activeInvitation?.posterUrl || '';
   const bank = activeInvitation?.bankGift || {
     bankName: 'Maybank',
     accountNumber: '5622 4501 2345 6789',
     accountHolder: 'MAIYA CLIENT ACCOUNT',
+    qrCodeUrl: activeInvitation?.bankGift?.qrCodeUrl || '',
   };
 
   const cardRsvps = rsvps.filter((r) => r.invitationId === activeInvitation?.id);
@@ -79,8 +90,11 @@ export const GuestInvitationScreen: React.FC<GuestInvitationScreenProps> = ({
         {/* Top Hero Video Card */}
         <div className="relative rounded-2xl overflow-hidden bg-[#1E1E1C] aspect-[9/12] shadow-md border border-[#D9D2CA]">
           <video
+            ref={videoRef}
             key={videoUrl}
             src={videoUrl}
+            poster={posterUrl || undefined}
+            preload="metadata"
             autoPlay
             loop
             muted={isMuted}
@@ -250,6 +264,11 @@ export const GuestInvitationScreen: React.FC<GuestInvitationScreenProps> = ({
             </div>
 
             <div className="p-4 bg-[#EFE7DF] rounded-xl border border-[#D9D2CA] space-y-1">
+              {bank.qrCodeUrl && (
+                <div className="pb-2 flex justify-center">
+                  <img src={bank.qrCodeUrl} alt="DuitNow / Bank QR" className="w-32 h-32 object-contain bg-white rounded-xl p-2 border border-[#D9D2CA] shadow-2xs" />
+                </div>
+              )}
               <span className="font-mono text-lg font-bold text-[#1E1E1C] block tracking-wider">
                 {bank.accountNumber}
               </span>

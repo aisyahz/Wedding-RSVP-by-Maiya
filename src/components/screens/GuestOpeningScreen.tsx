@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ScreenId, Invitation } from '../../types';
 import { Volume2, VolumeX, Menu, Play, X } from 'lucide-react';
 import { BottomGuestNav } from '../common/BottomGuestNav';
@@ -12,6 +12,7 @@ export const GuestOpeningScreen: React.FC<GuestOpeningScreenProps> = ({
   onNavigate,
   activeInvitation,
 }) => {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const [isMuted, setIsMuted] = useState(true);
   const [showMenuDrawer, setShowMenuDrawer] = useState(false);
 
@@ -19,6 +20,15 @@ export const GuestOpeningScreen: React.FC<GuestOpeningScreenProps> = ({
   const groomName = activeInvitation?.groomName || 'Adam Harith';
   const weddingDate = activeInvitation?.weddingDate || '24 NOVEMBER 2026';
   const videoUrl = activeInvitation?.videoUrl || 'https://assets.mixkit.co/videos/preview/mixkit-wedding-rings-in-a-box-41582-large.mp4';
+  const posterUrl = activeInvitation?.posterUrl || '';
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.play().catch((err) => {
+        console.warn('Auto-play fallback notice:', err);
+      });
+    }
+  }, [videoUrl, isMuted]);
 
   const handleOpenInvitation = () => {
     setIsMuted(false);
@@ -36,14 +46,17 @@ export const GuestOpeningScreen: React.FC<GuestOpeningScreenProps> = ({
   return (
     <div className="relative flex-1 min-h-dvh bg-[#1E1E1C] text-white flex flex-col justify-between overflow-hidden select-none">
       
-      {/* Background Hero Video */}
+      {/* Background Hero Video with Poster Image & Metadata Preload */}
       <video
+        ref={videoRef}
         key={videoUrl}
         src={videoUrl}
+        poster={posterUrl || undefined}
+        preload="metadata"
         autoPlay
         loop
-        muted={isMuted}
         playsInline
+        muted={isMuted}
         className="absolute inset-0 w-full h-full object-cover opacity-80 transition-all duration-1000 scale-105"
       />
 

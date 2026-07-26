@@ -1,6 +1,6 @@
 import React from 'react';
 import { ScreenId, Invitation, RsvpEntry } from '../../types';
-import { Plus, Mail, Users, Eye, Edit3, MessageSquare, ArrowRight } from 'lucide-react';
+import { Plus, Mail, Users, Eye, Edit3, MessageSquare, ArrowRight, Trash2, Copy } from 'lucide-react';
 
 interface DashboardScreenProps {
   currentScreen?: ScreenId;
@@ -8,6 +8,9 @@ interface DashboardScreenProps {
   invitations: Invitation[];
   rsvps: RsvpEntry[];
   onSelectInvitationForPreview: (invitationId: string) => void;
+  onEditInvitation?: (invitation: Invitation) => void;
+  onDeleteInvitation?: (id: string) => void;
+  onDuplicateInvitation?: (invitation: Invitation) => void;
 }
 
 export const DashboardScreen: React.FC<DashboardScreenProps> = ({
@@ -15,6 +18,9 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   invitations,
   rsvps,
   onSelectInvitationForPreview,
+  onEditInvitation,
+  onDeleteInvitation,
+  onDuplicateInvitation,
 }) => {
   const activeCount = invitations.filter((i) => i.status === 'active').length;
   const totalRsvpCount = rsvps.length;
@@ -121,7 +127,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-0 border-[#D9D2CA]/40">
+                <div className="flex flex-wrap items-center gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-0 border-[#D9D2CA]/40">
                   <button
                     onClick={() => {
                       onSelectInvitationForPreview(inv.id);
@@ -136,7 +142,11 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
 
                   <button
                     onClick={() => {
-                      onSelectInvitationForPreview(inv.id);
+                      if (onEditInvitation) {
+                        onEditInvitation(inv);
+                      } else {
+                        onSelectInvitationForPreview(inv.id);
+                      }
                       onNavigate('create_invitation');
                     }}
                     className="btn-outline h-9 px-3 text-xs gap-1.5 cursor-pointer"
@@ -146,17 +156,43 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                     <span>Edit</span>
                   </button>
 
+                  {onDuplicateInvitation && (
+                    <button
+                      onClick={() => onDuplicateInvitation(inv)}
+                      className="btn-outline h-9 px-3 text-xs gap-1.5 cursor-pointer"
+                      title="Duplicate / Copy Card"
+                    >
+                      <Copy className="w-3.5 h-3.5 text-[#9B7B63]" />
+                      <span>Copy</span>
+                    </button>
+                  )}
+
                   <button
                     onClick={() => {
                       onSelectInvitationForPreview(inv.id);
                       onNavigate('admin_rsvp');
                     }}
-                    className="btn-primary h-9 px-3 text-xs gap-1.5 cursor-pointer"
+                    className="btn-outline h-9 px-3 text-xs gap-1.5 cursor-pointer"
                     title="View RSVPs"
                   >
-                    <MessageSquare className="w-3.5 h-3.5" />
+                    <MessageSquare className="w-3.5 h-3.5 text-[#9B7B63]" />
                     <span>RSVP</span>
                   </button>
+
+                  {onDeleteInvitation && (
+                    <button
+                      onClick={() => {
+                        if (confirm(`Padam kad jemputan ${inv.brideName} & ${inv.groomName}? tindakan ini tidak boleh diundur.`)) {
+                          onDeleteInvitation(inv.id);
+                        }
+                      }}
+                      className="h-9 px-3 text-xs text-rose-600 hover:bg-rose-50 rounded-xl border border-rose-200 font-semibold inline-flex items-center gap-1 cursor-pointer transition-all"
+                      title="Delete Invitation"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Delete</span>
+                    </button>
+                  )}
                 </div>
               </div>
             );

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ScreenId, Invitation } from '../../types';
 import { ArrowLeft, ArrowRight, Upload, CheckCircle } from 'lucide-react';
+import { MediaProviderService } from '../../lib/mediaProvider';
 
 interface CreateInvitationScreenProps {
   onNavigate: (screen: ScreenId) => void;
@@ -330,7 +331,7 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
 
             {enableGiftSection && (
               <div className="p-4 bg-white rounded-xl border border-[#D9D2CA] space-y-3">
-                <span className="text-xs font-semibold text-[#9B7B63] block">Bank Details</span>
+                <span className="text-xs font-semibold text-[#9B7B63] block">Bank Details & Gift QR</span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <input
                     type="text"
@@ -354,6 +355,33 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
                   onChange={(e) => setAccountHolder(e.target.value)}
                   className="w-full input-maiya"
                 />
+
+                {/* Gift QR Image Upload */}
+                <div className="pt-2 border-t border-[#D9D2CA]/40">
+                  <label className="block text-[11px] font-semibold text-[#1E1E1C] mb-1">
+                    DuitNow / Bank QR Code Image
+                  </label>
+                  {qrCodeUrl && (
+                    <div className="mb-2 flex items-center gap-2">
+                      <img src={qrCodeUrl} alt="Gift QR" className="w-16 h-16 object-contain rounded-lg border border-[#D9D2CA] bg-white p-1" />
+                      <span className="text-[10px] text-emerald-700 font-medium">Imej QR bersedia</span>
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const tempId = editingInvitation?.id || `inv-${Date.now()}`;
+                      const { data } = await MediaProviderService.uploadMedia(file, tempId, 'gift-qr');
+                      if (data?.publicUrl) {
+                        setQrCodeUrl(data.publicUrl);
+                      }
+                    }}
+                    className="text-xs text-[#77736D] file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[#EFE7DF] file:text-[#1E1E1C] hover:file:bg-[#9B7B63] hover:file:text-white cursor-pointer"
+                  />
+                </div>
               </div>
             )}
           </div>
@@ -427,19 +455,15 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
               </p>
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-[#1E1E1C] mb-1.5">
-                4-Digit Couple Private PIN *
-              </label>
-              <input
-                type="text"
-                maxLength={4}
-                required
-                value={privatePin}
-                onChange={(e) => setPrivatePin(e.target.value)}
-                placeholder="1234"
-                className="w-full input-maiya font-mono font-bold"
-              />
+            <div className="p-4 bg-white rounded-xl border border-[#D9D2CA] space-y-1">
+              <span className="text-xs font-semibold text-[#1E1E1C] block">
+                🔒 Couple Private RSVP Report Access
+              </span>
+              <p className="text-xs text-[#77736D]">
+                {editingInvitation
+                  ? 'The couple uses their 6-digit security PIN to view private guest RSVP responses.'
+                  : 'A unique 6-digit PIN will be securely generated upon creation and displayed once for your records.'}
+              </p>
             </div>
           </div>
         )}
