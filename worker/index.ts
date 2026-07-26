@@ -108,17 +108,19 @@ async function authenticate(request: Request, env: Env): Promise<Response | null
     return json({ error: 'Unauthorized: Missing or invalid Authorization header' }, 401);
   }
 
-  console.info('[WORKER_BINDINGS_DIAGNOSTIC]', {
-    supabaseUrlExists: Boolean(env.SUPABASE_URL),
-    supabaseAnonKeyExists: Boolean(env.SUPABASE_ANON_KEY),
-    viteSupabaseUrlExists: Boolean(env.VITE_SUPABASE_URL),
-    viteSupabaseAnonKeyExists: Boolean(env.VITE_SUPABASE_ANON_KEY),
-  });
+  const bindingDiagnostics = {
+    stage: 'binding-check',
+    supabaseUrlExists: Boolean(env.SUPABASE_URL?.trim()),
+    supabaseAnonKeyExists: Boolean(env.SUPABASE_ANON_KEY?.trim()),
+    viteSupabaseUrlExists: Boolean(env.VITE_SUPABASE_URL?.trim()),
+    viteSupabaseAnonKeyExists: Boolean(env.VITE_SUPABASE_ANON_KEY?.trim()),
+  };
+  console.info('[WORKER_BINDINGS_DIAGNOSTIC]', bindingDiagnostics);
 
-  const supabaseUrl = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
-  const supabaseAnonKey = env.SUPABASE_ANON_KEY || env.VITE_SUPABASE_ANON_KEY;
+  const supabaseUrl = env.SUPABASE_URL?.trim() || env.VITE_SUPABASE_URL?.trim();
+  const supabaseAnonKey = env.SUPABASE_ANON_KEY?.trim() || env.VITE_SUPABASE_ANON_KEY?.trim();
   if (!supabaseUrl || !supabaseAnonKey) {
-    return json({ error: 'Worker Supabase authentication bindings are not configured.' }, 500);
+    return json(bindingDiagnostics, 500);
   }
 
   try {
