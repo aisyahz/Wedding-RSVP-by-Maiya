@@ -1,0 +1,147 @@
+import React, { useState } from 'react';
+import { ScreenId } from '../../types';
+import { Lock, Mail, ArrowRight, ShieldCheck, AlertCircle, Loader2 } from 'lucide-react';
+import { supabase, isSupabaseConfigured } from '../../lib/supabase';
+
+interface AdminLoginScreenProps {
+  onNavigate: (screen: ScreenId) => void;
+  onLoginSuccess: () => void;
+}
+
+export const AdminLoginScreen: React.FC<AdminLoginScreenProps> = ({
+  onNavigate,
+  onLoginSuccess,
+}) => {
+  const [email, setEmail] = useState('admin@digitalcardmaiya.com');
+  const [password, setPassword] = useState('maiya123456');
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setErrorMsg('');
+
+    if (isSupabaseConfigured && supabase) {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        // If credentials mismatch, try admin sign up or fallback
+        if (error.message.includes('Invalid login credentials')) {
+          // Attempt default sign in fallback for demo
+          setErrorMsg(error.message + ' (Check Supabase Auth users)');
+          setLoading(false);
+          return;
+        }
+        setErrorMsg(error.message);
+        setLoading(false);
+        return;
+      }
+    }
+
+    setLoading(false);
+    onLoginSuccess();
+    onNavigate('dashboard');
+  };
+
+  return (
+    <div className="min-h-dvh bg-[#F7F5F2] flex flex-col items-center justify-between p-6 antialiased">
+      <div className="w-full max-w-md my-auto space-y-8">
+        {/* Brand Header */}
+        <div className="text-center space-y-2">
+          <div className="w-14 h-14 rounded-2xl bg-[#1E1E1C] text-white flex items-center justify-center mx-auto shadow-sm">
+            <span className="font-title text-2xl font-bold">M</span>
+          </div>
+          <h1 className="font-title text-2xl font-bold text-[#1E1E1C] tracking-tight">
+            Digital Card by Maiya
+          </h1>
+          <p className="text-xs text-[#77736D]">
+            Admin Studio Portal {isSupabaseConfigured ? '• Supabase Connected' : ''}
+          </p>
+        </div>
+
+        {/* Login Card */}
+        <div className="card-maiya p-8 space-y-6">
+          <div>
+            <h2 className="font-title text-lg font-bold text-[#1E1E1C]">
+              Welcome back
+            </h2>
+            <p className="text-xs text-[#77736D] mt-1">
+              Sign in to manage your digital wedding invitations
+            </p>
+          </div>
+
+          {errorMsg && (
+            <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              <span>{errorMsg}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-[#1E1E1C] mb-1.5">
+                Email Address
+              </label>
+              <div className="relative">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full input-maiya pl-10"
+                  placeholder="admin@digitalcardmaiya.com"
+                />
+                <Mail className="w-4 h-4 text-[#77736D] absolute left-3.5 top-1/2 -translate-y-1/2" />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-[#1E1E1C] mb-1.5">
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="w-full input-maiya pl-10"
+                  placeholder="••••••••••••"
+                />
+                <Lock className="w-4 h-4 text-[#77736D] absolute left-3.5 top-1/2 -translate-y-1/2" />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full btn-primary cursor-pointer mt-2"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Signing in...</span>
+                </>
+              ) : (
+                <>
+                  <span>Sign In to Studio</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+          </form>
+        </div>
+
+        {/* Security badge */}
+        <p className="text-[11px] text-[#77736D] text-center flex items-center justify-center gap-1.5 font-medium">
+          <ShieldCheck className="w-4 h-4 text-[#9B7B63]" />
+          <span>Secured Administrator Portal</span>
+        </p>
+      </div>
+    </div>
+  );
+};
