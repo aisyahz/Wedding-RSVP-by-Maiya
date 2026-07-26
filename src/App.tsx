@@ -150,8 +150,7 @@ export default function App() {
       return;
     }
 
-    const targetInv = invitations.find((i) => i.id === id);
-    const { success, error } = await deleteInvitationFromSupabase(id, targetInv?.videoUrl);
+    const { success, error } = await deleteInvitationFromSupabase(id);
     if (!success) {
       console.error(`[DELETE_FAILED] App.tsx deletion failed: ${error}`);
       showToast('error', `Gagal memadamkan kad jemputan: ${error}`);
@@ -183,7 +182,7 @@ export default function App() {
       enableGiftSection: inv.enableGiftSection,
       bankGift: inv.bankGift,
       rsvpClosingDate: inv.rsvpClosingDate,
-      videoUrl: inv.videoUrl,
+      videoKey: inv.videoKey,
       videoFileName: inv.videoFileName,
       status: 'active',
     };
@@ -204,10 +203,10 @@ export default function App() {
     showToast('success', 'Salinan kad jemputan berjaya dicipta!');
   };
 
-  const handleUpdateVideo = async (videoUrl: string, fileName: string) => {
+  const handleUpdateVideo = async (videoKey: string, fileName: string) => {
     if (activeInvitation) {
       const { data, error } = await updateInvitationInSupabase(activeInvitation.id, {
-        videoUrl,
+        videoKey,
         videoFileName: fileName,
       });
       if (data) {

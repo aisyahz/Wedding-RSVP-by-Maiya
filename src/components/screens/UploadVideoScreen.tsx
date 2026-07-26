@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ScreenId, Invitation } from '../../types';
-import { SAMPLE_VIDEOS } from '../../data/mockData';
 import {
   ArrowLeft,
   UploadCloud,
@@ -17,11 +16,12 @@ import {
 } from 'lucide-react';
 import { MediaProviderService, UploadProgress } from '../../lib/mediaProvider';
 import { updateInvitationInSupabase } from '../../lib/supabase';
+import { buildR2PublicUrl } from '../../lib/mediaUrl';
 
 interface UploadVideoScreenProps {
   onNavigate: (screen: ScreenId) => void;
   activeInvitation: Invitation | null;
-  onUpdateVideo: (videoUrl: string, fileName: string) => void;
+  onUpdateVideo: (videoKey: string, fileName: string) => void;
 }
 
 export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
@@ -32,10 +32,10 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   const [currentVideoUrl, setCurrentVideoUrl] = useState(
-    activeInvitation?.videoUrl || SAMPLE_VIDEOS[0].url
+    buildR2PublicUrl(activeInvitation?.videoKey)
   );
   const [currentFileName, setCurrentFileName] = useState(
-    activeInvitation?.videoFileName || SAMPLE_VIDEOS[0].name
+    activeInvitation?.videoFileName || ''
   );
   const [currentPosterUrl, setCurrentPosterUrl] = useState(
     activeInvitation?.posterUrl || ''
@@ -59,7 +59,9 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
   const [videoErrorDetails, setVideoErrorDetails] = useState('');
   const [presignStatus, setPresignStatus] = useState<string>('Belum Diminta');
   const [r2PutStatus, setR2PutStatus] = useState<string>('Belum Diminta');
-  const [finalPublicUrl, setFinalPublicUrl] = useState<string>(activeInvitation?.videoUrl || '');
+  const [finalPublicUrl, setFinalPublicUrl] = useState<string>(
+    buildR2PublicUrl(activeInvitation?.videoKey)
+  );
   const [publicUrlPlaybackResult, setPublicUrlPlaybackResult] = useState<string>('Belum Diuji');
 
   const invId = activeInvitation?.id || 'demo-invitation-id';
@@ -162,7 +164,8 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
 
       setPresignStatus('200 OK (Diluluskan)');
       setR2PutStatus('200 OK (Berjaya Diisi)');
-      setFinalPublicUrl(data.publicUrl);
+      const publicUrl = buildR2PublicUrl(data.objectKey);
+      setFinalPublicUrl(publicUrl);
 
       if (data.warningMsg) {
         setUploadWarning(data.warningMsg);
@@ -171,7 +174,6 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
       // 2. Update Supabase database record ONLY after R2 upload succeeds
       if (activeInvitation?.id) {
         const { data: updated, error: dbErr } = await updateInvitationInSupabase(activeInvitation.id, {
-          videoUrl: data.publicUrl,
           videoKey: data.objectKey,
           videoFileName: selectedVideoFile.name,
         });
@@ -183,10 +185,10 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
         }
 
         if (updated) {
-          onUpdateVideo(data.publicUrl, selectedVideoFile.name);
+          onUpdateVideo(data.objectKey, selectedVideoFile.name);
         }
       } else {
-        onUpdateVideo(data.publicUrl, selectedVideoFile.name);
+        onUpdateVideo(data.objectKey, selectedVideoFile.name);
       }
 
       // 3. Delete previous R2 video object last after successful replacement
@@ -197,7 +199,7 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
       }
 
       setIsUploading(false);
-      setCurrentVideoUrl(data.publicUrl);
+      setCurrentVideoUrl(publicUrl);
       setPublicUrlPlaybackResult('Sedia Untuk Tontonan Tetamu');
       setUploadSuccess('Video MP4 berjaya dimuat naik & disimpan di Cloudflare R2 CDN!');
       setSelectedVideoFile(null); // Clear pending file state
@@ -236,7 +238,6 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
 
     if (activeInvitation?.id) {
       await updateInvitationInSupabase(activeInvitation.id, {
-        posterUrl: data.publicUrl,
         posterKey: data.objectKey,
       });
     }
@@ -247,24 +248,8 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
       );
     }
 
-    setCurrentPosterUrl(data.publicUrl);
+    setCurrentPosterUrl(buildR2PublicUrl(data.objectKey));
     setUploadSuccess('Imej poster WebP berjaya dimuat naik ke Cloudflare R2!');
-  };
-
-  const handleSelectSample = (sample: typeof SAMPLE_VIDEOS[0]) => {
-    setUploadError('');
-    setUploadWarning('');
-    setUploadSuccess('');
-    setSelectedVideoFile(null);
-    if (localPreviewUrl && localPreviewUrl.startsWith('blob:')) {
-      URL.revokeObjectURL(localPreviewUrl);
-      setLocalPreviewUrl('');
-    }
-    setCurrentVideoUrl(sample.url);
-    setCurrentFileName(sample.name);
-    setFinalPublicUrl(sample.url);
-    setLocalPreviewCreated(false);
-    onUpdateVideo(sample.url, sample.name);
   };
 
   const handleProceed = async () => {
@@ -509,32 +494,6 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
               <Sparkles className="w-4 h-4 text-[#9B7B63]" />
               <span>Muat Naik Imej Poster (WebP / JPG / PNG)</span>
             </div>
-          </div>
-        </div>
-
-        {/* Sample Templates */}
-        <div className="space-y-2">
-          <span className="text-xs text-[#77736D] font-semibold uppercase tracking-wider block">
-            Atau Pilih Video Template Praset:
-          </span>
-          <div className="grid grid-cols-2 gap-3">
-            {SAMPLE_VIDEOS.map((sample, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => handleSelectSample(sample)}
-                className={`p-3 rounded-xl border text-left text-xs transition-all flex items-center space-x-2 cursor-pointer ${
-                  currentVideoUrl === sample.url && !selectedVideoFile
-                    ? 'border-[#9B7B63] bg-[#EFE7DF] font-semibold text-[#1E1E1C]'
-                    : 'border-[#D9D2CA] bg-white text-[#77736D] hover:bg-[#F7F5F2]'
-                }`}
-              >
-                <div className="w-6 h-6 rounded-lg bg-[#9B7B63]/20 text-[#9B7B63] flex items-center justify-center font-title text-xs font-bold shrink-0">
-                  {idx + 1}
-                </div>
-                <span className="truncate text-xs">{sample.name.split('.')[0]}</span>
-              </button>
-            ))}
           </div>
         </div>
 

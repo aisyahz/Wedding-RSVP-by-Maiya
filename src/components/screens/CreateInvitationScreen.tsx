@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { buildR2PublicUrl } from '../../lib/mediaUrl';
 import { ScreenId, Invitation } from '../../types';
 import { ArrowLeft, ArrowRight, Upload, CheckCircle } from 'lucide-react';
 import { MediaProviderService } from '../../lib/mediaProvider';
@@ -38,7 +39,7 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
   const [accountHolder, setAccountHolder] = useState(editingInvitation?.bankGift?.accountHolder || 'MAIYA CLIENT ACCOUNT');
   const [qrCodeUrl, setQrCodeUrl] = useState(editingInvitation?.bankGift?.qrCodeUrl || '');
 
-  const [videoUrl, setVideoUrl] = useState(editingInvitation?.videoUrl || 'https://assets.mixkit.co/videos/preview/mixkit-wedding-rings-in-a-box-41582-large.mp4');
+  const [videoUrl, setVideoUrl] = useState(buildR2PublicUrl(editingInvitation?.videoKey));
   const [videoFileName, setVideoFileName] = useState(editingInvitation?.videoFileName || 'Wedding_Invitation_Video.mp4');
   const [privatePin, setPrivatePin] = useState(editingInvitation?.privatePin || '1234');
 
@@ -60,7 +61,7 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
       setAccountNumber(editingInvitation.bankGift?.accountNumber || '');
       setAccountHolder(editingInvitation.bankGift?.accountHolder || '');
       setQrCodeUrl(editingInvitation.bankGift?.qrCodeUrl || '');
-      setVideoUrl(editingInvitation.videoUrl || '');
+      setVideoUrl(buildR2PublicUrl(editingInvitation.videoKey));
       setVideoFileName(editingInvitation.videoFileName || '');
       setPrivatePin(editingInvitation.privatePin || '1234');
     }
@@ -104,7 +105,7 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
       rsvpClosingDate,
       privatePin,
       status: 'active',
-      videoUrl,
+      videoKey: editingInvitation?.videoKey,
       videoFileName,
     };
 

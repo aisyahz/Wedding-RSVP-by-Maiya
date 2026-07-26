@@ -72,7 +72,6 @@ CREATE TABLE IF NOT EXISTS public.invitations (
     bank_account_holder TEXT,
     qr_code_url TEXT,
     rsvp_closing_date TIMESTAMPTZ,
-    video_url TEXT NULL, -- Nullable for draft state
     video_key TEXT NULL,
     poster_url TEXT NULL,
     poster_key TEXT NULL,
@@ -89,6 +88,9 @@ ADD COLUMN IF NOT EXISTS video_key TEXT,
 ADD COLUMN IF NOT EXISTS poster_url TEXT,
 ADD COLUMN IF NOT EXISTS poster_key TEXT,
 ADD COLUMN IF NOT EXISTS gift_qr_key TEXT;
+
+-- Existing installations must backfill and verify video_key before removing
+-- video_url. Run migrations/20260726_r2_video_key_migration.sql in stages.
 
 -- Index for fast lookup by slug
 CREATE INDEX IF NOT EXISTS idx_invitations_slug ON public.invitations(slug);
@@ -229,6 +231,13 @@ $$;
 -- --------------------------------------------------------------------
 -- 6. SECURE AUTHENTICATED RPC: CREATE INVITATION WITH 6-DIGIT PIN
 -- --------------------------------------------------------------------
+-- Replace the legacy signature so its p_video_url argument cannot survive an
+-- upgrade of an existing database.
+DROP FUNCTION IF EXISTS public.create_invitation_with_pin(
+    TEXT, TEXT, TEXT, DATE, TIME, TEXT, TEXT, TEXT, TEXT, TEXT,
+    TEXT, TEXT, TEXT, TEXT, TEXT, TIMESTAMPTZ, TEXT, TEXT, TEXT, TEXT
+);
+
 CREATE OR REPLACE FUNCTION public.create_invitation_with_pin(
     p_slug TEXT,
     p_bride_name TEXT,
@@ -246,7 +255,7 @@ CREATE OR REPLACE FUNCTION public.create_invitation_with_pin(
     p_bank_account_holder TEXT DEFAULT NULL,
     p_qr_code_url TEXT DEFAULT NULL,
     p_rsvp_closing_date TIMESTAMPTZ DEFAULT NULL,
-    p_video_url TEXT DEFAULT NULL,
+    p_video_key TEXT DEFAULT NULL,
     p_video_file_name TEXT DEFAULT NULL,
     p_status TEXT DEFAULT 'draft',
     p_custom_pin TEXT DEFAULT NULL
@@ -286,12 +295,12 @@ BEGIN
         slug, bride_name, groom_name, wedding_date, wedding_time,
         venue_name, venue_address, google_maps_url, waze_url, whatsapp_contact,
         wishlist_url, bank_name, bank_account_number, bank_account_holder, qr_code_url,
-        rsvp_closing_date, video_url, video_file_name, status
+        rsvp_closing_date, video_key, video_file_name, status
     ) VALUES (
         p_slug, p_bride_name, p_groom_name, p_wedding_date, p_wedding_time,
         p_venue_name, p_venue_address, p_google_maps_url, p_waze_url, p_whatsapp_contact,
         p_wishlist_url, p_bank_name, p_bank_account_number, p_bank_account_holder, p_qr_code_url,
-        p_rsvp_closing_date, p_video_url, p_video_file_name, p_status
+        p_rsvp_closing_date, p_video_key, p_video_file_name, p_status
     )
     RETURNING id, invitations.slug INTO v_id, v_slug;
 
@@ -390,45 +399,3 @@ GRANT EXECUTE ON FUNCTION public.create_invitation_with_pin(
 
 -- Allow anon and authenticated to execute get_private_couple_rsvp_report
 GRANT EXECUTE ON FUNCTION public.get_private_couple_rsvp_report(TEXT, TEXT) TO anon, authenticated;
-
-
--- --------------------------------------------------------------------
--- 9. STORAGE BUCKET SETUP (invitation-videos)
--- Supports TUS resumable uploads natively via Supabase JS client
--- --------------------------------------------------------------------
-INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-VALUES (
-    'invitation-videos',
-    'invitation-videos',
-    true,
-    52428800, -- 50 MB limit
-    ARRAY['video/mp4']
-) ON CONFLICT (id) DO UPDATE SET
-    public = true,
-    file_size_limit = 52428800,
-    allowed_mime_types = ARRAY['video/mp4'];
-
--- Storage RLS Policies
-DROP POLICY IF EXISTS "Public can view invitation videos" ON storage.objects;
-CREATE POLICY "Public can view invitation videos" 
-    ON storage.objects FOR SELECT 
-    TO public 
-    USING (bucket_id = 'invitation-videos');
-
-DROP POLICY IF EXISTS "Admins can upload invitation videos" ON storage.objects;
-CREATE POLICY "Admins can upload invitation videos" 
-    ON storage.objects FOR INSERT 
-    TO authenticated 
-    WITH CHECK (bucket_id = 'invitation-videos');
-
-DROP POLICY IF EXISTS "Admins can update invitation videos" ON storage.objects;
-CREATE POLICY "Admins can update invitation videos" 
-    ON storage.objects FOR UPDATE 
-    TO authenticated 
-    USING (bucket_id = 'invitation-videos');
-
-DROP POLICY IF EXISTS "Admins can delete invitation videos" ON storage.objects;
-CREATE POLICY "Admins can delete invitation videos" 
-    ON storage.objects FOR DELETE 
-    TO authenticated 
-    USING (bucket_id = 'invitation-videos');

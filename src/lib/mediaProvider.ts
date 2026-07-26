@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { buildR2PublicUrl } from './mediaUrl';
 
 export type MediaType = 'video' | 'poster' | 'gift-qr' | 'all';
 
@@ -9,6 +10,7 @@ export interface UploadProgress {
 }
 
 export interface UploadMediaResult {
+  /** Runtime-only URL. Never persist this value. */
   publicUrl: string;
   objectKey: string;
   warningMsg?: string;
@@ -81,7 +83,7 @@ export const MediaProviderService = {
         return { data: null, error: errJson.error || 'Gagal menjana pautan muat naik R2.' };
       }
 
-      const { presignedUrl, objectKey, publicUrl } = await presignRes.json();
+      const { presignedUrl, objectKey } = await presignRes.json();
 
       // 3. Upload file directly to Cloudflare R2 using presigned PUT URL
       await new Promise<void>((resolve, reject) => {
@@ -112,7 +114,7 @@ export const MediaProviderService = {
 
       return {
         data: {
-          publicUrl,
+          publicUrl: buildR2PublicUrl(objectKey),
           objectKey,
           warningMsg,
         },

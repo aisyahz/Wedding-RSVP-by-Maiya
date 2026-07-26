@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ScreenId, Invitation, RsvpEntry } from '../../types';
 import { Clock, MapPin, Navigation, Phone, Gift, Copy, Lock, Volume2, VolumeX } from 'lucide-react';
 import { BottomGuestNav } from '../common/BottomGuestNav';
+import { buildR2PublicUrl } from '../../lib/mediaUrl';
 
 interface GuestInvitationScreenProps {
   onNavigate: (screen: ScreenId) => void;
@@ -24,7 +25,7 @@ export const GuestInvitationScreen: React.FC<GuestInvitationScreenProps> = ({
         console.warn('Auto-play fallback notice:', err);
       });
     }
-  }, [activeInvitation?.videoUrl, isMuted]);
+  }, [activeInvitation?.videoKey, isMuted]);
 
   // Live countdown state
   const targetDateStr = activeInvitation?.weddingDate || '2026-11-28';
@@ -58,7 +59,7 @@ export const GuestInvitationScreen: React.FC<GuestInvitationScreenProps> = ({
   const weddingTime = activeInvitation?.weddingTime || '11:00 AM – 4:00 PM';
   const venueName = activeInvitation?.venueName || 'Glasshouse at Seputeh';
   const venueAddress = activeInvitation?.venueAddress || '17, Jalan Syed Putra, Seputeh, 50460 Kuala Lumpur';
-  const videoUrl = activeInvitation?.videoUrl || 'https://assets.mixkit.co/videos/preview/mixkit-wedding-rings-in-a-box-41582-large.mp4';
+  const videoUrl = buildR2PublicUrl(activeInvitation?.videoKey);
   const posterUrl = activeInvitation?.posterUrl || '';
   const bank = activeInvitation?.bankGift || {
     bankName: 'Maybank',

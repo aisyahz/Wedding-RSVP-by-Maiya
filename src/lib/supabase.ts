@@ -43,7 +43,6 @@ export function mapDbInvitationToApp(dbRow: any): Invitation {
         }
       : undefined,
     rsvpClosingDate: dbRow.rsvp_closing_date ? new Date(dbRow.rsvp_closing_date).toISOString().split('T')[0] : '',
-    videoUrl: dbRow.video_url || '',
     videoKey: dbRow.video_key || '',
     posterUrl: dbRow.poster_url || '',
     posterKey: dbRow.poster_key || '',
@@ -216,7 +215,7 @@ export async function createInvitationWithPin(
       p_bank_account_holder: invData.bankGift?.accountHolder || null,
       p_qr_code_url: invData.bankGift?.qrCodeUrl || null,
       p_rsvp_closing_date: closingDateIso,
-      p_video_url: invData.videoUrl || null,
+      p_video_key: invData.videoKey || null,
       p_video_file_name: invData.videoFileName || null,
       p_status: invData.status || 'draft',
       p_custom_pin: customPin || null,
@@ -269,7 +268,7 @@ export async function createInvitationWithPin(
       bank_account_holder: payload.p_bank_account_holder,
       qr_code_url: payload.p_qr_code_url,
       rsvp_closing_date: payload.p_rsvp_closing_date,
-      video_url: payload.p_video_url,
+      video_key: payload.p_video_key,
       video_file_name: payload.p_video_file_name,
       status: payload.p_status,
     };
@@ -309,6 +308,9 @@ export async function updateInvitationInSupabase(
   }
 
   try {
+    const has = (key: keyof Invitation) =>
+      Object.prototype.hasOwnProperty.call(invData, key);
+
     let closingDateIso: string | null = null;
     if (invData.rsvpClosingDate && invData.rsvpClosingDate.trim()) {
       const d = new Date(invData.rsvpClosingDate);
@@ -325,21 +327,22 @@ export async function updateInvitationInSupabase(
       ...(invData.weddingTime ? { wedding_time: formatTimeForDb(invData.weddingTime) } : {}),
       ...(invData.venueName ? { venue_name: invData.venueName } : {}),
       ...(invData.venueAddress ? { venue_address: invData.venueAddress } : {}),
-      google_maps_url: invData.googleMapsUrl || null,
-      waze_url: invData.wazeUrl || null,
+      ...(has('googleMapsUrl') ? { google_maps_url: invData.googleMapsUrl || null } : {}),
+      ...(has('wazeUrl') ? { waze_url: invData.wazeUrl || null } : {}),
       ...(invData.whatsappContact ? { whatsapp_contact: invData.whatsappContact } : {}),
-      wishlist_url: invData.wishlistUrl || null,
-      bank_name: invData.bankGift?.bankName || null,
-      bank_account_number: invData.bankGift?.accountNumber || null,
-      bank_account_holder: invData.bankGift?.accountHolder || null,
-      qr_code_url: invData.bankGift?.qrCodeUrl || null,
-      gift_qr_key: invData.bankGift?.qrCodeKey || invData.giftQrKey || null,
-      rsvp_closing_date: closingDateIso,
-      video_url: invData.videoUrl || null,
-      video_key: invData.videoKey || null,
-      poster_url: invData.posterUrl || null,
-      poster_key: invData.posterKey || null,
-      video_file_name: invData.videoFileName || null,
+      ...(has('wishlistUrl') ? { wishlist_url: invData.wishlistUrl || null } : {}),
+      ...(has('bankGift') ? {
+        bank_name: invData.bankGift?.bankName || null,
+        bank_account_number: invData.bankGift?.accountNumber || null,
+        bank_account_holder: invData.bankGift?.accountHolder || null,
+        qr_code_url: invData.bankGift?.qrCodeUrl || null,
+      } : {}),
+      ...(has('giftQrKey') ? { gift_qr_key: invData.giftQrKey || null } : {}),
+      ...(has('rsvpClosingDate') ? { rsvp_closing_date: closingDateIso } : {}),
+      ...(has('videoKey') ? { video_key: invData.videoKey || null } : {}),
+      ...(has('posterUrl') ? { poster_url: invData.posterUrl || null } : {}),
+      ...(has('posterKey') ? { poster_key: invData.posterKey || null } : {}),
+      ...(has('videoFileName') ? { video_file_name: invData.videoFileName || null } : {}),
       ...(invData.status ? { status: invData.status } : {}),
       updated_at: new Date().toISOString(),
     };
@@ -364,8 +367,7 @@ export async function updateInvitationInSupabase(
 
 // 5. Delete Invitation (and attached video/media files & rsvps)
 export async function deleteInvitationFromSupabase(
-  id: string,
-  videoUrl?: string
+  id: string
 ): Promise<{ success: boolean; error?: string }> {
   console.log(`[DELETE_HANDLER_RECEIVED_ID] Starting deletion for ID: ${id}`);
 
@@ -384,18 +386,9 @@ export async function deleteInvitationFromSupabase(
       console.warn(`[R2_DELETE_WARNING] R2 media deletion warning: ${r2Err?.message || r2Err}`);
     }
 
-    // 2. Delete attached legacy storage video file if available
-    if (videoUrl && videoUrl.includes('invitation-videos')) {
-      try {
-        await deleteVideoFromSupabaseBucket(videoUrl);
-      } catch (bucketErr: any) {
-        console.warn(`Legacy bucket video deletion warning: ${bucketErr?.message || bucketErr}`);
-      }
-    }
-
     console.log(`[SUPABASE_DELETE_STARTED] Deleting database records for invitation ID: ${id}`);
 
-    // 3. Explicitly delete related rsvp_entries in case ON DELETE CASCADE is missing
+    // 2. Explicitly delete related rsvp_entries in case ON DELETE CASCADE is missing
     const { error: rsvpError } = await supabase
       .from('rsvp_entries')
       .delete()
@@ -405,7 +398,7 @@ export async function deleteInvitationFromSupabase(
       console.warn(`Notice: rsvp_entries deletion notice: ${rsvpError.message}`);
     }
 
-    // 4. Explicitly delete invitation_secrets
+    // 3. Explicitly delete invitation_secrets
     const { error: secretsError } = await supabase
       .from('invitation_secrets')
       .delete()
@@ -415,7 +408,7 @@ export async function deleteInvitationFromSupabase(
       console.warn(`Notice: invitation_secrets deletion notice: ${secretsError.message}`);
     }
 
-    // 5. Delete invitation record
+    // 4. Delete invitation record
     const { error: invError } = await supabase
       .from('invitations')
       .delete()
@@ -432,68 +425,6 @@ export async function deleteInvitationFromSupabase(
     console.error(`[DELETE_FAILED] Exception during deletion: ${err?.message || err}`);
     return { success: false, error: err?.message || 'Error deleting invitation' };
   }
-}
-
-// ====================================================================
-// STORAGE BUCKET SERVICE (invitation-videos)
-// ====================================================================
-
-export async function uploadVideoToSupabase(
-  file: File,
-  slug: string
-): Promise<{ publicUrl: string | null; error?: string }> {
-  if (!file.name.toLowerCase().endsWith('.mp4') && file.type !== 'video/mp4') {
-    return { publicUrl: null, error: 'Only MP4 format video files are supported.' };
-  }
-
-  if (file.size > 50 * 1024 * 1024) {
-    return { publicUrl: null, error: 'File size exceeds maximum 50 MB limit.' };
-  }
-
-  if (!supabase || !isSupabaseConfigured) {
-    return { publicUrl: null, error: 'Supabase client is not configured' };
-  }
-
-  try {
-    const cleanSlug = slug.replace(/[^a-z0-9-]/gi, '_');
-    const filePath = `invitations/${cleanSlug}_${Date.now()}.mp4`;
-
-    const { error: uploadError } = await supabase.storage
-      .from('invitation-videos')
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: true,
-        contentType: 'video/mp4',
-      });
-
-    if (uploadError) {
-      console.error('Supabase video upload error:', uploadError);
-      return { publicUrl: null, error: uploadError.message };
-    }
-
-    const { data } = supabase.storage.from('invitation-videos').getPublicUrl(filePath);
-    return { publicUrl: data.publicUrl };
-  } catch (err: any) {
-    return { publicUrl: null, error: err.message || 'Error uploading video' };
-  }
-}
-
-export async function deleteVideoFromSupabaseBucket(videoUrl: string): Promise<boolean> {
-  if (!supabase || !videoUrl || !videoUrl.includes('invitation-videos')) return false;
-
-  try {
-    // Extract file path from URL (e.g. invitations/slug_12345.mp4)
-    const urlParts = videoUrl.split('/invitation-videos/');
-    if (urlParts.length > 1) {
-      const filePath = urlParts[1];
-      const { error } = await supabase.storage.from('invitation-videos').remove([filePath]);
-      if (error) console.warn('Video deletion notice:', error.message);
-      return !error;
-    }
-  } catch (err) {
-    console.warn('Video deletion exception:', err);
-  }
-  return false;
 }
 
 // ====================================================================

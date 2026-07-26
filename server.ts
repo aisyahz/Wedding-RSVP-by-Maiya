@@ -140,15 +140,9 @@ app.post('/api/r2/presign', verifySupabaseAdmin, async (req: Request, res: Respo
     // 15 minutes = 900 seconds
     const presignedUrl = await getSignedUrl(r2.client, command, { expiresIn: 900 });
 
-    const publicDomain = process.env.CLOUDFLARE_R2_PUBLIC_DOMAIN;
-    const publicUrl = publicDomain
-      ? `${publicDomain.replace(/\/$/, '')}/${objectKey}`
-      : `https://${r2.bucketName}.${r2.accountId}.r2.cloudflarestorage.com/${objectKey}`;
-
     res.json({
       presignedUrl,
       objectKey,
-      publicUrl,
     });
   } catch (err: any) {
     console.error('Error generating presigned URL:', err);

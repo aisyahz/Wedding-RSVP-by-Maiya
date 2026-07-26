@@ -40,7 +40,6 @@ export interface Invitation {
   enableGiftSection?: boolean;
   bankGift?: BankGiftInfo;
   rsvpClosingDate: string;
-  videoUrl: string;
   videoKey?: string;
   posterUrl?: string;
   posterKey?: string;

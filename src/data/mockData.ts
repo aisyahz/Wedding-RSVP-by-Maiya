@@ -10,19 +10,6 @@ export const INITIAL_SETTINGS: SystemSettings = {
   defaultExpiryDays: 30,
 };
 
-export const SAMPLE_VIDEOS = [
-  {
-    name: 'Luxury_Gold_Floral_Loop.mp4',
-    url: 'https://assets.mixkit.co/videos/preview/mixkit-wedding-rings-in-a-box-41582-large.mp4',
-    poster: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=800&auto=format&fit=crop&q=80',
-  },
-  {
-    name: 'Elegance_Rose_Petals_Vertical.mp4',
-    url: 'https://assets.mixkit.co/videos/preview/mixkit-hands-holding-a-wedding-bouquet-41581-large.mp4',
-    poster: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=800&auto=format&fit=crop&q=80',
-  },
-];
-
 export const INITIAL_INVITATIONS: Invitation[] = [
   {
     id: 'inv-001',
@@ -45,7 +32,6 @@ export const INITIAL_INVITATIONS: Invitation[] = [
       qrCodeUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&auto=format&fit=crop&q=80',
     },
     rsvpClosingDate: '2026-10-10',
-    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-wedding-rings-in-a-box-41582-large.mp4',
     videoFileName: 'Adam_Sofea_Wedding_Card.mp4',
     status: 'active',
     privatePin: '1234',
@@ -72,7 +58,6 @@ export const INITIAL_INVITATIONS: Invitation[] = [
       qrCodeUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&auto=format&fit=crop&q=80',
     },
     rsvpClosingDate: '2026-11-01',
-    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-hands-holding-a-wedding-bouquet-41581-large.mp4',
     videoFileName: 'Farah_Imran_Luxury_Video.mp4',
     status: 'active',
     privatePin: '2026',
@@ -98,7 +83,6 @@ export const INITIAL_INVITATIONS: Invitation[] = [
       accountHolder: 'DANIAL DANISH BIN ZULKIFLI',
     },
     rsvpClosingDate: '2026-06-01',
-    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-wedding-rings-in-a-box-41582-large.mp4',
     videoFileName: 'Aina_Danial_Invitation.mp4',
     status: 'expired',
     privatePin: '8888',
