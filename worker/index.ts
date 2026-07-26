@@ -12,8 +12,10 @@ interface R2BucketBinding {
 interface Env {
   ASSETS: AssetsBinding;
   MEDIA_BUCKET: R2BucketBinding;
-  SUPABASE_URL: string;
-  SUPABASE_ANON_KEY: string;
+  SUPABASE_URL?: string;
+  SUPABASE_ANON_KEY?: string;
+  VITE_SUPABASE_URL?: string;
+  VITE_SUPABASE_ANON_KEY?: string;
   CLOUDFLARE_R2_ACCOUNT_ID: string;
   CLOUDFLARE_R2_ACCESS_KEY_ID: string;
   CLOUDFLARE_R2_SECRET_ACCESS_KEY: string;
@@ -105,15 +107,25 @@ async function authenticate(request: Request, env: Env): Promise<Response | null
   if (!authorization?.startsWith('Bearer ') || authorization.length <= 7) {
     return json({ error: 'Unauthorized: Missing or invalid Authorization header' }, 401);
   }
-  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+
+  console.info('[WORKER_BINDINGS_DIAGNOSTIC]', {
+    supabaseUrlExists: Boolean(env.SUPABASE_URL),
+    supabaseAnonKeyExists: Boolean(env.SUPABASE_ANON_KEY),
+    viteSupabaseUrlExists: Boolean(env.VITE_SUPABASE_URL),
+    viteSupabaseAnonKeyExists: Boolean(env.VITE_SUPABASE_ANON_KEY),
+  });
+
+  const supabaseUrl = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
+  const supabaseAnonKey = env.SUPABASE_ANON_KEY || env.VITE_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseAnonKey) {
     return json({ error: 'Worker Supabase authentication bindings are not configured.' }, 500);
   }
 
   try {
-    const response = await fetch(`${env.SUPABASE_URL.replace(/\/+$/, '')}/auth/v1/user`, {
+    const response = await fetch(`${supabaseUrl.replace(/\/+$/, '')}/auth/v1/user`, {
       headers: {
         authorization,
-        apikey: env.SUPABASE_ANON_KEY,
+        apikey: supabaseAnonKey,
       },
     });
     if (!response.ok) {
