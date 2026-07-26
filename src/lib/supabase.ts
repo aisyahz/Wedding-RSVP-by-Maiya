@@ -124,6 +124,28 @@ export async function getInvitations(): Promise<{ data: Invitation[]; error?: st
   }
 }
 
+export async function getInvitationById(id: string): Promise<{ data: Invitation | null; error?: string }> {
+  if (!supabase || !isSupabaseConfigured) {
+    return { data: null, error: 'Supabase client is not configured' };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('invitations')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error || !data) {
+      return { data: null, error: error?.message || 'Invitation not found' };
+    }
+
+    return { data: mapDbInvitationToApp(data) };
+  } catch (err: any) {
+    return { data: null, error: err.message || 'Error retrieving invitation' };
+  }
+}
+
 // 2. Fetch Single Invitation by Slug (For Public Guest View)
 export async function getInvitationBySlug(slug: string): Promise<{ data: Invitation | null; error?: string }> {
   if (!supabase || !isSupabaseConfigured) {

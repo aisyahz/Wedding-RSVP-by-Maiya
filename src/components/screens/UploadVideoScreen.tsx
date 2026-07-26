@@ -27,6 +27,7 @@ interface UploadVideoScreenProps {
     videoUrl: string,
     fileName: string
   ) => Promise<{ success: boolean; error?: string }>;
+  onPendingVideoCleared?: (reason: string) => void;
 }
 
 export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
@@ -34,6 +35,7 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
   activeInvitation,
   initialVideoFile,
   onUpdateVideo,
+  onPendingVideoCleared,
 }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
@@ -222,7 +224,11 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
       setCurrentVideoUrl(publicUrl);
       setPublicUrlPlaybackResult('Sedia Untuk Tontonan Tetamu');
       setUploadSuccess('Video MP4 berjaya dimuat naik & disimpan di Cloudflare R2 CDN!');
-      setSelectedVideoFile(null); // Clear pending file state
+      console.info('[R2_DIAGNOSTIC] Clearing pending video file', {
+        reason: 'R2 PUT and Supabase persistence succeeded',
+      });
+      setSelectedVideoFile(null);
+      onPendingVideoCleared?.('R2 PUT and Supabase persistence succeeded');
       return true;
     } catch (err: any) {
       setIsUploading(false);

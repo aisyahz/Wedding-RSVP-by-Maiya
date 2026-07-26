@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ScreenId, Invitation } from '../../types';
 import { ArrowLeft, ArrowRight, Upload, CheckCircle } from 'lucide-react';
 import { MediaProviderService } from '../../lib/mediaProvider';
+import { useLocation } from 'react-router-dom';
 
 interface CreateInvitationScreenProps {
   onNavigate: (screen: ScreenId, slugOrId?: string) => void;
@@ -16,6 +17,7 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
   onSaveInvitation,
   onVideoFileSelected,
 }) => {
+  const location = useLocation();
   const [step, setStep] = useState<number>(1);
 
   // Form State
@@ -83,6 +85,9 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
   };
 
   const handlePublish = async () => {
+    console.info('[ROUTING_DIAGNOSTIC] Before invitation creation', {
+      currentPathname: location.pathname,
+    });
     const data: Partial<Invitation> = {
       id: editingInvitation?.id || `inv-${Date.now()}`,
       slug: generatedSlug,
@@ -117,6 +122,14 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
     console.info('[R2_DIAGNOSTIC] Invitation created', {
       invitationId: savedInvitation.id,
     });
+    console.info('[ROUTING_DIAGNOSTIC] Invitation creation returned', {
+      invitationId: savedInvitation.id,
+      invitationIdExists: Boolean(savedInvitation.id),
+    });
+    if (!savedInvitation.id) {
+      console.error('[ROUTING_DIAGNOSTIC] Navigation stopped: returned invitation ID is missing');
+      return;
+    }
     onNavigate('upload_video', savedInvitation.id);
   };
 

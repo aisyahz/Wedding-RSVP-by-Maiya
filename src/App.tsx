@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Invitation, RsvpEntry, SystemSettings, ScreenId } from './types';
 import { INITIAL_SETTINGS } from './data/mockData';
 import {
   getInvitations,
+  getInvitationById,
   getRsvps,
   createInvitationWithPin,
   updateInvitationInSupabase,
@@ -36,6 +37,63 @@ import { ThankYouScreen } from './components/screens/ThankYouScreen';
 import { PrivateRsvpReportScreen } from './components/screens/PrivateRsvpReportScreen';
 import { AdminRsvpScreen } from './components/screens/AdminRsvpScreen';
 import { SettingsScreen } from './components/screens/SettingsScreen';
+
+function NavigationAdapter({
+  children,
+  selectedInvitationId = '',
+  activeInvitation = null,
+}: {
+  children: (onNavigate: (screen: ScreenId, slugOrId?: string) => void) => React.ReactNode;
+  selectedInvitationId?: string;
+  activeInvitation?: Invitation | null;
+}) {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleNavigate = (screen: ScreenId, slugOrId?: string) => {
+    let target = '/dashboard';
+    switch (screen) {
+      case 'login': target = '/login'; break;
+      case 'dashboard': target = '/dashboard'; break;
+      case 'invitation_list': target = '/invitations'; break;
+      case 'create_invitation': target = '/invitations/new'; break;
+      case 'upload_video': target = `/invitations/${slugOrId || selectedInvitationId}/upload-video`; break;
+      case 'generate_link': target = `/invitations/${slugOrId || selectedInvitationId}/generate-link`; break;
+      case 'guest_opening': target = `/invite/${slugOrId || activeInvitation?.slug || 'adam-sofea'}`; break;
+      case 'guest_invitation': target = `/invite/${slugOrId || activeInvitation?.slug || 'adam-sofea'}/details`; break;
+      case 'guest_rsvp_form': target = `/invite/${slugOrId || activeInvitation?.slug || 'adam-sofea'}/rsvp`; break;
+      case 'thank_you': target = `/invite/${slugOrId || activeInvitation?.slug || 'adam-sofea'}/thank-you`; break;
+      case 'private_rsvp_report': target = `/report/${slugOrId || activeInvitation?.slug || 'adam-sofea'}`; break;
+      case 'admin_rsvp': target = '/rsvp'; break;
+      case 'settings': target = '/settings'; break;
+    }
+    console.info('[ROUTING_DIAGNOSTIC] Navigating', {
+      currentPathname: location.pathname,
+      screen,
+      target,
+    });
+    navigate(target);
+    window.setTimeout(() => {
+      console.info('[ROUTING_DIAGNOSTIC] Pathname after navigation', {
+        requestedTarget: target,
+        currentPathname: window.location.pathname,
+      });
+    }, 0);
+  };
+
+  return <>{children(handleNavigate)}</>;
+}
+
+function DiagnosticRedirect({ to, reason }: { to: string; reason: string }) {
+  useEffect(() => {
+    console.warn('[ROUTING_DIAGNOSTIC] Redirect', {
+      currentPathname: window.location.pathname,
+      redirectTarget: to,
+      reason,
+    });
+  }, [reason, to]);
+  return <Navigate to={to} replace />;
+}
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -240,6 +298,10 @@ export default function App() {
     }
 
     setInvitations((prev) => prev.map((i) => (i.id === data.id ? data : i)));
+    console.info('[R2_DIAGNOSTIC] Clearing pending upload state', {
+      reason: 'Supabase video persistence succeeded',
+      invitationId,
+    });
     setPendingVideoFile(null);
     setPendingUploadInvitation(null);
     showToast('success', 'Video kad jemputan berjaya dikemas kini!');
@@ -273,75 +335,12 @@ export default function App() {
     setIsAuthenticated(false);
   };
 
-  // Navigation Helper
-  function NavigationAdapter({ children }: { children: (onNavigate: (screen: ScreenId, slugOrId?: string) => void) => React.ReactNode }) {
-    const navigate = useNavigate();
-
-    const handleNavigate = (screen: ScreenId, slugOrId?: string) => {
-      switch (screen) {
-        case 'login':
-          navigate('/login');
-          break;
-        case 'dashboard':
-          navigate('/dashboard');
-          break;
-        case 'invitation_list':
-          navigate('/invitations');
-          break;
-        case 'create_invitation':
-          navigate('/invitations/new');
-          break;
-        case 'upload_video':
-          navigate(`/invitations/${slugOrId || selectedInvitationId}/upload-video`);
-          break;
-        case 'generate_link':
-          navigate(`/invitations/${slugOrId || selectedInvitationId}/preview`);
-          break;
-        case 'guest_opening': {
-          const targetSlug = slugOrId || activeInvitation?.slug || 'adam-sofea';
-          navigate(`/invite/${targetSlug}`);
-          break;
-        }
-        case 'guest_invitation': {
-          const targetSlug = slugOrId || activeInvitation?.slug || 'adam-sofea';
-          navigate(`/invite/${targetSlug}/details`);
-          break;
-        }
-        case 'guest_rsvp_form': {
-          const targetSlug = slugOrId || activeInvitation?.slug || 'adam-sofea';
-          navigate(`/invite/${targetSlug}/rsvp`);
-          break;
-        }
-        case 'thank_you': {
-          const targetSlug = slugOrId || activeInvitation?.slug || 'adam-sofea';
-          navigate(`/invite/${targetSlug}/thank-you`);
-          break;
-        }
-        case 'private_rsvp_report': {
-          const targetSlug = slugOrId || activeInvitation?.slug || 'adam-sofea';
-          navigate(`/report/${targetSlug}`);
-          break;
-        }
-        case 'admin_rsvp':
-          navigate('/rsvp');
-          break;
-        case 'settings':
-          navigate('/settings');
-          break;
-        default:
-          navigate('/dashboard');
-      }
-    };
-
-    return <>{children(handleNavigate)}</>;
-  }
-
   // Wrapper for Edit Invitation by ID
   function EditInvitationWrapper() {
     const { id } = useParams<{ id: string }>();
     const inv = invitations.find((i) => i.id === id) || editingInvitation;
     return (
-      <NavigationAdapter>
+      <NavigationAdapter selectedInvitationId={selectedInvitationId} activeInvitation={activeInvitation}>
         {(onNavigate) => (
           <CreateInvitationScreen
             onNavigate={onNavigate}
@@ -357,18 +356,75 @@ export default function App() {
   // Wrapper for Upload Video by ID
   function UploadVideoWrapper() {
     const { id } = useParams<{ id: string }>();
+    const [fetchedInvitation, setFetchedInvitation] = useState<Invitation | null>(null);
+    const [fetchError, setFetchError] = useState('');
+    const [isFetching, setIsFetching] = useState(false);
     const inv =
       invitations.find((i) => i.id === id) ||
       (pendingUploadInvitation?.id === id ? pendingUploadInvitation : null) ||
-      (activeInvitation?.id === id ? activeInvitation : null);
+      (activeInvitation?.id === id ? activeInvitation : null) ||
+      fetchedInvitation;
+
+    useEffect(() => {
+      console.info('[ROUTING_DIAGNOSTIC] UploadVideoWrapper mounted', {
+        currentPathname: window.location.pathname,
+        routeParamId: id || null,
+        pendingFileExists: pendingVideoFile instanceof File,
+      });
+      if (!id) {
+        setFetchError('ID jemputan tiada pada URL. Muat naik tidak boleh diteruskan.');
+        console.error('[ROUTING_DIAGNOSTIC] Upload route error', {
+          reason: 'route param ID missing',
+          redirectTarget: null,
+        });
+        return;
+      }
+      let cancelled = false;
+      setIsFetching(true);
+      getInvitationById(id).then(({ data, error }) => {
+        if (cancelled) return;
+        console.info('[ROUTING_DIAGNOSTIC] Invitation record fetch result', {
+          routeParamId: id,
+          found: Boolean(data),
+          error: error || null,
+        });
+        setIsFetching(false);
+        if (data) {
+          setFetchedInvitation(data);
+          setInvitations((prev) => prev.some((item) => item.id === data.id) ? prev : [data, ...prev]);
+        } else {
+          setFetchError(error || 'Rekod jemputan tidak ditemui.');
+        }
+      });
+      return () => {
+        cancelled = true;
+      };
+    }, [id]);
+
+    if (!id || (!inv && fetchError)) {
+      return (
+        <div className="max-w-2xl mx-auto card-maiya p-6 text-rose-800">
+          <h1 className="font-title font-bold">Video upload unavailable</h1>
+          <p className="mt-2 text-sm">{fetchError || 'ID jemputan tiada pada URL.'}</p>
+        </div>
+      );
+    }
+
+    if (!inv && isFetching) {
+      return <div className="max-w-2xl mx-auto card-maiya p-6">Loading invitation…</div>;
+    }
     return (
-      <NavigationAdapter>
+      <NavigationAdapter selectedInvitationId={selectedInvitationId} activeInvitation={activeInvitation}>
         {(onNavigate) => (
           <UploadVideoScreen
             onNavigate={onNavigate}
             activeInvitation={inv}
             onUpdateVideo={handleUpdateVideo}
             initialVideoFile={pendingVideoFile}
+            onPendingVideoCleared={(reason) => {
+              console.info('[R2_DIAGNOSTIC] Parent pending video clear requested', { reason });
+              setPendingVideoFile(null);
+            }}
           />
         )}
       </NavigationAdapter>
@@ -380,7 +436,7 @@ export default function App() {
     const { id } = useParams<{ id: string }>();
     const inv = invitations.find((i) => i.id === id) || activeInvitation;
     return (
-      <NavigationAdapter>
+      <NavigationAdapter selectedInvitationId={selectedInvitationId} activeInvitation={activeInvitation}>
         {(onNavigate) => (
           <GenerateLinkScreen
             onNavigate={onNavigate}
@@ -444,7 +500,7 @@ export default function App() {
     }, [slug, invitations]);
 
     return (
-      <NavigationAdapter>
+      <NavigationAdapter selectedInvitationId={selectedInvitationId} activeInvitation={activeInvitation}>
         {(onNavigate) => {
           const navHandler = (screen: ScreenId) => onNavigate(screen, slug);
           if (loading) {
@@ -560,7 +616,7 @@ export default function App() {
         <Route
           path="/login"
           element={
-            <NavigationAdapter>
+            <NavigationAdapter selectedInvitationId={selectedInvitationId} activeInvitation={activeInvitation}>
               {(onNavigate) => (
                 <AdminLoginScreen
                   onNavigate={onNavigate}
@@ -577,14 +633,17 @@ export default function App() {
             isAuthenticated ? (
               <AdminLayout onLogout={handleLogout} />
             ) : (
-              <Navigate to="/login" replace />
+              <DiagnosticRedirect
+                to="/login"
+                reason="Protected admin route requested without an authenticated session"
+              />
             )
           }
         >
           <Route
             path="/dashboard"
             element={
-              <NavigationAdapter>
+              <NavigationAdapter selectedInvitationId={selectedInvitationId} activeInvitation={activeInvitation}>
                 {(onNavigate) => (
                   <DashboardScreen
                     currentScreen="dashboard"
@@ -604,7 +663,7 @@ export default function App() {
           <Route
             path="/invitations"
             element={
-              <NavigationAdapter>
+              <NavigationAdapter selectedInvitationId={selectedInvitationId} activeInvitation={activeInvitation}>
                 {(onNavigate) => (
                   <InvitationListScreen
                     currentScreen="invitation_list"
@@ -624,7 +683,7 @@ export default function App() {
           <Route
             path="/invitations/new"
             element={
-              <NavigationAdapter>
+              <NavigationAdapter selectedInvitationId={selectedInvitationId} activeInvitation={activeInvitation}>
                 {(onNavigate) => (
                   <CreateInvitationScreen
                     onNavigate={onNavigate}
@@ -639,12 +698,13 @@ export default function App() {
 
           <Route path="/invitations/:id/edit" element={<EditInvitationWrapper />} />
           <Route path="/invitations/:id/upload-video" element={<UploadVideoWrapper />} />
+          <Route path="/invitations/:id/generate-link" element={<PreviewWrapper />} />
           <Route path="/invitations/:id/preview" element={<PreviewWrapper />} />
 
           <Route
             path="/rsvp"
             element={
-              <NavigationAdapter>
+              <NavigationAdapter selectedInvitationId={selectedInvitationId} activeInvitation={activeInvitation}>
                 {(onNavigate) => (
                   <AdminRsvpScreen
                     currentScreen="admin_rsvp"
@@ -661,7 +721,7 @@ export default function App() {
           <Route
             path="/settings"
             element={
-              <NavigationAdapter>
+              <NavigationAdapter selectedInvitationId={selectedInvitationId} activeInvitation={activeInvitation}>
                 {(onNavigate) => (
                   <SettingsScreen
                     currentScreen="settings"
@@ -753,8 +813,24 @@ export default function App() {
         </Route>
 
         {/* Default Redirects */}
-        <Route path="/" element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />} />
-        <Route path="*" element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />} />
+        <Route
+          path="/"
+          element={
+            <DiagnosticRedirect
+              to={isAuthenticated ? '/dashboard' : '/login'}
+              reason="Root route default"
+            />
+          }
+        />
+        <Route
+          path="*"
+          element={
+            <DiagnosticRedirect
+              to={isAuthenticated ? '/dashboard' : '/login'}
+              reason="No React Router route matched the current pathname"
+            />
+          }
+        />
       </Routes>
     </BrowserRouter>
   );
