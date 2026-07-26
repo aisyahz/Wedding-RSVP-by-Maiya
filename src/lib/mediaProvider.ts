@@ -16,9 +16,15 @@ export interface UploadMediaResult {
 
 // Get bearer token from Supabase Auth session
 async function getAdminToken(): Promise<string | null> {
-  if (!supabase) return 'dev-token';
+  if (!supabase) return null;
   const { data } = await supabase.auth.getSession();
-  return data.session?.access_token || 'dev-token';
+  const session = data.session;
+  console.info('[AUTH_DIAGNOSTIC]', {
+    sessionExists: Boolean(session),
+    userId: session?.user?.id || null,
+    accessTokenExists: Boolean(session?.access_token),
+  });
+  return session?.access_token || null;
 }
 
 /**
@@ -62,6 +68,9 @@ export const MediaProviderService = {
     try {
       // 2. Request presigned upload URL from backend API
       const token = await getAdminToken();
+      if (!token) {
+        return { data: null, error: 'Authentication required. Please sign in again.' };
+      }
       const contentType = mediaType === 'video'
         ? 'video/mp4'
         : (file.type || 'image/webp');
@@ -168,6 +177,9 @@ export const MediaProviderService = {
   ): Promise<{ success: boolean; error?: string }> {
     try {
       const token = await getAdminToken();
+      if (!token) {
+        return { success: false, error: 'Authentication required. Please sign in again.' };
+      }
       const res = await fetch('/api/r2/delete', {
         method: 'POST',
         headers: {

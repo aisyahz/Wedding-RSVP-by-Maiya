@@ -1,19 +1,20 @@
 import React, { useState } from 'react';
 import { ScreenId } from '../../types';
 import { Lock, Mail, ArrowRight, ShieldCheck, AlertCircle, Loader2 } from 'lucide-react';
-import { supabase, isSupabaseConfigured } from '../../lib/supabase';
+import type { Session } from '@supabase/supabase-js';
+import { isSupabaseConfigured, loginAdmin } from '../../lib/supabase';
 
 interface AdminLoginScreenProps {
   onNavigate: (screen: ScreenId) => void;
-  onLoginSuccess: () => void;
+  onLoginSuccess: (session: Session) => void;
 }
 
 export const AdminLoginScreen: React.FC<AdminLoginScreenProps> = ({
   onNavigate,
   onLoginSuccess,
 }) => {
-  const [email, setEmail] = useState('admin@digitalcardmaiya.com');
-  const [password, setPassword] = useState('maiya123456');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -22,34 +23,20 @@ export const AdminLoginScreen: React.FC<AdminLoginScreenProps> = ({
     setLoading(true);
     setErrorMsg('');
 
-    if (isSupabaseConfigured && supabase) {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        // If invalid credentials, attempt sign up or notify user
-        if (error.message.toLowerCase().includes('invalid login credentials')) {
-          const { error: signUpErr } = await supabase.auth.signUp({
-            email,
-            password,
-          });
-          if (signUpErr) {
-            setErrorMsg(`Sign in failed: ${error.message}`);
-            setLoading(false);
-            return;
-          }
-        } else {
-          setErrorMsg(error.message);
-          setLoading(false);
-          return;
-        }
-      }
+    if (!isSupabaseConfigured) {
+      setErrorMsg('Supabase authentication is not configured.');
+      setLoading(false);
+      return;
     }
 
+    const result = await loginAdmin(email, password);
     setLoading(false);
-    onLoginSuccess();
+    if (!result.session || result.error) {
+      setErrorMsg(result.error || 'Sign in failed because no authenticated session was returned.');
+      return;
+    }
+
+    onLoginSuccess(result.session);
     onNavigate('dashboard');
   };
 
@@ -99,7 +86,7 @@ export const AdminLoginScreen: React.FC<AdminLoginScreenProps> = ({
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   className="w-full input-maiya pl-10"
-                  placeholder="admin@digitalcardmaiya.com"
+                  placeholder="admin@example.com"
                 />
                 <Mail className="w-4 h-4 text-[#77736D] absolute left-3.5 top-1/2 -translate-y-1/2" />
               </div>

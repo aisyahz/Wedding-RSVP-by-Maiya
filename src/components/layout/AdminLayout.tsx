@@ -74,7 +74,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout }) => {
             </div>
             <div className="text-xs truncate">
               <p className="font-bold text-white">Maiya Admin</p>
-              <p className="text-[10px] text-[#77736D]">admin@digitalcardmaiya.com</p>
+              <p className="text-[10px] text-[#77736D]">Supabase authenticated</p>
             </div>
           </div>
 

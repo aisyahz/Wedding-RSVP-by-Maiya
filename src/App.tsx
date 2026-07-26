@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import type { Session } from '@supabase/supabase-js';
 import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Invitation, RsvpEntry, SystemSettings, ScreenId } from './types';
 import { INITIAL_SETTINGS } from './data/mockData';
@@ -96,7 +97,8 @@ function DiagnosticRedirect({ to, reason }: { to: string; reason: string }) {
 }
 
 export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [session, setSession] = useState<Session | null>(null);
+  const [isAuthReady, setIsAuthReady] = useState(false);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [rsvps, setRsvps] = useState<RsvpEntry[]>([]);
   const [selectedInvitationId, setSelectedInvitationId] = useState<string>('');
@@ -115,25 +117,61 @@ export default function App() {
     slug: string;
   } | null>(null);
 
-  // Load initial session and DB data
+  // Restore and continuously track the real Supabase Auth session.
   useEffect(() => {
-    async function initSystem() {
+    if (!isSupabaseConfigured || !supabase) {
+      console.info('[AUTH_DIAGNOSTIC]', {
+        sessionExists: false,
+        userId: null,
+        accessTokenExists: false,
+      });
+      setSession(null);
+      setIsAuthReady(true);
+      return;
+    }
+
+    let active = true;
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      if (!active) return;
+      console.info('[AUTH_DIAGNOSTIC]', {
+        sessionExists: Boolean(nextSession),
+        userId: nextSession?.user?.id || null,
+        accessTokenExists: Boolean(nextSession?.access_token),
+      });
+      setSession(nextSession);
+      setIsAuthReady(true);
+    });
+
+    supabase.auth.getSession().then(({ data, error }) => {
+      if (!active) return;
+      const restoredSession = error ? null : data.session;
+      console.info('[AUTH_DIAGNOSTIC]', {
+        sessionExists: Boolean(restoredSession),
+        userId: restoredSession?.user?.id || null,
+        accessTokenExists: Boolean(restoredSession?.access_token),
+      });
+      setSession(restoredSession);
+      setIsAuthReady(true);
+    });
+
+    return () => {
+      active = false;
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+
+  // Load admin data only after a real authenticated session is restored.
+  useEffect(() => {
+    if (!isAuthReady) return;
+    if (!session?.access_token || !session.user) {
+      setInvitations([]);
+      setRsvps([]);
+      setIsLoadingData(false);
+      return;
+    }
+
+    async function initData() {
       setIsLoadingData(true);
-
-      if (isSupabaseConfigured && supabase) {
-        const { data: sessionData } = await supabase.auth.getSession();
-        if (sessionData?.session) {
-          setIsAuthenticated(true);
-        }
-
-        supabase.auth.onAuthStateChange((_event, session) => {
-          setIsAuthenticated(Boolean(session));
-        });
-      } else {
-        // Fallback for development preview without Supabase auth
-        setIsAuthenticated(true);
-      }
-
       const [invRes, rsvpRes] = await Promise.all([getInvitations(), getRsvps()]);
 
       if (invRes.data) {
@@ -148,8 +186,8 @@ export default function App() {
       setIsLoadingData(false);
     }
 
-    initSystem();
-  }, []);
+    initData();
+  }, [isAuthReady, session?.access_token, session?.user]);
 
   const showToast = (type: 'success' | 'error', message: string) => {
     setNotification({ type, message });
@@ -331,8 +369,8 @@ export default function App() {
   };
 
   const handleLogout = async () => {
-    await logoutAdmin();
-    setIsAuthenticated(false);
+    const result = await logoutAdmin();
+    if (result.success) setSession(null);
   };
 
   // Wrapper for Edit Invitation by ID
@@ -616,21 +654,30 @@ export default function App() {
         <Route
           path="/login"
           element={
-            <NavigationAdapter selectedInvitationId={selectedInvitationId} activeInvitation={activeInvitation}>
-              {(onNavigate) => (
-                <AdminLoginScreen
-                  onNavigate={onNavigate}
-                  onLoginSuccess={() => setIsAuthenticated(true)}
-                />
-              )}
-            </NavigationAdapter>
+            isAuthReady && session?.access_token && session.user ? (
+              <DiagnosticRedirect
+                to="/dashboard"
+                reason="Authenticated session already exists"
+              />
+            ) : (
+              <NavigationAdapter selectedInvitationId={selectedInvitationId} activeInvitation={activeInvitation}>
+                {(onNavigate) => (
+                  <AdminLoginScreen
+                    onNavigate={onNavigate}
+                    onLoginSuccess={(authenticatedSession) => setSession(authenticatedSession)}
+                  />
+                )}
+              </NavigationAdapter>
+            )
           }
         />
 
         {/* Protected Admin Routes */}
         <Route
           element={
-            isAuthenticated ? (
+            !isAuthReady ? (
+              <div className="p-6 text-center">Checking authentication…</div>
+            ) : session?.access_token && session.user ? (
               <AdminLayout onLogout={handleLogout} />
             ) : (
               <DiagnosticRedirect
@@ -817,7 +864,7 @@ export default function App() {
           path="/"
           element={
             <DiagnosticRedirect
-              to={isAuthenticated ? '/dashboard' : '/login'}
+              to={session?.access_token && session.user ? '/dashboard' : '/login'}
               reason="Root route default"
             />
           }
@@ -826,7 +873,7 @@ export default function App() {
           path="*"
           element={
             <DiagnosticRedirect
-              to={isAuthenticated ? '/dashboard' : '/login'}
+              to={session?.access_token && session.user ? '/dashboard' : '/login'}
               reason="No React Router route matched the current pathname"
             />
           }

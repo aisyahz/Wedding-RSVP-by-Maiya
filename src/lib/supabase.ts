@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, Session } from '@supabase/supabase-js';
 import { Invitation, RsvpEntry, InvitationStatus } from '../types';
 import { MediaProviderService } from './mediaProvider';
 
@@ -74,13 +74,25 @@ export function mapDbRsvpToApp(dbRow: any): RsvpEntry {
 // SUPABASE AUTH SERVICE
 // ====================================================================
 
-export async function loginAdmin(email: string, pass: string): Promise<{ success: boolean; error?: string }> {
-  if (!supabase) return { success: false, error: 'Supabase client is not configured.' };
-  const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
-  if (error) {
-    return { success: false, error: error.message };
+export async function loginAdmin(
+  email: string,
+  pass: string
+): Promise<{ session: Session | null; error?: string }> {
+  if (!supabase) return { session: null, error: 'Supabase client is not configured.' };
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
+  const session = data.session;
+  console.info('[AUTH_DIAGNOSTIC]', {
+    sessionExists: Boolean(session),
+    userId: session?.user?.id || null,
+    accessTokenExists: Boolean(session?.access_token),
+  });
+  if (error || !session || !session.access_token || !session.user) {
+    return {
+      session: null,
+      error: error?.message || 'Supabase did not return a valid authenticated session.',
+    };
   }
-  return { success: true };
+  return { session };
 }
 
 export async function logoutAdmin(): Promise<{ success: boolean; error?: string }> {
@@ -202,7 +214,7 @@ export function formatTimeForDb(timeStr?: string): string {
   return '11:00:00';
 }
 
-// 3. Create Invitation with 6-digit PIN via RPC (with direct table fallback)
+// 3. Create Invitation with 6-digit PIN via the authenticated RPC
 export async function createInvitationWithPin(
   invData: Partial<Invitation>,
   customPin?: string
@@ -212,6 +224,20 @@ export async function createInvitationWithPin(
   }
 
   try {
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    const session = sessionData.session;
+    console.info('[AUTH_DIAGNOSTIC]', {
+      sessionExists: Boolean(session),
+      userId: session?.user?.id || null,
+      accessTokenExists: Boolean(session?.access_token),
+    });
+    if (sessionError || !session || !session.access_token || !session.user) {
+      return {
+        data: null,
+        error: sessionError?.message || 'Authentication required. Please sign in again.',
+      };
+    }
+
     // Format closing date to ISO string if provided
     let closingDateIso: string | null = null;
     if (invData.rsvpClosingDate && invData.rsvpClosingDate.trim()) {
@@ -246,70 +272,27 @@ export async function createInvitationWithPin(
 
     const { data, error } = await supabase.rpc('create_invitation_with_pin', payload);
 
-    if (!error && data && data.length > 0) {
-      const createdRow = data[0];
-      const generatedPin = createdRow.plain_pin;
-      const invitationId = createdRow.invitation_id;
-
-      // Fetch newly created invitation row
-      const { data: fetchRow } = await supabase
-        .from('invitations')
-        .select('*')
-        .eq('id', invitationId)
-        .single();
-
-      if (fetchRow) {
-        const mappedInv = mapDbInvitationToApp(fetchRow);
-        mappedInv.privatePin = generatedPin;
-        return {
-          data: {
-            invitation: mappedInv,
-            plainPin: generatedPin,
-          },
-        };
-      }
+    if (error) {
+      return { data: null, error: error.message };
+    }
+    if (!data || data.length === 0) {
+      return { data: null, error: 'create_invitation_with_pin returned no invitation.' };
     }
 
-    // Direct table insert fallback if RPC failed or had auth restriction
-    console.warn('RPC create_invitation_with_pin notice:', error?.message || 'Attempting direct insert fallback');
-
-    const generatedPin = customPin || Math.floor(100000 + Math.random() * 900000).toString();
-    const insertPayload = {
-      slug: payload.p_slug,
-      bride_name: payload.p_bride_name,
-      groom_name: payload.p_groom_name,
-      wedding_date: payload.p_wedding_date,
-      wedding_time: payload.p_wedding_time,
-      venue_name: payload.p_venue_name,
-      venue_address: payload.p_venue_address,
-      google_maps_url: payload.p_google_maps_url,
-      waze_url: payload.p_waze_url,
-      whatsapp_contact: payload.p_whatsapp_contact,
-      wishlist_url: payload.p_wishlist_url,
-      bank_name: payload.p_bank_name,
-      bank_account_number: payload.p_bank_account_number,
-      bank_account_holder: payload.p_bank_account_holder,
-      qr_code_url: payload.p_qr_code_url,
-      rsvp_closing_date: payload.p_rsvp_closing_date,
-      video_key: payload.p_video_key,
-      video_file_name: payload.p_video_file_name,
-      status: payload.p_status,
-    };
-
-    const { data: directData, error: directError } = await supabase
+    const createdRow = data[0];
+    const generatedPin = createdRow.plain_pin;
+    const invitationId = createdRow.invitation_id;
+    const { data: fetchRow, error: fetchError } = await supabase
       .from('invitations')
-      .insert([insertPayload])
-      .select()
+      .select('*')
+      .eq('id', invitationId)
       .single();
 
-    if (directError || !directData) {
-      console.error('Direct insert fallback error:', directError);
-      return { data: null, error: error?.message || directError?.message || 'Gagal mencipta rekod kad jemputan' };
+    if (fetchError || !fetchRow) {
+      return { data: null, error: fetchError?.message || 'Created invitation could not be loaded.' };
     }
-
-    const mappedInv = mapDbInvitationToApp(directData);
+    const mappedInv = mapDbInvitationToApp(fetchRow);
     mappedInv.privatePin = generatedPin;
-
     return {
       data: {
         invitation: mappedInv,
