@@ -279,10 +279,17 @@ app.post('/api/r2/presign', verifySupabaseAdmin, async (req: Request, res: Respo
 
     // 15 minutes = 900 seconds
     const presignedUrl = await getSignedUrl(r2.client, command, { expiresIn: 900 });
+    const publicDomain = String(process.env.CLOUDFLARE_R2_PUBLIC_DOMAIN || '').replace(/\/+$/, '');
+    if (!publicDomain) {
+      res.status(500).json({ error: 'CLOUDFLARE_R2_PUBLIC_DOMAIN is not configured.' });
+      return;
+    }
+    const publicUrl = `${publicDomain}/${objectKey}`;
 
     res.json({
-      presignedUrl,
-      objectKey,
+      uploadUrl: presignedUrl,
+      videoKey: objectKey,
+      publicUrl,
     });
   } catch (err: any) {
     console.error('Error generating presigned URL:', err);

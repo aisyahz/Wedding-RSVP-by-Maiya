@@ -1,19 +1,20 @@
 import React, { useState } from 'react';
-import { buildR2PublicUrl } from '../../lib/mediaUrl';
 import { ScreenId, Invitation } from '../../types';
 import { ArrowLeft, ArrowRight, Upload, CheckCircle } from 'lucide-react';
 import { MediaProviderService } from '../../lib/mediaProvider';
 
 interface CreateInvitationScreenProps {
-  onNavigate: (screen: ScreenId) => void;
+  onNavigate: (screen: ScreenId, slugOrId?: string) => void;
   editingInvitation?: Invitation | null;
-  onSaveInvitation: (invitation: Partial<Invitation>) => void;
+  onSaveInvitation: (invitation: Partial<Invitation>) => Promise<Invitation | null>;
+  onVideoFileSelected: (file: File | null) => void;
 }
 
 export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
   onNavigate,
   editingInvitation,
   onSaveInvitation,
+  onVideoFileSelected,
 }) => {
   const [step, setStep] = useState<number>(1);
 
@@ -39,8 +40,8 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
   const [accountHolder, setAccountHolder] = useState(editingInvitation?.bankGift?.accountHolder || 'MAIYA CLIENT ACCOUNT');
   const [qrCodeUrl, setQrCodeUrl] = useState(editingInvitation?.bankGift?.qrCodeUrl || '');
 
-  const [videoUrl, setVideoUrl] = useState(buildR2PublicUrl(editingInvitation?.videoKey));
-  const [videoFileName, setVideoFileName] = useState(editingInvitation?.videoFileName || 'Wedding_Invitation_Video.mp4');
+  const [videoUrl, setVideoUrl] = useState(editingInvitation?.videoUrl || '');
+  const [videoFileName, setVideoFileName] = useState(editingInvitation?.videoFileName || '');
   const [privatePin, setPrivatePin] = useState(editingInvitation?.privatePin || '1234');
 
   React.useEffect(() => {
@@ -61,7 +62,7 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
       setAccountNumber(editingInvitation.bankGift?.accountNumber || '');
       setAccountHolder(editingInvitation.bankGift?.accountHolder || '');
       setQrCodeUrl(editingInvitation.bankGift?.qrCodeUrl || '');
-      setVideoUrl(buildR2PublicUrl(editingInvitation.videoKey));
+      setVideoUrl(editingInvitation.videoUrl || '');
       setVideoFileName(editingInvitation.videoFileName || '');
       setPrivatePin(editingInvitation.privatePin || '1234');
     }
@@ -72,16 +73,16 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
     : 'wedding-invite'
   ).toLowerCase().replace(/[^a-z0-9-]/g, '');
 
-  const handleNext = (e: React.FormEvent) => {
+  const handleNext = async (e: React.FormEvent) => {
     e.preventDefault();
     if (step < 5) {
       setStep(step + 1);
     } else {
-      handlePublish();
+      await handlePublish();
     }
   };
 
-  const handlePublish = () => {
+  const handlePublish = async () => {
     const data: Partial<Invitation> = {
       id: editingInvitation?.id || `inv-${Date.now()}`,
       slug: generatedSlug,
@@ -106,11 +107,17 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
       privatePin,
       status: 'active',
       videoKey: editingInvitation?.videoKey,
-      videoFileName,
+      videoUrl: editingInvitation?.videoUrl,
+      videoFileName: editingInvitation ? videoFileName : undefined,
     };
 
-    onSaveInvitation(data);
-    onNavigate('generate_link');
+    const savedInvitation = await onSaveInvitation(data);
+    if (!savedInvitation) return;
+
+    console.info('[R2_DIAGNOSTIC] Invitation created', {
+      invitationId: savedInvitation.id,
+    });
+    onNavigate('upload_video', savedInvitation.id);
   };
 
   return (
@@ -436,9 +443,15 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
                   accept="video/mp4"
                   className="hidden"
                   onChange={(e) => {
-                    if (e.target.files && e.target.files[0]) {
-                      setVideoFileName(e.target.files[0].name);
-                    }
+                    const file = e.target.files?.[0] || null;
+                    console.info('[R2_DIAGNOSTIC] Video selected', {
+                      fileName: file?.name || null,
+                      fileSize: file?.size || 0,
+                      fileType: file?.type || null,
+                      fileObjectExists: file instanceof File,
+                    });
+                    setVideoFileName(file?.name || '');
+                    onVideoFileSelected(file);
                   }}
                 />
               </label>

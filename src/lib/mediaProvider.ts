@@ -1,5 +1,4 @@
 import { supabase } from './supabase';
-import { buildR2PublicUrl } from './mediaUrl';
 
 export type MediaType = 'video' | 'poster' | 'gift-qr' | 'all';
 
@@ -10,9 +9,8 @@ export interface UploadProgress {
 }
 
 export interface UploadMediaResult {
-  /** Runtime-only URL. Never persist this value. */
   publicUrl: string;
-  objectKey: string;
+  videoKey: string;
   warningMsg?: string;
 }
 
@@ -64,6 +62,15 @@ export const MediaProviderService = {
     try {
       // 2. Request presigned upload URL from backend API
       const token = await getAdminToken();
+      const contentType = mediaType === 'video'
+        ? 'video/mp4'
+        : (file.type || 'image/webp');
+      console.info('[R2_DIAGNOSTIC] Before presign', {
+        invitationId,
+        fileName: file.name,
+        contentType,
+        objectType: mediaType,
+      });
       const presignRes = await fetch('/api/r2/presign', {
         method: 'POST',
         headers: {
@@ -73,23 +80,41 @@ export const MediaProviderService = {
         body: JSON.stringify({
           invitationId,
           mediaType,
-          contentType: file.type || (mediaType === 'video' ? 'video/mp4' : 'image/webp'),
+          fileName: file.name,
+          contentType,
           contentLength: file.size,
         }),
       });
 
+      const presignJson = await presignRes.json().catch(() => ({}));
+      console.info('[R2_DIAGNOSTIC] Presign response', {
+        httpStatus: presignRes.status,
+        videoKey: presignJson.videoKey || presignJson.key || null,
+        publicUrl: presignJson.publicUrl || null,
+        uploadUrlExists: Boolean(presignJson.uploadUrl),
+      });
       if (!presignRes.ok) {
-        const errJson = await presignRes.json().catch(() => ({}));
-        return { data: null, error: errJson.error || 'Gagal menjana pautan muat naik R2.' };
+        return { data: null, error: presignJson.error || 'Gagal menjana pautan muat naik R2.' };
       }
 
-      const { presignedUrl, objectKey } = await presignRes.json();
+      const { uploadUrl, videoKey, publicUrl } = presignJson;
+      if (!uploadUrl || !videoKey || !publicUrl) {
+        return {
+          data: null,
+          error: 'Respons presign tidak lengkap: uploadUrl, videoKey atau publicUrl tiada.',
+        };
+      }
 
       // 3. Upload file directly to Cloudflare R2 using presigned PUT URL
+      console.info('[R2_DIAGNOSTIC] Before PUT', {
+        fileObjectExists: file instanceof File,
+        fileSize: file.size,
+        contentType,
+      });
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
-        xhr.open('PUT', presignedUrl, true);
-        xhr.setRequestHeader('Content-Type', file.type || (mediaType === 'video' ? 'video/mp4' : 'image/webp'));
+        xhr.open('PUT', uploadUrl, true);
+        xhr.setRequestHeader('Content-Type', contentType);
 
         if (xhr.upload && onProgress) {
           xhr.upload.onprogress = (e) => {
@@ -101,10 +126,19 @@ export const MediaProviderService = {
         }
 
         xhr.onload = () => {
+          console.info('[R2_DIAGNOSTIC] PUT response', {
+            httpStatus: xhr.status,
+            responseBody: xhr.status >= 200 && xhr.status < 300
+              ? null
+              : (xhr.responseText || null),
+          });
           if (xhr.status >= 200 && xhr.status < 300) {
             resolve();
           } else {
-            reject(new Error(`Muat naik R2 gagal dengan status ${xhr.status}`));
+            reject(new Error(
+              `Muat naik R2 gagal dengan status ${xhr.status}` +
+              (xhr.responseText ? `: ${xhr.responseText}` : '')
+            ));
           }
         };
 
@@ -114,8 +148,8 @@ export const MediaProviderService = {
 
       return {
         data: {
-          publicUrl: buildR2PublicUrl(objectKey),
-          objectKey,
+          publicUrl,
+          videoKey,
           warningMsg,
         },
       };

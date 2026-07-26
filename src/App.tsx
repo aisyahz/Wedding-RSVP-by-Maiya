@@ -45,6 +45,8 @@ export default function App() {
   const [editingInvitation, setEditingInvitation] = useState<Invitation | null>(null);
   const [settings, setSettings] = useState<SystemSettings>(INITIAL_SETTINGS);
   const [seoInvitation, setSeoInvitation] = useState<Invitation | null>(null);
+  const [pendingVideoFile, setPendingVideoFile] = useState<File | null>(null);
+  const [pendingUploadInvitation, setPendingUploadInvitation] = useState<Invitation | null>(null);
 
   const [isLoadingData, setIsLoadingData] = useState<boolean>(true);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -101,29 +103,31 @@ export default function App() {
   const activeInvitation =
     invitations.find((i) => i.id === selectedInvitationId) || invitations[0] || null;
 
-  const handleSaveInvitation = async (invData: Partial<Invitation>) => {
+  const handleSaveInvitation = async (invData: Partial<Invitation>): Promise<Invitation | null> => {
     if (editingInvitation) {
       // EDIT EXISTING INVITATION
       const { data: updatedInv, error } = await updateInvitationInSupabase(editingInvitation.id, invData);
       if (error || !updatedInv) {
         showToast('error', `Gagal mengemas kini kad: ${error || 'Ralat simpan'}`);
-        return;
+        return null;
       }
 
       setInvitations((prev) => prev.map((item) => (item.id === updatedInv.id ? updatedInv : item)));
       setEditingInvitation(null);
       showToast('success', 'Tetapan kad jemputan berjaya dikemas kini!');
+      return updatedInv;
     } else {
       // CREATE NEW INVITATION WITH GENERATED PIN RPC
       const { data, error } = await createInvitationWithPin(invData);
       if (error || !data) {
         showToast('error', `Gagal mencipta kad jemputan: ${error || 'Ralat cipta'}`);
-        return;
+        return null;
       }
 
       const { invitation: newInv, plainPin } = data;
       setInvitations((prev) => [newInv, ...prev]);
       setSelectedInvitationId(newInv.id);
+      setPendingUploadInvitation(newInv);
 
       // Show generated 6-digit PIN modal once after creation
       setCreatedPinModal({
@@ -134,6 +138,10 @@ export default function App() {
       });
 
       showToast('success', 'Kad jemputan baharu & PIN keselamatan 6-digit berjaya dicipta!');
+      console.info('[R2_DIAGNOSTIC] Invitation created', {
+        invitationId: newInv.id,
+      });
+      return newInv;
     }
   };
 
@@ -205,19 +213,37 @@ export default function App() {
     showToast('success', 'Salinan kad jemputan berjaya dicipta!');
   };
 
-  const handleUpdateVideo = async (videoKey: string, fileName: string) => {
-    if (activeInvitation) {
-      const { data, error } = await updateInvitationInSupabase(activeInvitation.id, {
-        videoKey,
-        videoFileName: fileName,
-      });
-      if (data) {
-        setInvitations((prev) => prev.map((i) => (i.id === data.id ? data : i)));
-        showToast('success', 'Video kad jemputan berjaya dikemas kini!');
-      } else if (error) {
-        showToast('error', `Gagal memuat naik video: ${error}`);
-      }
+  const handleUpdateVideo = async (
+    invitationId: string,
+    videoKey: string,
+    videoUrl: string,
+    fileName: string
+  ): Promise<{ success: boolean; error?: string }> => {
+    console.info('[R2_DIAGNOSTIC] Before Supabase update', {
+      video_key: videoKey,
+      video_url: videoUrl,
+      video_file_name: fileName,
+    });
+    const { data, error } = await updateInvitationInSupabase(invitationId, {
+      videoKey,
+      videoUrl,
+      videoFileName: fileName,
+    });
+    console.info('[R2_DIAGNOSTIC] Supabase update result', {
+      success: Boolean(data && !error),
+      error: error || null,
+    });
+    if (!data || error) {
+      const exactError = error || 'Supabase returned no updated invitation';
+      showToast('error', `Gagal menyimpan video: ${exactError}`);
+      return { success: false, error: exactError };
     }
+
+    setInvitations((prev) => prev.map((i) => (i.id === data.id ? data : i)));
+    setPendingVideoFile(null);
+    setPendingUploadInvitation(null);
+    showToast('success', 'Video kad jemputan berjaya dikemas kini!');
+    return { success: true };
   };
 
   const handleAddRsvp = async (newRsvp: Omit<RsvpEntry, 'id' | 'submittedAt'>) => {
@@ -321,6 +347,7 @@ export default function App() {
             onNavigate={onNavigate}
             editingInvitation={inv}
             onSaveInvitation={handleSaveInvitation}
+            onVideoFileSelected={setPendingVideoFile}
           />
         )}
       </NavigationAdapter>
@@ -330,7 +357,10 @@ export default function App() {
   // Wrapper for Upload Video by ID
   function UploadVideoWrapper() {
     const { id } = useParams<{ id: string }>();
-    const inv = invitations.find((i) => i.id === id) || activeInvitation;
+    const inv =
+      invitations.find((i) => i.id === id) ||
+      (pendingUploadInvitation?.id === id ? pendingUploadInvitation : null) ||
+      (activeInvitation?.id === id ? activeInvitation : null);
     return (
       <NavigationAdapter>
         {(onNavigate) => (
@@ -338,6 +368,7 @@ export default function App() {
             onNavigate={onNavigate}
             activeInvitation={inv}
             onUpdateVideo={handleUpdateVideo}
+            initialVideoFile={pendingVideoFile}
           />
         )}
       </NavigationAdapter>
@@ -599,6 +630,7 @@ export default function App() {
                     onNavigate={onNavigate}
                     editingInvitation={null}
                     onSaveInvitation={handleSaveInvitation}
+                    onVideoFileSelected={setPendingVideoFile}
                   />
                 )}
               </NavigationAdapter>

@@ -73,6 +73,7 @@ CREATE TABLE IF NOT EXISTS public.invitations (
     qr_code_url TEXT,
     rsvp_closing_date TIMESTAMPTZ,
     video_key TEXT NULL,
+    video_url TEXT NULL,
     poster_url TEXT NULL,
     poster_key TEXT NULL,
     gift_qr_key TEXT NULL,
@@ -85,12 +86,11 @@ CREATE TABLE IF NOT EXISTS public.invitations (
 -- Migration for existing databases
 ALTER TABLE public.invitations
 ADD COLUMN IF NOT EXISTS video_key TEXT,
+ADD COLUMN IF NOT EXISTS video_url TEXT,
 ADD COLUMN IF NOT EXISTS poster_url TEXT,
 ADD COLUMN IF NOT EXISTS poster_key TEXT,
 ADD COLUMN IF NOT EXISTS gift_qr_key TEXT;
 
--- Existing installations must backfill and verify video_key before removing
--- video_url. Run migrations/20260726_r2_video_key_migration.sql in stages.
 
 -- Index for fast lookup by slug
 CREATE INDEX IF NOT EXISTS idx_invitations_slug ON public.invitations(slug);

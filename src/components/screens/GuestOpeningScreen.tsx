@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ScreenId, Invitation } from '../../types';
 import { Volume2, VolumeX, Menu, Play, X } from 'lucide-react';
 import { BottomGuestNav } from '../common/BottomGuestNav';
-import { buildR2PublicUrl } from '../../lib/mediaUrl';
 
 interface GuestOpeningScreenProps {
   onNavigate: (screen: ScreenId) => void;
@@ -20,7 +19,7 @@ export const GuestOpeningScreen: React.FC<GuestOpeningScreenProps> = ({
   const brideName = activeInvitation?.brideName || 'Sofea Azman';
   const groomName = activeInvitation?.groomName || 'Adam Harith';
   const weddingDate = activeInvitation?.weddingDate || '24 NOVEMBER 2026';
-  const videoUrl = buildR2PublicUrl(activeInvitation?.videoKey);
+  const videoUrl = activeInvitation?.videoUrl || '';
   const posterUrl = activeInvitation?.posterUrl || '';
 
   useEffect(() => {

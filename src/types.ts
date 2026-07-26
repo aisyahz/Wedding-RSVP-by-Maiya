@@ -41,6 +41,7 @@ export interface Invitation {
   bankGift?: BankGiftInfo;
   rsvpClosingDate: string;
   videoKey?: string;
+  videoUrl?: string;
   posterUrl?: string;
   posterKey?: string;
   giftQrKey?: string;

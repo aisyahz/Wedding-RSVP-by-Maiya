@@ -16,33 +16,39 @@ import {
 } from 'lucide-react';
 import { MediaProviderService, UploadProgress } from '../../lib/mediaProvider';
 import { updateInvitationInSupabase } from '../../lib/supabase';
-import { buildR2PublicUrl } from '../../lib/mediaUrl';
 
 interface UploadVideoScreenProps {
   onNavigate: (screen: ScreenId) => void;
   activeInvitation: Invitation | null;
-  onUpdateVideo: (videoKey: string, fileName: string) => void;
+  initialVideoFile?: File | null;
+  onUpdateVideo: (
+    invitationId: string,
+    videoKey: string,
+    videoUrl: string,
+    fileName: string
+  ) => Promise<{ success: boolean; error?: string }>;
 }
 
 export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
   onNavigate,
   activeInvitation,
+  initialVideoFile,
   onUpdateVideo,
 }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   const [currentVideoUrl, setCurrentVideoUrl] = useState(
-    buildR2PublicUrl(activeInvitation?.videoKey)
+    activeInvitation?.videoUrl || ''
   );
   const [currentFileName, setCurrentFileName] = useState(
-    activeInvitation?.videoFileName || ''
+    initialVideoFile?.name || activeInvitation?.videoFileName || ''
   );
   const [currentPosterUrl, setCurrentPosterUrl] = useState(
     activeInvitation?.posterUrl || ''
   );
 
   // Local File & Object URL Preview State
-  const [selectedVideoFile, setSelectedVideoFile] = useState<File | null>(null);
+  const [selectedVideoFile, setSelectedVideoFile] = useState<File | null>(initialVideoFile || null);
   const [localPreviewUrl, setLocalPreviewUrl] = useState<string>('');
 
   // Upload State
@@ -60,11 +66,18 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
   const [presignStatus, setPresignStatus] = useState<string>('Belum Diminta');
   const [r2PutStatus, setR2PutStatus] = useState<string>('Belum Diminta');
   const [finalPublicUrl, setFinalPublicUrl] = useState<string>(
-    buildR2PublicUrl(activeInvitation?.videoKey)
+    activeInvitation?.videoUrl || ''
   );
   const [publicUrlPlaybackResult, setPublicUrlPlaybackResult] = useState<string>('Belum Diuji');
 
-  const invId = activeInvitation?.id || 'demo-invitation-id';
+  const invId = activeInvitation?.id || '';
+
+  useEffect(() => {
+    if (!initialVideoFile || localPreviewUrl) return;
+    const objectUrl = URL.createObjectURL(initialVideoFile);
+    setLocalPreviewUrl(objectUrl);
+    setLocalPreviewCreated(true);
+  }, [initialVideoFile, localPreviewUrl]);
 
   // Revoke Object URL on unmount or when localPreviewUrl changes
   useEffect(() => {
@@ -86,6 +99,12 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    console.info('[R2_DIAGNOSTIC] Video selected', {
+      fileName: file.name,
+      fileSize: file.size,
+      fileType: file.type || null,
+      fileObjectExists: file instanceof File,
+    });
 
     setUploadError('');
     setUploadWarning('');
@@ -133,7 +152,13 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
   // Perform actual R2 Upload
   const performR2Upload = async (): Promise<boolean> => {
     if (!selectedVideoFile) {
-      return true; // Already using public URL or preset
+      if (activeInvitation?.videoKey && activeInvitation.videoUrl) return true;
+      setUploadError('Fail video tidak tersedia. Sila pilih semula fail MP4 sebelum meneruskan.');
+      return false;
+    }
+    if (!invId) {
+      setUploadError('ID jemputan tiada. Muat naik dihentikan sebelum presign.');
+      return false;
     }
 
     setUploadError('');
@@ -142,8 +167,6 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
     setIsUploading(true);
     setPresignStatus('Meminta Presigned URL...');
     setR2PutStatus('Menunggu...');
-
-    const oldVideoKey = activeInvitation?.videoKey;
 
     try {
       // 1. Upload file to Cloudflare R2 via presigned URL
@@ -164,38 +187,35 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
 
       setPresignStatus('200 OK (Diluluskan)');
       setR2PutStatus('200 OK (Berjaya Diisi)');
-      const publicUrl = buildR2PublicUrl(data.objectKey);
+      const publicUrl = data.publicUrl;
       setFinalPublicUrl(publicUrl);
 
       if (data.warningMsg) {
         setUploadWarning(data.warningMsg);
       }
 
-      // 2. Update Supabase database record ONLY after R2 upload succeeds
-      if (activeInvitation?.id) {
-        const { data: updated, error: dbErr } = await updateInvitationInSupabase(activeInvitation.id, {
-          videoKey: data.objectKey,
-          videoFileName: selectedVideoFile.name,
-        });
-
-        if (dbErr) {
-          setIsUploading(false);
-          setUploadError(`Video dimuat naik ke R2 tetapi gagal mengemas kini rekod Supabase: ${dbErr}`);
-          return false;
-        }
-
-        if (updated) {
-          onUpdateVideo(data.objectKey, selectedVideoFile.name);
-        }
-      } else {
-        onUpdateVideo(data.objectKey, selectedVideoFile.name);
-      }
-
-      // 3. Delete previous R2 video object last after successful replacement
-      if (oldVideoKey && oldVideoKey !== data.objectKey) {
-        MediaProviderService.deleteMedia(invId, 'video').catch((e) =>
-          console.warn('Notice: Clean old R2 video exception:', e)
+      // 2. Persist only after the R2 PUT succeeds.
+      console.info('[R2_DIAGNOSTIC] Before Supabase update', {
+        video_key: data.videoKey,
+        video_url: data.publicUrl,
+        video_file_name: selectedVideoFile.name,
+      });
+      const persistence = await onUpdateVideo(
+        invId,
+        data.videoKey,
+        data.publicUrl,
+        selectedVideoFile.name
+      );
+      console.info('[R2_DIAGNOSTIC] Supabase update result', {
+        success: persistence.success,
+        error: persistence.error || null,
+      });
+      if (!persistence.success) {
+        setIsUploading(false);
+        setUploadError(
+          `Video dimuat naik ke R2 tetapi gagal disimpan di Supabase: ${persistence.error || 'Ralat tidak diketahui'}`
         );
+        return false;
       }
 
       setIsUploading(false);
@@ -237,26 +257,29 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
     }
 
     if (activeInvitation?.id) {
-      await updateInvitationInSupabase(activeInvitation.id, {
-        posterKey: data.objectKey,
+      const { error: posterDbError } = await updateInvitationInSupabase(activeInvitation.id, {
+        posterKey: data.videoKey,
+        posterUrl: data.publicUrl,
       });
+      if (posterDbError) {
+        setUploadError(`Poster dimuat naik tetapi gagal disimpan: ${posterDbError}`);
+        return;
+      }
     }
 
-    if (oldPosterKey && oldPosterKey !== data.objectKey) {
+    if (oldPosterKey && oldPosterKey !== data.videoKey) {
       MediaProviderService.deleteMedia(invId, 'poster').catch((e) =>
         console.warn('Notice: Clean old poster exception:', e)
       );
     }
 
-    setCurrentPosterUrl(buildR2PublicUrl(data.objectKey));
+    setCurrentPosterUrl(data.publicUrl);
     setUploadSuccess('Imej poster WebP berjaya dimuat naik ke Cloudflare R2!');
   };
 
   const handleProceed = async () => {
-    if (selectedVideoFile) {
-      const ok = await performR2Upload();
-      if (!ok) return;
-    }
+    const ok = await performR2Upload();
+    if (!ok) return;
     onNavigate('generate_link');
   };
 
