@@ -118,6 +118,7 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
 
     // Create Browser Object URL for immediate local preview
     const objectUrl = URL.createObjectURL(file);
+    console.log(`[VIDEO_PREVIEW_BLOB_CREATED] Blob URL: ${objectUrl}, File: ${file.name}, MIME: ${file.type || 'video/mp4'}, Size: ${(file.size / (1024 * 1024)).toFixed(2)} MB`);
     setSelectedVideoFile(file);
     setLocalPreviewUrl(objectUrl);
     setCurrentFileName(file.name);
@@ -363,17 +364,36 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
               preload="metadata"
               onLoadedMetadata={(e) => {
                 const duration = e.currentTarget.duration;
+                console.log('[VIDEO_LOADED_METADATA]', {
+                  currentSrc: e.currentTarget.currentSrc,
+                  duration,
+                  videoWidth: e.currentTarget.videoWidth,
+                  videoHeight: e.currentTarget.videoHeight,
+                  readyState: e.currentTarget.readyState,
+                  networkState: e.currentTarget.networkState,
+                });
                 setVideoMetadataLoaded(true);
                 setVideoDuration(Number.isFinite(duration) ? duration : null);
                 setVideoErrorDetails('');
               }}
+              onCanPlay={(e) => {
+                console.log('[VIDEO_CAN_PLAY]', {
+                  currentSrc: e.currentTarget.currentSrc,
+                  readyState: e.currentTarget.readyState,
+                  networkState: e.currentTarget.networkState,
+                });
+              }}
               onError={(e) => {
                 const err = e.currentTarget.error;
-                let msg = 'Gagal memuatkan video. Sila pastikan format ialah MP4 (H.264 codec).';
-                if (err) {
-                  if (err.code === 3) msg = 'Ralat penyahkodan video (Codec tidak disokong oleh pelayar).';
-                  if (err.code === 4) msg = 'Sumber video tidak dijumpai atau format tidak disokong.';
-                }
+                const mediaErrObj = {
+                  code: err?.code,
+                  message: err?.message,
+                  currentSrc: e.currentTarget.currentSrc,
+                  readyState: e.currentTarget.readyState,
+                  networkState: e.currentTarget.networkState,
+                };
+                console.error('[VIDEO_MEDIA_ERROR]', mediaErrObj);
+                const msg = 'This MP4 codec is not supported. Please export the video as H.264 video with AAC audio.';
                 setVideoErrorDetails(msg);
               }}
               className="w-full h-full object-cover"
@@ -390,6 +410,13 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
               )}
             </div>
           </div>
+
+          {selectedVideoFile && (
+            <div className="text-[11px] font-mono text-[#77736D] text-center space-y-0.5 pt-1">
+              <div>MIME Type: <span className="font-bold text-[#1E1E1C]">{selectedVideoFile.type || 'video/mp4'}</span></div>
+              <div>File Size: <span className="font-bold text-[#1E1E1C]">{(selectedVideoFile.size / (1024 * 1024)).toFixed(2)} MB</span></div>
+            </div>
+          )}
         </div>
 
         {/* Upload Progress Bar */}

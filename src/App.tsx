@@ -135,24 +135,36 @@ export default function App() {
     }
   };
 
-  const handleEditInvitation = (inv: Invitation) => {
+  const handleEditInvitation = (inv: Invitation | null) => {
     setEditingInvitation(inv);
-    setSelectedInvitationId(inv.id);
+    if (inv) {
+      setSelectedInvitationId(inv.id);
+    }
   };
 
   const handleDeleteInvitation = async (id: string) => {
+    console.log(`[DELETE_HANDLER_RECEIVED_ID] App.tsx handleDeleteInvitation received ID: ${id}`);
+    if (!id || typeof id !== 'string') {
+      console.error(`[DELETE_FAILED] Invalid invitation ID received: ${id}`);
+      showToast('error', 'Ralat ID kad jemputan tidak sah.');
+      return;
+    }
+
     const targetInv = invitations.find((i) => i.id === id);
     const { success, error } = await deleteInvitationFromSupabase(id, targetInv?.videoUrl);
     if (!success) {
+      console.error(`[DELETE_FAILED] App.tsx deletion failed: ${error}`);
       showToast('error', `Gagal memadamkan kad jemputan: ${error}`);
       return;
     }
 
     setInvitations((prev) => prev.filter((i) => i.id !== id));
     if (selectedInvitationId === id && invitations.length > 1) {
-      setSelectedInvitationId(invitations.find((i) => i.id !== id)?.id || '');
+      const remaining = invitations.filter((i) => i.id !== id);
+      setSelectedInvitationId(remaining[0]?.id || '');
     }
-    showToast('success', 'Kad jemputan & fail video berkaitan telah dipadamkan.');
+    console.log(`[DELETE_SUCCESS] Successfully updated local state after deleting ID: ${id}`);
+    showToast('success', 'Invitation deleted successfully.');
   };
 
   const handleDuplicateInvitation = async (inv: Invitation) => {

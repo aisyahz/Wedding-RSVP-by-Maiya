@@ -42,6 +42,30 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
   const [videoFileName, setVideoFileName] = useState(editingInvitation?.videoFileName || 'Wedding_Invitation_Video.mp4');
   const [privatePin, setPrivatePin] = useState(editingInvitation?.privatePin || '1234');
 
+  React.useEffect(() => {
+    if (editingInvitation) {
+      setBrideName(editingInvitation.brideName || '');
+      setGroomName(editingInvitation.groomName || '');
+      setWeddingDate(editingInvitation.weddingDate || '');
+      setWeddingTime(editingInvitation.weddingTime || '');
+      setVenueName(editingInvitation.venueName || '');
+      setVenueAddress(editingInvitation.venueAddress || '');
+      setGoogleMapsUrl(editingInvitation.googleMapsUrl || '');
+      setWazeUrl(editingInvitation.wazeUrl || '');
+      setWhatsappContact(editingInvitation.whatsappContact || '');
+      setRsvpClosingDate(editingInvitation.rsvpClosingDate || '');
+      setWishlistUrl(editingInvitation.wishlistUrl || '');
+      setEnableGiftSection(editingInvitation.enableGiftSection !== undefined ? editingInvitation.enableGiftSection : true);
+      setBankName(editingInvitation.bankGift?.bankName || 'Maybank');
+      setAccountNumber(editingInvitation.bankGift?.accountNumber || '');
+      setAccountHolder(editingInvitation.bankGift?.accountHolder || '');
+      setQrCodeUrl(editingInvitation.bankGift?.qrCodeUrl || '');
+      setVideoUrl(editingInvitation.videoUrl || '');
+      setVideoFileName(editingInvitation.videoFileName || '');
+      setPrivatePin(editingInvitation.privatePin || '1234');
+    }
+  }, [editingInvitation]);
+
   const generatedSlug = (brideName && groomName
     ? `${brideName.split(' ')[0]}-${groomName.split(' ')[0]}`
     : 'wedding-invite'

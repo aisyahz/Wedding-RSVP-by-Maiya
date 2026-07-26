@@ -1,14 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ScreenId, Invitation, RsvpEntry } from '../../types';
-import { Plus, Mail, Users, Eye, Edit3, MessageSquare, ArrowRight, Trash2, Copy } from 'lucide-react';
+import { Plus, Mail, Users, Eye, Edit3, MessageSquare, ArrowRight, Trash2, Copy, Loader2, AlertTriangle, X } from 'lucide-react';
 
 interface DashboardScreenProps {
   currentScreen?: ScreenId;
-  onNavigate: (screen: ScreenId) => void;
+  onNavigate: (screen: ScreenId, slugOrId?: string) => void;
   invitations: Invitation[];
   rsvps: RsvpEntry[];
   onSelectInvitationForPreview: (invitationId: string) => void;
-  onEditInvitation?: (invitation: Invitation) => void;
+  onEditInvitation?: (invitation: Invitation | null) => void;
   onDeleteInvitation?: (id: string) => void;
   onDuplicateInvitation?: (invitation: Invitation) => void;
 }
@@ -22,8 +22,26 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   onDeleteInvitation,
   onDuplicateInvitation,
 }) => {
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteModalTarget, setDeleteModalTarget] = useState<Invitation | null>(null);
+
   const activeCount = invitations.filter((i) => i.status === 'active').length;
   const totalRsvpCount = rsvps.length;
+
+  const handleConfirmDelete = async () => {
+    if (!deleteModalTarget || !onDeleteInvitation) return;
+    const invId = deleteModalTarget.id;
+    console.log(`[DELETE_CONFIRMATION_ACCEPTED] ID: ${invId}`);
+    setDeletingId(invId);
+    try {
+      await onDeleteInvitation(invId);
+    } catch (err: any) {
+      console.error(`[DELETE_FAILED] DashboardScreen error: ${err?.message || err}`);
+    } finally {
+      setDeletingId(null);
+      setDeleteModalTarget(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -147,7 +165,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                       } else {
                         onSelectInvitationForPreview(inv.id);
                       }
-                      onNavigate('create_invitation');
+                      onNavigate('create_invitation', inv.id);
                     }}
                     className="btn-outline h-9 px-3 text-xs gap-1.5 cursor-pointer"
                     title="Edit Invitation"
@@ -181,16 +199,20 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
 
                   {onDeleteInvitation && (
                     <button
+                      disabled={deletingId === inv.id}
                       onClick={() => {
-                        if (confirm(`Padam kad jemputan ${inv.brideName} & ${inv.groomName}? tindakan ini tidak boleh diundur.`)) {
-                          onDeleteInvitation(inv.id);
-                        }
+                        console.log(`[DELETE_BUTTON_CLICKED] ID: ${inv.id}, Bride: ${inv.brideName}`);
+                        setDeleteModalTarget(inv);
                       }}
-                      className="h-9 px-3 text-xs text-rose-600 hover:bg-rose-50 rounded-xl border border-rose-200 font-semibold inline-flex items-center gap-1 cursor-pointer transition-all"
+                      className="h-9 px-3 text-xs text-rose-600 hover:bg-rose-50 rounded-xl border border-rose-200 font-semibold inline-flex items-center gap-1 cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                       title="Delete Invitation"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      <span>Delete</span>
+                      {deletingId === inv.id ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-600" />
+                      ) : (
+                        <Trash2 className="w-3.5 h-3.5" />
+                      )}
+                      <span>{deletingId === inv.id ? 'Deleting...' : 'Delete'}</span>
                     </button>
                   )}
                 </div>
@@ -199,6 +221,73 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           })}
         </div>
       </div>
+
+      {/* User-Friendly Delete Confirmation Modal */}
+      {deleteModalTarget && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="card-maiya p-6 max-w-md w-full bg-white space-y-5 shadow-2xl rounded-2xl border border-[#D9D2CA] animate-in zoom-in-95">
+            <div className="flex items-start justify-between">
+              <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center border border-rose-200 shrink-0">
+                <AlertTriangle className="w-6 h-6 text-rose-600" />
+              </div>
+              <button
+                onClick={() => setDeleteModalTarget(null)}
+                className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="font-title text-lg font-bold text-gray-900">
+                Padam Kad Jemputan? / Delete Invitation?
+              </h3>
+              <p className="text-xs text-gray-600 leading-relaxed">
+                Adakah anda pasti mahu memadamkan kad jemputan untuk{' '}
+                <strong className="text-gray-900">
+                  {deleteModalTarget.brideName} & {deleteModalTarget.groomName}
+                </strong>
+                ?
+              </p>
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-[11px] text-rose-800 space-y-1">
+                <p className="font-bold">⚠️ Tindakan ini tidak boleh diundur.</p>
+                <p>
+                  Semua media video, kod QR hadiah, dan rekod RSVP berkaitan kad ini akan dipadamkan secara kekal dari pangkalan data.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                disabled={deletingId === deleteModalTarget.id}
+                onClick={() => setDeleteModalTarget(null)}
+                className="flex-1 btn-outline h-11 text-xs cursor-pointer font-semibold"
+              >
+                Batal / Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deletingId === deleteModalTarget.id}
+                onClick={handleConfirmDelete}
+                className="flex-1 h-11 px-4 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 active:bg-rose-800 rounded-xl shadow-xs inline-flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-50"
+              >
+                {deletingId === deleteModalTarget.id ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-white" />
+                    <span>Memadam...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    <span>Ya, Padam / Confirm Delete</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

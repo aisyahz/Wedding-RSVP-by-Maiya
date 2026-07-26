@@ -362,31 +362,75 @@ export async function updateInvitationInSupabase(
   }
 }
 
-// 5. Delete Invitation (and attached video file)
+// 5. Delete Invitation (and attached video/media files & rsvps)
 export async function deleteInvitationFromSupabase(
   id: string,
   videoUrl?: string
 ): Promise<{ success: boolean; error?: string }> {
+  console.log(`[DELETE_HANDLER_RECEIVED_ID] Starting deletion for ID: ${id}`);
+
   if (!supabase || !isSupabaseConfigured) {
+    console.error('[DELETE_FAILED] Supabase client is not configured');
     return { success: false, error: 'Supabase is not configured' };
   }
 
   try {
-    // Clean up R2 media objects (video, poster, gift-qr) for this invitation
-    await MediaProviderService.deleteMedia(id, 'all');
+    // 1. Clean up R2 media objects (video, poster, gift-qr) for this invitation
+    console.log(`[R2_DELETE_STARTED] Deleting R2 media assets for invitation ID: ${id}`);
+    try {
+      await MediaProviderService.deleteMedia(id, 'all');
+      console.log(`[R2_DELETE_FINISHED] R2 media deletion completed for ID: ${id}`);
+    } catch (r2Err: any) {
+      console.warn(`[R2_DELETE_WARNING] R2 media deletion warning: ${r2Err?.message || r2Err}`);
+    }
 
-    // Delete attached legacy storage video file if available
+    // 2. Delete attached legacy storage video file if available
     if (videoUrl && videoUrl.includes('invitation-videos')) {
-      await deleteVideoFromSupabaseBucket(videoUrl);
+      try {
+        await deleteVideoFromSupabaseBucket(videoUrl);
+      } catch (bucketErr: any) {
+        console.warn(`Legacy bucket video deletion warning: ${bucketErr?.message || bucketErr}`);
+      }
     }
 
-    const { error } = await supabase.from('invitations').delete().eq('id', id);
-    if (error) {
-      return { success: false, error: error.message };
+    console.log(`[SUPABASE_DELETE_STARTED] Deleting database records for invitation ID: ${id}`);
+
+    // 3. Explicitly delete related rsvp_entries in case ON DELETE CASCADE is missing
+    const { error: rsvpError } = await supabase
+      .from('rsvp_entries')
+      .delete()
+      .eq('invitation_id', id);
+
+    if (rsvpError) {
+      console.warn(`Notice: rsvp_entries deletion notice: ${rsvpError.message}`);
     }
+
+    // 4. Explicitly delete invitation_secrets
+    const { error: secretsError } = await supabase
+      .from('invitation_secrets')
+      .delete()
+      .eq('invitation_id', id);
+
+    if (secretsError) {
+      console.warn(`Notice: invitation_secrets deletion notice: ${secretsError.message}`);
+    }
+
+    // 5. Delete invitation record
+    const { error: invError } = await supabase
+      .from('invitations')
+      .delete()
+      .eq('id', id);
+
+    if (invError) {
+      console.error(`[DELETE_FAILED] Supabase delete error: ${invError.message}`);
+      return { success: false, error: invError.message };
+    }
+
+    console.log(`[DELETE_SUCCESS] Successfully deleted invitation ID: ${id} from Supabase and R2 storage`);
     return { success: true };
   } catch (err: any) {
-    return { success: false, error: err.message || 'Error deleting invitation' };
+    console.error(`[DELETE_FAILED] Exception during deletion: ${err?.message || err}`);
+    return { success: false, error: err?.message || 'Error deleting invitation' };
   }
 }
 
