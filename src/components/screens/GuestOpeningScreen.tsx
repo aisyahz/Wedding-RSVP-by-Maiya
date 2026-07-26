@@ -16,9 +16,9 @@ export const GuestOpeningScreen: React.FC<GuestOpeningScreenProps> = ({
   const [isMuted, setIsMuted] = useState(true);
   const [showMenuDrawer, setShowMenuDrawer] = useState(false);
 
-  const brideName = activeInvitation?.brideName || 'Sofea Azman';
-  const groomName = activeInvitation?.groomName || 'Adam Harith';
-  const weddingDate = activeInvitation?.weddingDate || '24 NOVEMBER 2026';
+  const brideName = activeInvitation?.brideName || '';
+  const groomName = activeInvitation?.groomName || '';
+  const weddingDate = activeInvitation?.weddingDate || '';
   const videoUrl = activeInvitation?.videoUrl || '';
   const posterUrl = activeInvitation?.posterUrl || '';
 
@@ -44,30 +44,39 @@ export const GuestOpeningScreen: React.FC<GuestOpeningScreenProps> = ({
   };
 
   return (
-    <div className="relative flex-1 min-h-dvh bg-[#1E1E1C] text-white flex flex-col justify-between overflow-hidden select-none">
+    <div className="relative flex-1 min-w-0 min-h-dvh bg-[#1E1E1C] text-white flex flex-col justify-between overflow-hidden select-none">
       
       {/* Background Hero Video with Poster Image & Metadata Preload */}
-      <video
-        ref={videoRef}
-        key={videoUrl}
-        src={videoUrl}
-        poster={posterUrl || undefined}
-        preload="metadata"
-        autoPlay
-        loop
-        playsInline
-        muted={isMuted}
-        className="absolute inset-0 w-full h-full object-cover opacity-80 transition-all duration-1000 scale-105"
-      />
+      {videoUrl ? (
+        <video
+          ref={videoRef}
+          key={videoUrl}
+          src={videoUrl}
+          poster={posterUrl || undefined}
+          preload="metadata"
+          autoPlay
+          loop
+          playsInline
+          muted={isMuted}
+          className="absolute inset-0 w-full h-full object-cover opacity-80 transition-all duration-1000 scale-105"
+        />
+      ) : posterUrl ? (
+        <img
+          src={posterUrl}
+          alt={`Kad jemputan ${brideName} dan ${groomName}`}
+          className="absolute inset-0 w-full h-full object-cover opacity-80"
+        />
+      ) : null}
 
       {/* Editorial Gradient Overlay */}
       <div className="absolute inset-0 bg-gradient-to-t from-[#1E1E1C] via-[#1E1E1C]/40 to-black/60 pointer-events-none" />
 
       {/* Floating Menu Button (Top Left) */}
-      <div className="absolute top-6 left-5 z-20">
+      <div className="absolute top-[calc(1rem+env(safe-area-inset-top))] left-4 min-[360px]:left-5 z-20">
         <button
           onClick={() => setShowMenuDrawer(true)}
-          className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:scale-105 cursor-pointer shadow-lg transition-transform"
+          className="w-11 h-11 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:scale-105 cursor-pointer shadow-lg transition-transform"
+          aria-label="Buka menu jemputan"
           title="Menu"
         >
           <Menu className="w-5 h-5" />
@@ -75,10 +84,12 @@ export const GuestOpeningScreen: React.FC<GuestOpeningScreenProps> = ({
       </div>
 
       {/* Floating Music Button (Top Right) */}
-      <div className="absolute top-6 right-5 z-20">
+      <div className="absolute top-[calc(1rem+env(safe-area-inset-top))] right-4 min-[360px]:right-5 z-20">
         <button
           onClick={() => setIsMuted(!isMuted)}
-          className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:scale-105 cursor-pointer shadow-lg transition-transform"
+          disabled={!videoUrl}
+          className="w-11 h-11 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:scale-105 cursor-pointer shadow-lg transition-transform disabled:cursor-not-allowed disabled:opacity-50"
+          aria-label={isMuted ? 'Hidupkan audio video' : 'Senyapkan audio video'}
           title={isMuted ? 'Unmute Audio' : 'Mute Audio'}
         >
           {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5 text-[#9B7B63]" />}
@@ -86,15 +97,15 @@ export const GuestOpeningScreen: React.FC<GuestOpeningScreenProps> = ({
       </div>
 
       {/* Center Hero: Minimal Couple Names & Play Button */}
-      <div className="relative z-10 text-center py-12 my-auto space-y-5 px-6">
+      <div className="relative z-10 min-w-0 text-center py-12 my-auto space-y-5 px-4 min-[360px]:px-6">
         <p className="text-[10px] font-sans uppercase tracking-[0.3em] text-[#EFE7DF] bg-black/40 backdrop-blur-md px-3.5 py-1 rounded-full inline-block border border-white/10 font-semibold">
           Walimatul 'Urus
         </p>
 
-        <h1 className="font-serif text-3xl sm:text-4xl font-bold tracking-tight leading-tight text-white drop-shadow-md">
-          {brideName}
+        <h1 className="font-serif text-[clamp(1.75rem,9vw,2.5rem)] font-bold tracking-tight leading-tight text-white drop-shadow-md break-words [overflow-wrap:anywhere]">
+          <span className="block">{brideName}</span>
           <div className="my-1 text-xl font-normal italic text-[#9B7B63]">&</div>
-          {groomName}
+          <span className="block">{groomName}</span>
         </h1>
 
         <p className="font-sans text-xs uppercase tracking-[0.2em] text-[#EFE7DF] font-semibold">
@@ -119,7 +130,7 @@ export const GuestOpeningScreen: React.FC<GuestOpeningScreenProps> = ({
       {/* Drawer Menu Modal */}
       {showMenuDrawer && (
         <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex flex-col justify-end">
-          <div className="bg-[#F7F5F2] text-[#1E1E1C] p-6 rounded-t-2xl space-y-4 max-w-md mx-auto w-full animate-in slide-in-from-bottom">
+          <div role="dialog" aria-modal="true" aria-label="Menu jemputan" className="bg-[#F7F5F2] text-[#1E1E1C] p-4 min-[360px]:p-6 rounded-t-2xl space-y-4 max-w-md mx-auto w-full min-w-0 max-h-[calc(100dvh-2rem)] overflow-y-auto animate-in slide-in-from-bottom">
             <div className="flex items-center justify-between pb-3 border-b border-[#D9D2CA]">
               <span className="font-title font-bold text-base">Digital Card by Maiya</span>
               <button
@@ -149,7 +160,7 @@ export const GuestOpeningScreen: React.FC<GuestOpeningScreenProps> = ({
                 onClick={() => { setShowMenuDrawer(false); onNavigate('private_rsvp_report'); }}
                 className="w-full text-left p-3.5 rounded-xl bg-white border border-[#D9D2CA] font-semibold text-xs text-[#77736D] flex items-center justify-between cursor-pointer"
               >
-                <span>🔒 Laporan RSVP Pengantin (Private PIN)</span>
+                <span className="break-words">Laporan RSVP Pengantin (PIN Peribadi)</span>
               </button>
             </div>
           </div>

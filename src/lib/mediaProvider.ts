@@ -19,11 +19,6 @@ async function getAdminToken(): Promise<string | null> {
   if (!supabase) return null;
   const { data } = await supabase.auth.getSession();
   const session = data.session;
-  console.info('[AUTH_DIAGNOSTIC]', {
-    sessionExists: Boolean(session),
-    userId: session?.user?.id || null,
-    accessTokenExists: Boolean(session?.access_token),
-  });
   return session?.access_token || null;
 }
 
@@ -74,12 +69,6 @@ export const MediaProviderService = {
       const contentType = mediaType === 'video'
         ? 'video/mp4'
         : (file.type || 'image/webp');
-      console.info('[R2_DIAGNOSTIC] Before presign', {
-        invitationId,
-        fileName: file.name,
-        contentType,
-        objectType: mediaType,
-      });
       const presignRes = await fetch('/api/r2/presign', {
         method: 'POST',
         headers: {
@@ -96,12 +85,6 @@ export const MediaProviderService = {
       });
 
       const presignJson = await presignRes.json().catch(() => ({}));
-      console.info('[R2_DIAGNOSTIC] Presign response', {
-        httpStatus: presignRes.status,
-        videoKey: presignJson.videoKey || presignJson.key || null,
-        publicUrl: presignJson.publicUrl || null,
-        uploadUrlExists: Boolean(presignJson.uploadUrl),
-      });
       if (!presignRes.ok) {
         return { data: null, error: presignJson.error || 'Gagal menjana pautan muat naik R2.' };
       }
@@ -115,11 +98,6 @@ export const MediaProviderService = {
       }
 
       // 3. Upload file directly to Cloudflare R2 using presigned PUT URL
-      console.info('[R2_DIAGNOSTIC] Before PUT', {
-        fileObjectExists: file instanceof File,
-        fileSize: file.size,
-        contentType,
-      });
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open('PUT', uploadUrl, true);
@@ -135,12 +113,6 @@ export const MediaProviderService = {
         }
 
         xhr.onload = () => {
-          console.info('[R2_DIAGNOSTIC] PUT response', {
-            httpStatus: xhr.status,
-            responseBody: xhr.status >= 200 && xhr.status < 300
-              ? null
-              : (xhr.responseText || null),
-          });
           if (xhr.status >= 200 && xhr.status < 300) {
             resolve();
           } else {

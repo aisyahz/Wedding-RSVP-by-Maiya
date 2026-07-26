@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { ScreenId, Invitation } from '../../types';
-import { ArrowLeft, ArrowRight, Upload, CheckCircle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Upload, CheckCircle, Loader2 } from 'lucide-react';
 import { MediaProviderService } from '../../lib/mediaProvider';
-import { useLocation } from 'react-router-dom';
 
 interface CreateInvitationScreenProps {
   onNavigate: (screen: ScreenId, slugOrId?: string) => void;
@@ -17,34 +16,34 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
   onSaveInvitation,
   onVideoFileSelected,
 }) => {
-  const location = useLocation();
   const [step, setStep] = useState<number>(1);
+  const [isPublishing, setIsPublishing] = useState(false);
 
   // Form State
   const [brideName, setBrideName] = useState(editingInvitation?.brideName || '');
   const [groomName, setGroomName] = useState(editingInvitation?.groomName || '');
-  const [weddingDate, setWeddingDate] = useState(editingInvitation?.weddingDate || '2026-11-28');
-  const [weddingTime, setWeddingTime] = useState(editingInvitation?.weddingTime || '11:00 AM – 4:00 PM');
+  const [weddingDate, setWeddingDate] = useState(editingInvitation?.weddingDate || '');
+  const [weddingTime, setWeddingTime] = useState(editingInvitation?.weddingTime || '');
 
-  const [venueName, setVenueName] = useState(editingInvitation?.venueName || 'Glasshouse at Seputeh');
-  const [venueAddress, setVenueAddress] = useState(editingInvitation?.venueAddress || '17, Jalan Syed Putra, Seputeh, 50460 Kuala Lumpur');
-  const [googleMapsUrl, setGoogleMapsUrl] = useState(editingInvitation?.googleMapsUrl || 'https://maps.google.com/?q=Glasshouse+at+Seputeh');
-  const [wazeUrl, setWazeUrl] = useState(editingInvitation?.wazeUrl || 'https://waze.com/ul?q=Glasshouse+at+Seputeh');
+  const [venueName, setVenueName] = useState(editingInvitation?.venueName || '');
+  const [venueAddress, setVenueAddress] = useState(editingInvitation?.venueAddress || '');
+  const [googleMapsUrl, setGoogleMapsUrl] = useState(editingInvitation?.googleMapsUrl || '');
+  const [wazeUrl, setWazeUrl] = useState(editingInvitation?.wazeUrl || '');
 
-  const [whatsappContact, setWhatsappContact] = useState(editingInvitation?.whatsappContact || '+60123456789');
-  const [rsvpClosingDate, setRsvpClosingDate] = useState(editingInvitation?.rsvpClosingDate || '2026-11-14');
+  const [whatsappContact, setWhatsappContact] = useState(editingInvitation?.whatsappContact || '');
+  const [rsvpClosingDate, setRsvpClosingDate] = useState(editingInvitation?.rsvpClosingDate || '');
   const [wishlistUrl, setWishlistUrl] = useState(editingInvitation?.wishlistUrl || '');
   const [enableGiftSection, setEnableGiftSection] = useState<boolean>(
     editingInvitation?.enableGiftSection !== undefined ? editingInvitation.enableGiftSection : true
   );
-  const [bankName, setBankName] = useState(editingInvitation?.bankGift?.bankName || 'Maybank');
-  const [accountNumber, setAccountNumber] = useState(editingInvitation?.bankGift?.accountNumber || '5622 4501 2345 6789');
-  const [accountHolder, setAccountHolder] = useState(editingInvitation?.bankGift?.accountHolder || 'MAIYA CLIENT ACCOUNT');
+  const [bankName, setBankName] = useState(editingInvitation?.bankGift?.bankName || '');
+  const [accountNumber, setAccountNumber] = useState(editingInvitation?.bankGift?.accountNumber || '');
+  const [accountHolder, setAccountHolder] = useState(editingInvitation?.bankGift?.accountHolder || '');
   const [qrCodeUrl, setQrCodeUrl] = useState(editingInvitation?.bankGift?.qrCodeUrl || '');
 
   const [videoUrl, setVideoUrl] = useState(editingInvitation?.videoUrl || '');
   const [videoFileName, setVideoFileName] = useState(editingInvitation?.videoFileName || '');
-  const [privatePin, setPrivatePin] = useState(editingInvitation?.privatePin || '1234');
+  const [privatePin, setPrivatePin] = useState(editingInvitation?.privatePin || '');
 
   React.useEffect(() => {
     if (editingInvitation) {
@@ -60,13 +59,13 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
       setRsvpClosingDate(editingInvitation.rsvpClosingDate || '');
       setWishlistUrl(editingInvitation.wishlistUrl || '');
       setEnableGiftSection(editingInvitation.enableGiftSection !== undefined ? editingInvitation.enableGiftSection : true);
-      setBankName(editingInvitation.bankGift?.bankName || 'Maybank');
+      setBankName(editingInvitation.bankGift?.bankName || '');
       setAccountNumber(editingInvitation.bankGift?.accountNumber || '');
       setAccountHolder(editingInvitation.bankGift?.accountHolder || '');
       setQrCodeUrl(editingInvitation.bankGift?.qrCodeUrl || '');
       setVideoUrl(editingInvitation.videoUrl || '');
       setVideoFileName(editingInvitation.videoFileName || '');
-      setPrivatePin(editingInvitation.privatePin || '1234');
+      setPrivatePin(editingInvitation.privatePin || '');
     }
   }, [editingInvitation]);
 
@@ -85,9 +84,8 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
   };
 
   const handlePublish = async () => {
-    console.info('[ROUTING_DIAGNOSTIC] Before invitation creation', {
-      currentPathname: location.pathname,
-    });
+    if (isPublishing) return;
+    setIsPublishing(true);
     const data: Partial<Invitation> = {
       id: editingInvitation?.id || `inv-${Date.now()}`,
       slug: generatedSlug,
@@ -116,27 +114,19 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
       videoFileName: editingInvitation ? videoFileName : undefined,
     };
 
-    const savedInvitation = await onSaveInvitation(data);
-    if (!savedInvitation) return;
-
-    console.info('[R2_DIAGNOSTIC] Invitation created', {
-      invitationId: savedInvitation.id,
-    });
-    console.info('[ROUTING_DIAGNOSTIC] Invitation creation returned', {
-      invitationId: savedInvitation.id,
-      invitationIdExists: Boolean(savedInvitation.id),
-    });
-    if (!savedInvitation.id) {
-      console.error('[ROUTING_DIAGNOSTIC] Navigation stopped: returned invitation ID is missing');
-      return;
+    try {
+      const savedInvitation = await onSaveInvitation(data);
+      if (!savedInvitation?.id) return;
+      onNavigate('upload_video', savedInvitation.id);
+    } finally {
+      setIsPublishing(false);
     }
-    onNavigate('upload_video', savedInvitation.id);
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-2xl min-w-0 w-full mx-auto space-y-4 min-[360px]:space-y-6">
       {/* Top Header Navigation */}
-      <div className="flex items-center justify-between bg-white p-5 rounded-2xl border border-[#D9D2CA] shadow-2xs">
+      <div className="flex min-w-0 items-center justify-between gap-2 bg-white p-3 min-[360px]:p-5 rounded-2xl border border-[#D9D2CA] shadow-2xs">
         <button
           onClick={() => {
             if (step > 1) setStep(step - 1);
@@ -147,7 +137,7 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
           <ArrowLeft className="w-5 h-5" />
         </button>
 
-        <div className="text-center">
+        <div className="text-center min-w-0">
           <span className="text-[10px] uppercase font-semibold text-[#9B7B63] tracking-wider block">
             Step {step} of 5
           </span>
@@ -164,7 +154,7 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
       </div>
 
       {/* Stepper Progress Bar */}
-      <div className="grid grid-cols-5 gap-2 px-1">
+      <div className="grid grid-cols-5 gap-1.5 min-[360px]:gap-2 px-1" aria-label={`Langkah ${step} daripada 5`}>
         {[1, 2, 3, 4, 5].map((i) => (
           <div
             key={i}
@@ -176,7 +166,7 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
       </div>
 
       {/* Form Container */}
-      <form onSubmit={handleNext} className="card-maiya p-6 md:p-8 space-y-6">
+      <form onSubmit={handleNext} className="card-maiya p-4 min-[360px]:p-6 md:p-8 space-y-6">
         
         {/* STEP 1: Couple Details */}
         {step === 1 && (
@@ -277,7 +267,7 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
                 value={venueAddress}
                 onChange={(e) => setVenueAddress(e.target.value)}
                 placeholder="17, Jalan Syed Putra, Seputeh, 50460 Kuala Lumpur"
-                className="w-full bg-white border border-[#D9D2CA] rounded-xl p-3 text-xs text-[#1E1E1C] focus:outline-none focus:border-[#9B7B63]"
+                className="w-full bg-white border border-[#D9D2CA] rounded-xl p-3 text-base text-[#1E1E1C] focus:outline-none focus:border-[#9B7B63] focus:ring-3 focus:ring-[#9B7B63]/10"
               />
             </div>
 
@@ -377,7 +367,7 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
             {enableGiftSection && (
               <div className="p-4 bg-white rounded-xl border border-[#D9D2CA] space-y-3">
                 <span className="text-xs font-semibold text-[#9B7B63] block">Bank Details & Gift QR</span>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 min-w-0">
                   <input
                     type="text"
                     placeholder="Bank Name (e.g. Maybank)"
@@ -409,7 +399,7 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
                   {qrCodeUrl && (
                     <div className="mb-2 flex items-center gap-2">
                       <img src={qrCodeUrl} alt="Gift QR" className="w-16 h-16 object-contain rounded-lg border border-[#D9D2CA] bg-white p-1" />
-                      <span className="text-[10px] text-emerald-700 font-medium">Imej QR bersedia</span>
+                      <span className="text-xs text-emerald-700 font-medium break-words">Imej QR bersedia</span>
                     </div>
                   )}
                   <input
@@ -445,8 +435,8 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
             <div className="border-2 border-dashed border-[#9B7B63]/60 rounded-2xl p-6 bg-[#EFE7DF]/50 text-center space-y-3">
               <Upload className="w-8 h-8 text-[#9B7B63] mx-auto" />
               <div>
-                <p className="text-xs font-semibold text-[#1E1E1C]">{videoFileName}</p>
-                <p className="text-[10px] text-[#77736D] mt-0.5">MP4 Format • Max 100MB</p>
+                <p className="text-sm font-semibold text-[#1E1E1C] break-words [overflow-wrap:anywhere]">{videoFileName}</p>
+                <p className="text-xs text-[#77736D] mt-0.5">Format MP4 • Maksimum 50MB</p>
               </div>
 
               <label className="btn-outline h-10 text-xs px-4 cursor-pointer inline-flex items-center gap-1.5">
@@ -457,12 +447,6 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
                   className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0] || null;
-                    console.info('[R2_DIAGNOSTIC] Video selected', {
-                      fileName: file?.name || null,
-                      fileSize: file?.size || 0,
-                      fileType: file?.type || null,
-                      fileObjectExists: file instanceof File,
-                    });
                     setVideoFileName(file?.name || '');
                     onVideoFileSelected(file);
                   }}
@@ -520,7 +504,7 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
         )}
 
         {/* Footer Actions */}
-        <div className="pt-4 border-t border-[#D9D2CA]/40 flex justify-end">
+            <div className="pt-4 border-t border-[#D9D2CA]/40 flex flex-col min-[390px]:flex-row justify-end gap-2">
           {step < 5 ? (
             <button type="submit" className="w-full sm:w-auto btn-primary cursor-pointer">
               <span>Continue to Step {step + 1}</span>
@@ -530,10 +514,11 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
             <button
               type="button"
               onClick={handlePublish}
-              className="w-full sm:w-auto btn-accent cursor-pointer"
+              disabled={isPublishing}
+              className="w-full sm:w-auto btn-accent cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <CheckCircle className="w-4 h-4" />
-              <span>Generate Link</span>
+              {isPublishing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+              <span>{isPublishing ? 'Menyimpan…' : 'Generate Link'}</span>
             </button>
           )}
         </div>

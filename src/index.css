@@ -16,6 +16,34 @@
     color: #1E1E1C;
     background-color: #F7F5F2;
     -webkit-tap-highlight-color: transparent;
+    overflow-wrap: anywhere;
+  }
+
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    min-width: 0;
+  }
+
+  button,
+  a {
+    touch-action: manipulation;
+  }
+
+  button {
+    min-height: 44px;
+  }
+
+  img,
+  video {
+    max-width: 100%;
+  }
+
+  :focus-visible {
+    outline: 3px solid rgba(155, 123, 99, 0.38);
+    outline-offset: 2px;
   }
 
   .font-serif {
@@ -53,6 +81,9 @@
   border-radius: 16px;
   border: 1px solid #D9D2CA;
   box-shadow: 0 2px 12px rgba(30, 30, 28, 0.03);
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .card-dark {
@@ -82,6 +113,12 @@
   justify-content: center;
   gap: 0.5rem;
   transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  min-width: 0;
+  max-width: 100%;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  text-align: center;
+  white-space: normal;
 }
 
 .btn-primary:hover {
@@ -108,6 +145,12 @@
   justify-content: center;
   gap: 0.5rem;
   transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  min-width: 0;
+  max-width: 100%;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  text-align: center;
+  white-space: normal;
 }
 
 .btn-accent:hover {
@@ -134,6 +177,12 @@
   justify-content: center;
   gap: 0.5rem;
   transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  min-width: 0;
+  max-width: 100%;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  text-align: center;
+  white-space: normal;
 }
 
 .btn-outline:hover {
@@ -146,6 +195,9 @@
 }
 
 .input-maiya {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   height: 50px;
   background-color: #FFFFFF;
   border: 1px solid #D9D2CA;
@@ -155,6 +207,71 @@
   font-size: 0.875rem;
   color: #1E1E1C;
   transition: all 0.15s ease;
+}
+
+textarea {
+  max-width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 639px) {
+  body {
+    font-size: 0.875rem;
+    overflow-x: clip;
+  }
+
+  .card-maiya {
+    border-radius: 14px;
+  }
+
+  .input-maiya,
+  input,
+  select,
+  textarea {
+    font-size: 1rem;
+  }
+
+  .text-xs {
+    font-size: 0.875rem;
+    line-height: 1.35rem;
+  }
+
+  .text-\[9px\],
+  .text-\[10px\] {
+    font-size: 0.6875rem;
+    line-height: 1rem;
+  }
+
+  .text-\[11px\],
+  .text-\[12px\] {
+    font-size: 0.75rem;
+    line-height: 1.1rem;
+  }
+}
+
+@media (max-width: 340px) {
+  .btn-primary,
+  .btn-accent,
+  .btn-outline {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 .input-maiya:focus {

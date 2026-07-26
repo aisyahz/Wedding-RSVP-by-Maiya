@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate } from 'react-router-dom';
 import { Invitation, RsvpEntry, SystemSettings, ScreenId } from './types';
 import { INITIAL_SETTINGS } from './data/mockData';
 import {
@@ -49,8 +49,6 @@ function NavigationAdapter({
   activeInvitation?: Invitation | null;
 }) {
   const navigate = useNavigate();
-  const location = useLocation();
-
   const handleNavigate = (screen: ScreenId, slugOrId?: string) => {
     let target = '/dashboard';
     switch (screen) {
@@ -60,39 +58,46 @@ function NavigationAdapter({
       case 'create_invitation': target = '/invitations/new'; break;
       case 'upload_video': target = `/invitations/${slugOrId || selectedInvitationId}/upload-video`; break;
       case 'generate_link': target = `/invitations/${slugOrId || selectedInvitationId}/generate-link`; break;
-      case 'guest_opening': target = `/invite/${slugOrId || activeInvitation?.slug || 'adam-sofea'}`; break;
-      case 'guest_invitation': target = `/invite/${slugOrId || activeInvitation?.slug || 'adam-sofea'}/details`; break;
-      case 'guest_rsvp_form': target = `/invite/${slugOrId || activeInvitation?.slug || 'adam-sofea'}/rsvp`; break;
-      case 'thank_you': target = `/invite/${slugOrId || activeInvitation?.slug || 'adam-sofea'}/thank-you`; break;
-      case 'private_rsvp_report': target = `/report/${slugOrId || activeInvitation?.slug || 'adam-sofea'}`; break;
+      case 'guest_opening': {
+        const slug = slugOrId || activeInvitation?.slug;
+        if (!slug) return;
+        target = `/invite/${slug}`;
+        break;
+      }
+      case 'guest_invitation': {
+        const slug = slugOrId || activeInvitation?.slug;
+        if (!slug) return;
+        target = `/invite/${slug}/details`;
+        break;
+      }
+      case 'guest_rsvp_form': {
+        const slug = slugOrId || activeInvitation?.slug;
+        if (!slug) return;
+        target = `/invite/${slug}/rsvp`;
+        break;
+      }
+      case 'thank_you': {
+        const slug = slugOrId || activeInvitation?.slug;
+        if (!slug) return;
+        target = `/invite/${slug}/thank-you`;
+        break;
+      }
+      case 'private_rsvp_report': {
+        const slug = slugOrId || activeInvitation?.slug;
+        if (!slug) return;
+        target = `/report/${slug}`;
+        break;
+      }
       case 'admin_rsvp': target = '/rsvp'; break;
       case 'settings': target = '/settings'; break;
     }
-    console.info('[ROUTING_DIAGNOSTIC] Navigating', {
-      currentPathname: location.pathname,
-      screen,
-      target,
-    });
     navigate(target);
-    window.setTimeout(() => {
-      console.info('[ROUTING_DIAGNOSTIC] Pathname after navigation', {
-        requestedTarget: target,
-        currentPathname: window.location.pathname,
-      });
-    }, 0);
   };
 
   return <>{children(handleNavigate)}</>;
 }
 
-function DiagnosticRedirect({ to, reason }: { to: string; reason: string }) {
-  useEffect(() => {
-    console.warn('[ROUTING_DIAGNOSTIC] Redirect', {
-      currentPathname: window.location.pathname,
-      redirectTarget: to,
-      reason,
-    });
-  }, [reason, to]);
+function DiagnosticRedirect({ to }: { to: string; reason: string }) {
   return <Navigate to={to} replace />;
 }
 
@@ -120,11 +125,6 @@ export default function App() {
   // Restore and continuously track the real Supabase Auth session.
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) {
-      console.info('[AUTH_DIAGNOSTIC]', {
-        sessionExists: false,
-        userId: null,
-        accessTokenExists: false,
-      });
       setSession(null);
       setIsAuthReady(true);
       return;
@@ -133,11 +133,6 @@ export default function App() {
     let active = true;
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       if (!active) return;
-      console.info('[AUTH_DIAGNOSTIC]', {
-        sessionExists: Boolean(nextSession),
-        userId: nextSession?.user?.id || null,
-        accessTokenExists: Boolean(nextSession?.access_token),
-      });
       setSession(nextSession);
       setIsAuthReady(true);
     });
@@ -145,11 +140,6 @@ export default function App() {
     supabase.auth.getSession().then(({ data, error }) => {
       if (!active) return;
       const restoredSession = error ? null : data.session;
-      console.info('[AUTH_DIAGNOSTIC]', {
-        sessionExists: Boolean(restoredSession),
-        userId: restoredSession?.user?.id || null,
-        accessTokenExists: Boolean(restoredSession?.access_token),
-      });
       setSession(restoredSession);
       setIsAuthReady(true);
     });
@@ -234,9 +224,6 @@ export default function App() {
       });
 
       showToast('success', 'Kad jemputan baharu & PIN keselamatan 6-digit berjaya dicipta!');
-      console.info('[R2_DIAGNOSTIC] Invitation created', {
-        invitationId: newInv.id,
-      });
       return newInv;
     }
   };
@@ -249,16 +236,13 @@ export default function App() {
   };
 
   const handleDeleteInvitation = async (id: string) => {
-    console.log(`[DELETE_HANDLER_RECEIVED_ID] App.tsx handleDeleteInvitation received ID: ${id}`);
     if (!id || typeof id !== 'string') {
-      console.error(`[DELETE_FAILED] Invalid invitation ID received: ${id}`);
       showToast('error', 'Ralat ID kad jemputan tidak sah.');
       return;
     }
 
-    const { success, error } = await deleteInvitationFromSupabase(id);
+    const { success, warning, error } = await deleteInvitationFromSupabase(id);
     if (!success) {
-      console.error(`[DELETE_FAILED] App.tsx deletion failed: ${error}`);
       showToast('error', `Gagal memadamkan kad jemputan: ${error}`);
       return;
     }
@@ -268,8 +252,11 @@ export default function App() {
       const remaining = invitations.filter((i) => i.id !== id);
       setSelectedInvitationId(remaining[0]?.id || '');
     }
-    console.log(`[DELETE_SUCCESS] Successfully updated local state after deleting ID: ${id}`);
-    showToast('success', 'Invitation deleted successfully.');
+    if (warning) {
+      showToast('error', `Kad dipadam, tetapi media R2 mungkin masih wujud: ${warning}`);
+    } else {
+      showToast('success', 'Kad jemputan berjaya dipadamkan.');
+    }
   };
 
   const handleDuplicateInvitation = async (inv: Invitation) => {
@@ -315,19 +302,10 @@ export default function App() {
     videoUrl: string,
     fileName: string
   ): Promise<{ success: boolean; error?: string }> => {
-    console.info('[R2_DIAGNOSTIC] Before Supabase update', {
-      video_key: videoKey,
-      video_url: videoUrl,
-      video_file_name: fileName,
-    });
     const { data, error } = await updateInvitationInSupabase(invitationId, {
       videoKey,
       videoUrl,
       videoFileName: fileName,
-    });
-    console.info('[R2_DIAGNOSTIC] Supabase update result', {
-      success: Boolean(data && !error),
-      error: error || null,
     });
     if (!data || error) {
       const exactError = error || 'Supabase returned no updated invitation';
@@ -336,10 +314,6 @@ export default function App() {
     }
 
     setInvitations((prev) => prev.map((i) => (i.id === data.id ? data : i)));
-    console.info('[R2_DIAGNOSTIC] Clearing pending upload state', {
-      reason: 'Supabase video persistence succeeded',
-      invitationId,
-    });
     setPendingVideoFile(null);
     setPendingUploadInvitation(null);
     showToast('success', 'Video kad jemputan berjaya dikemas kini!');
@@ -349,12 +323,14 @@ export default function App() {
   const handleAddRsvp = async (newRsvp: Omit<RsvpEntry, 'id' | 'submittedAt'>) => {
     const { data: savedRsvp, error } = await addRsvpToSupabase(newRsvp);
     if (error || !savedRsvp) {
-      showToast('error', `Ralat menghantar RSVP: ${error}`);
-      return;
+      const message = error || 'RSVP tidak dapat disimpan.';
+      showToast('error', `Ralat menghantar RSVP: ${message}`);
+      return { success: false, error: message };
     }
 
     setRsvps((prev) => [savedRsvp, ...prev]);
     showToast('success', 'Terima kasih! Kehadiran anda telah berjaya direkodkan.');
+    return { success: true };
   };
 
   const handleDeleteRsvp = async (id: string) => {
@@ -404,28 +380,14 @@ export default function App() {
       fetchedInvitation;
 
     useEffect(() => {
-      console.info('[ROUTING_DIAGNOSTIC] UploadVideoWrapper mounted', {
-        currentPathname: window.location.pathname,
-        routeParamId: id || null,
-        pendingFileExists: pendingVideoFile instanceof File,
-      });
       if (!id) {
         setFetchError('ID jemputan tiada pada URL. Muat naik tidak boleh diteruskan.');
-        console.error('[ROUTING_DIAGNOSTIC] Upload route error', {
-          reason: 'route param ID missing',
-          redirectTarget: null,
-        });
         return;
       }
       let cancelled = false;
       setIsFetching(true);
       getInvitationById(id).then(({ data, error }) => {
         if (cancelled) return;
-        console.info('[ROUTING_DIAGNOSTIC] Invitation record fetch result', {
-          routeParamId: id,
-          found: Boolean(data),
-          error: error || null,
-        });
         setIsFetching(false);
         if (data) {
           setFetchedInvitation(data);
@@ -449,7 +411,12 @@ export default function App() {
     }
 
     if (!inv && isFetching) {
-      return <div className="max-w-2xl mx-auto card-maiya p-6">Loading invitation…</div>;
+      return (
+        <div className="max-w-2xl mx-auto card-maiya p-6 flex items-center justify-center gap-3 text-sm text-[#77736D]">
+          <Loader2 className="w-5 h-5 animate-spin text-[#9B7B63]" />
+          <span>Memuatkan jemputan…</span>
+        </div>
+      );
     }
     return (
       <NavigationAdapter selectedInvitationId={selectedInvitationId} activeInvitation={activeInvitation}>
@@ -459,10 +426,7 @@ export default function App() {
             activeInvitation={inv}
             onUpdateVideo={handleUpdateVideo}
             initialVideoFile={pendingVideoFile}
-            onPendingVideoCleared={(reason) => {
-              console.info('[R2_DIAGNOSTIC] Parent pending video clear requested', { reason });
-              setPendingVideoFile(null);
-            }}
+            onPendingVideoCleared={() => setPendingVideoFile(null)}
           />
         )}
       </NavigationAdapter>
@@ -569,7 +533,7 @@ export default function App() {
       <SeoMetadata invitation={seoInvitation} />
       {/* Toast Notification Banner */}
       {notification && (
-        <div className="fixed top-4 right-4 z-50 max-w-sm animate-in fade-in slide-in-from-top duration-300">
+        <div className="fixed top-[calc(0.75rem+env(safe-area-inset-top))] left-3 right-3 sm:left-auto sm:right-4 z-50 sm:max-w-sm animate-in fade-in slide-in-from-top duration-300">
           <div
             className={`p-4 rounded-xl shadow-lg border flex items-center gap-3 text-xs font-semibold ${
               notification.type === 'success'
@@ -590,17 +554,17 @@ export default function App() {
       {/* 6-Digit Generated PIN Overlay Modal */}
       {createdPinModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="card-maiya p-6 max-w-md w-full bg-white space-y-5 text-center shadow-2xl rounded-2xl border border-[#D9D2CA] animate-in zoom-in-95">
+          <div role="dialog" aria-modal="true" aria-label="PIN keselamatan jemputan" className="card-maiya p-4 min-[360px]:p-6 max-w-md w-full min-w-0 max-h-[calc(100dvh-2rem)] overflow-y-auto bg-white space-y-5 text-center shadow-2xl rounded-2xl border border-[#D9D2CA] animate-in zoom-in-95">
             <div className="w-14 h-14 rounded-2xl bg-[#EFE7DF] text-[#9B7B63] flex items-center justify-center mx-auto border border-[#D9D2CA]">
               <KeyRound className="w-7 h-7" />
             </div>
 
             <div className="space-y-1">
               <span className="text-[10px] uppercase font-bold text-[#9B7B63] tracking-widest">
-                Card Created Successfully
+                Kad Berjaya Dicipta
               </span>
               <h2 className="font-title text-xl font-bold text-[#1E1E1C]">
-                Couple Private Security PIN
+                PIN Keselamatan Peribadi Pasangan
               </h2>
               <p className="text-xs text-[#77736D]">
                 For <strong>{createdPinModal.brideName} & {createdPinModal.groomName}</strong>
@@ -609,7 +573,7 @@ export default function App() {
 
             <div className="p-4 bg-[#F7F5F2] rounded-xl border border-[#D9D2CA] space-y-2">
               <span className="text-xs font-semibold text-[#77736D] block uppercase">
-                6-Digit Generated Security PIN
+                PIN Keselamatan 6 Digit
               </span>
               <div className="font-mono text-3xl font-extrabold tracking-[0.4em] text-[#1E1E1C]">
                 {createdPinModal.pin}
@@ -619,7 +583,7 @@ export default function App() {
               </p>
             </div>
 
-            <div className="flex gap-2 pt-1">
+            <div className="flex flex-col min-[360px]:flex-row gap-2 pt-1">
               <button
                 onClick={() => {
                   navigator.clipboard.writeText(createdPinModal.pin);
@@ -676,7 +640,10 @@ export default function App() {
         <Route
           element={
             !isAuthReady ? (
-              <div className="p-6 text-center">Checking authentication…</div>
+              <div className="min-h-dvh flex flex-col items-center justify-center gap-3 p-6 text-center text-[#77736D]">
+                <Loader2 className="w-7 h-7 animate-spin text-[#9B7B63]" />
+                <span className="text-sm">Menyemak sesi pentadbir…</span>
+              </div>
             ) : session?.access_token && session.user ? (
               <AdminLayout onLogout={handleLogout} />
             ) : (

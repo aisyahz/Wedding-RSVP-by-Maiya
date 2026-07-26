@@ -10,9 +10,7 @@ import {
   CheckCircle2,
   Image as ImageIcon,
   Sparkles,
-  Play,
-  Activity,
-  Terminal
+  Play
 } from 'lucide-react';
 import { MediaProviderService, UploadProgress } from '../../lib/mediaProvider';
 import { updateInvitationInSupabase } from '../../lib/supabase';
@@ -60,17 +58,8 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
   const [uploadWarning, setUploadWarning] = useState('');
   const [uploadSuccess, setUploadSuccess] = useState('');
 
-  // Diagnostic State
-  const [localPreviewCreated, setLocalPreviewCreated] = useState(false);
-  const [videoMetadataLoaded, setVideoMetadataLoaded] = useState(false);
   const [videoDuration, setVideoDuration] = useState<number | null>(null);
   const [videoErrorDetails, setVideoErrorDetails] = useState('');
-  const [presignStatus, setPresignStatus] = useState<string>('Belum Diminta');
-  const [r2PutStatus, setR2PutStatus] = useState<string>('Belum Diminta');
-  const [finalPublicUrl, setFinalPublicUrl] = useState<string>(
-    activeInvitation?.videoUrl || ''
-  );
-  const [publicUrlPlaybackResult, setPublicUrlPlaybackResult] = useState<string>('Belum Diuji');
 
   const invId = activeInvitation?.id || '';
 
@@ -78,7 +67,6 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
     if (!initialVideoFile || localPreviewUrl) return;
     const objectUrl = URL.createObjectURL(initialVideoFile);
     setLocalPreviewUrl(objectUrl);
-    setLocalPreviewCreated(true);
   }, [initialVideoFile, localPreviewUrl]);
 
   // Revoke Object URL on unmount or when localPreviewUrl changes
@@ -101,13 +89,6 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    console.info('[R2_DIAGNOSTIC] Video selected', {
-      fileName: file.name,
-      fileSize: file.size,
-      fileType: file.type || null,
-      fileObjectExists: file instanceof File,
-    });
-
     setUploadError('');
     setUploadWarning('');
     setUploadSuccess('');
@@ -141,12 +122,9 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
 
     // Create Browser Object URL for immediate local preview
     const objectUrl = URL.createObjectURL(file);
-    console.log(`[VIDEO_PREVIEW_BLOB_CREATED] Blob URL: ${objectUrl}, File: ${file.name}, MIME: ${file.type || 'video/mp4'}, Size: ${(file.size / (1024 * 1024)).toFixed(2)} MB`);
     setSelectedVideoFile(file);
     setLocalPreviewUrl(objectUrl);
     setCurrentFileName(file.name);
-    setLocalPreviewCreated(true);
-    setVideoMetadataLoaded(false);
     setVideoDuration(null);
     setUploadSuccess('Fail MP4 dipilih! Anda boleh menguji tontonan di bawah sebelum memuat naik ke R2 CDN.');
   };
@@ -167,8 +145,6 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
     setUploadWarning('');
     setUploadSuccess('');
     setIsUploading(true);
-    setPresignStatus('Meminta Presigned URL...');
-    setR2PutStatus('Menunggu...');
 
     try {
       // 1. Upload file to Cloudflare R2 via presigned URL
@@ -181,37 +157,23 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
 
       if (error || !data) {
         setIsUploading(false);
-        setPresignStatus('Gagal / Ralat');
-        setR2PutStatus('Gagal');
         setUploadError(error || 'Ralat muat naik video ke Cloudflare R2.');
         return false;
       }
 
-      setPresignStatus('200 OK (Diluluskan)');
-      setR2PutStatus('200 OK (Berjaya Diisi)');
       const publicUrl = data.publicUrl;
-      setFinalPublicUrl(publicUrl);
 
       if (data.warningMsg) {
         setUploadWarning(data.warningMsg);
       }
 
       // 2. Persist only after the R2 PUT succeeds.
-      console.info('[R2_DIAGNOSTIC] Before Supabase update', {
-        video_key: data.videoKey,
-        video_url: data.publicUrl,
-        video_file_name: selectedVideoFile.name,
-      });
       const persistence = await onUpdateVideo(
         invId,
         data.videoKey,
         data.publicUrl,
         selectedVideoFile.name
       );
-      console.info('[R2_DIAGNOSTIC] Supabase update result', {
-        success: persistence.success,
-        error: persistence.error || null,
-      });
       if (!persistence.success) {
         setIsUploading(false);
         setUploadError(
@@ -222,11 +184,7 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
 
       setIsUploading(false);
       setCurrentVideoUrl(publicUrl);
-      setPublicUrlPlaybackResult('Sedia Untuk Tontonan Tetamu');
       setUploadSuccess('Video MP4 berjaya dimuat naik & disimpan di Cloudflare R2 CDN!');
-      console.info('[R2_DIAGNOSTIC] Clearing pending video file', {
-        reason: 'R2 PUT and Supabase persistence succeeded',
-      });
       setSelectedVideoFile(null);
       onPendingVideoCleared?.('R2 PUT and Supabase persistence succeeded');
       return true;
@@ -246,8 +204,6 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
     setUploadSuccess('');
 
     setIsUploading(true);
-
-    const oldPosterKey = activeInvitation?.posterKey;
 
     const { data, error } = await MediaProviderService.uploadMedia(
       file,
@@ -273,12 +229,6 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
       }
     }
 
-    if (oldPosterKey && oldPosterKey !== data.videoKey) {
-      MediaProviderService.deleteMedia(invId, 'poster').catch((e) =>
-        console.warn('Notice: Clean old poster exception:', e)
-      );
-    }
-
     setCurrentPosterUrl(data.publicUrl);
     setUploadSuccess('Imej poster WebP berjaya dimuat naik ke Cloudflare R2!');
   };
@@ -292,9 +242,9 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
   const activeVideoSrc = localPreviewUrl || currentVideoUrl;
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-2xl min-w-0 w-full mx-auto space-y-4 min-[360px]:space-y-6">
       {/* Top Header */}
-      <div className="flex items-center justify-between bg-white p-5 rounded-2xl border border-[#D9D2CA] shadow-2xs">
+      <div className="flex min-w-0 items-center justify-between gap-2 bg-white p-3 min-[360px]:p-5 rounded-2xl border border-[#D9D2CA] shadow-2xs">
         <button
           onClick={() => onNavigate('create_invitation')}
           className="w-10 h-10 rounded-xl bg-[#F7F5F2] hover:bg-[#EFE7DF] text-[#1E1E1C] flex items-center justify-center cursor-pointer transition-all border border-[#D9D2CA]"
@@ -302,7 +252,7 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
           <ArrowLeft className="w-5 h-5" />
         </button>
 
-        <div className="text-center">
+        <div className="text-center min-w-0">
           <span className="text-[10px] uppercase font-semibold text-[#9B7B63] tracking-wider block">
             Media Storage • Cloudflare R2 CDN
           </span>
@@ -315,7 +265,7 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
       </div>
 
       {/* Main Card */}
-      <div className="card-maiya p-6 md:p-8 space-y-6">
+      <div className="card-maiya p-4 min-[360px]:p-6 md:p-8 space-y-6">
         {/* Status Alerts */}
         {uploadError && (
           <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-800 text-xs rounded-xl flex items-center gap-2 font-medium">
@@ -378,36 +328,12 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
               preload="metadata"
               onLoadedMetadata={(e) => {
                 const duration = e.currentTarget.duration;
-                console.log('[VIDEO_LOADED_METADATA]', {
-                  currentSrc: e.currentTarget.currentSrc,
-                  duration,
-                  videoWidth: e.currentTarget.videoWidth,
-                  videoHeight: e.currentTarget.videoHeight,
-                  readyState: e.currentTarget.readyState,
-                  networkState: e.currentTarget.networkState,
-                });
-                setVideoMetadataLoaded(true);
                 setVideoDuration(Number.isFinite(duration) ? duration : null);
                 setVideoErrorDetails('');
               }}
-              onCanPlay={(e) => {
-                console.log('[VIDEO_CAN_PLAY]', {
-                  currentSrc: e.currentTarget.currentSrc,
-                  readyState: e.currentTarget.readyState,
-                  networkState: e.currentTarget.networkState,
-                });
-              }}
               onError={(e) => {
                 const err = e.currentTarget.error;
-                const mediaErrObj = {
-                  code: err?.code,
-                  message: err?.message,
-                  currentSrc: e.currentTarget.currentSrc,
-                  readyState: e.currentTarget.readyState,
-                  networkState: e.currentTarget.networkState,
-                };
-                console.error('[VIDEO_MEDIA_ERROR]', mediaErrObj);
-                const msg = 'This MP4 codec is not supported. Please export the video as H.264 video with AAC audio.';
+                const msg = err?.message || 'This MP4 codec is not supported. Please export the video as H.264 video with AAC audio.';
                 setVideoErrorDetails(msg);
               }}
               className="w-full h-full object-cover"
@@ -436,7 +362,7 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
         {/* Upload Progress Bar */}
         {isUploading && uploadProgress && (
           <div className="p-4 bg-[#F7F5F2] rounded-xl border border-[#D9D2CA] space-y-2">
-            <div className="flex justify-between items-center text-xs text-[#1E1E1C] font-semibold">
+            <div className="flex min-w-0 flex-wrap justify-between items-center gap-2 text-sm text-[#1E1E1C] font-semibold">
               <span>Memuat naik ke Cloudflare R2...</span>
               <span className="font-mono text-[#9B7B63]">{uploadProgress.percentage}%</span>
             </div>
@@ -470,7 +396,7 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
                   <UploadCloud className="w-5 h-5" />
                 )}
               </div>
-              <p className="font-title text-sm font-bold text-[#1E1E1C]">
+              <p className="font-title text-sm font-bold text-[#1E1E1C] break-words [overflow-wrap:anywhere]">
                 {selectedVideoFile ? 'Tukar Fail Video MP4' : 'Pilih Fail Video Jemputan (MP4)'}
               </p>
               <p className="text-xs text-[#77736D]">
@@ -487,15 +413,15 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
               className="w-full py-3 bg-[#9B7B63] hover:bg-[#8A6A52] text-white font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs"
             >
               <UploadCloud className="w-4 h-4" />
-              <span>Muat Naik "{selectedVideoFile.name}" ke Cloudflare R2 Sekarang</span>
+              <span className="min-w-0 break-words [overflow-wrap:anywhere]">Muat naik “{selectedVideoFile.name}” sekarang</span>
             </button>
           )}
         </div>
 
         {/* Optional WebP Poster Image Upload Zone */}
         <div className="p-4 bg-white rounded-2xl border border-[#D9D2CA] space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-2">
               <ImageIcon className="w-4 h-4 text-[#9B7B63]" />
               <span className="text-xs font-bold text-[#1E1E1C]">
                 WebP Poster Image (Sebelum Video Dimainkan)
@@ -523,59 +449,6 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
               <Sparkles className="w-4 h-4 text-[#9B7B63]" />
               <span>Muat Naik Imej Poster (WebP / JPG / PNG)</span>
             </div>
-          </div>
-        </div>
-
-        {/* Runtime Diagnostic Report Panel */}
-        <div className="p-4 bg-[#1E1E1C] text-white rounded-2xl border border-black/40 space-y-2.5 font-mono text-[11px]">
-          <div className="flex items-center justify-between border-b border-white/10 pb-2">
-            <div className="flex items-center gap-2 text-[#9B7B63]">
-              <Terminal className="w-4 h-4" />
-              <span className="font-bold tracking-wider uppercase text-xs">Laporan Diagnostik Video Runtime</span>
-            </div>
-            <Activity className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-          </div>
-
-          <div className="grid grid-cols-2 gap-2 text-[10px]">
-            <div>
-              <span className="text-white/60">Local Preview URL Created:</span>{' '}
-              <span className={localPreviewCreated ? 'text-emerald-400 font-bold' : 'text-white/40'}>
-                {localPreviewCreated ? 'Ya (blob: URL)' : 'Tidak'}
-              </span>
-            </div>
-
-            <div>
-              <span className="text-white/60">Metadata Loaded:</span>{' '}
-              <span className={videoMetadataLoaded ? 'text-emerald-400 font-bold' : 'text-amber-400'}>
-                {videoMetadataLoaded ? 'Ya' : 'Menunggu / Belum'}
-              </span>
-            </div>
-
-            <div>
-              <span className="text-white/60">Video Duration:</span>{' '}
-              <span className="text-white font-bold">
-                {videoDuration ? `${videoDuration.toFixed(1)} saat` : 'N/A'}
-              </span>
-            </div>
-
-            <div>
-              <span className="text-white/60">Presign Status:</span>{' '}
-              <span className="text-sky-300 font-bold">{presignStatus}</span>
-            </div>
-
-            <div>
-              <span className="text-white/60">R2 PUT Status:</span>{' '}
-              <span className="text-sky-300 font-bold">{r2PutStatus}</span>
-            </div>
-
-            <div>
-              <span className="text-white/60">Public Playback:</span>{' '}
-              <span className="text-emerald-300 font-bold">{publicUrlPlaybackResult}</span>
-            </div>
-          </div>
-
-          <div className="pt-1 border-t border-white/10 text-[10px] truncate text-white/70">
-            <span className="text-white/40">Final Public URL:</span> {finalPublicUrl || 'Belum dimuat naik ke R2'}
           </div>
         </div>
 

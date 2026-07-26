@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { ScreenId, Invitation, RsvpEntry } from '../../types';
-import { ArrowLeft, Check, X, Send } from 'lucide-react';
+import { ArrowLeft, Check, X, Send, Loader2 } from 'lucide-react';
 
 interface GuestRsvpFormScreenProps {
   onNavigate: (screen: ScreenId) => void;
   activeInvitation: Invitation | null;
-  onAddRsvp: (newRsvp: Omit<RsvpEntry, 'id' | 'submittedAt'>) => void;
+  onAddRsvp: (
+    newRsvp: Omit<RsvpEntry, 'id' | 'submittedAt'>,
+  ) => Promise<{ success: boolean; error?: string }>;
 }
 
 export const GuestRsvpFormScreen: React.FC<GuestRsvpFormScreenProps> = ({
@@ -17,32 +19,47 @@ export const GuestRsvpFormScreen: React.FC<GuestRsvpFormScreenProps> = ({
   const [attendance, setAttendance] = useState<'attending' | 'declined'>('attending');
   const [pax, setPax] = useState(2);
   const [wishes, setWishes] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
-  const brideName = activeInvitation?.brideName || 'Sofea Azman';
-  const groomName = activeInvitation?.groomName || 'Adam Harith';
+  const brideName = activeInvitation?.brideName || '';
+  const groomName = activeInvitation?.groomName || '';
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     if (!guestName.trim()) {
-      alert('Sila masukkan nama tetamu.');
+      setSubmitError('Sila masukkan nama tetamu.');
+      return;
+    }
+    if (!activeInvitation?.id) {
+      setSubmitError('Jemputan tidak dijumpai. Sila muat semula halaman.');
       return;
     }
 
-    onAddRsvp({
-      invitationId: activeInvitation?.id || 'inv-001',
+    setSubmitError('');
+    setIsSubmitting(true);
+    const result = await onAddRsvp({
+      invitationId: activeInvitation.id,
       guestName: guestName.trim(),
       attendance,
       pax: attendance === 'attending' ? pax : 0,
-      wishes: wishes.trim() || 'Selamat Pengantin Baru! Semoga berkekalan hingga ke anak cucu.',
+      wishes: wishes.trim(),
     });
 
-    onNavigate('thank_you');
+    if (result.success) {
+      onNavigate('thank_you');
+      return;
+    }
+
+    setSubmitError(result.error || 'RSVP tidak dapat dihantar. Sila cuba lagi.');
+    setIsSubmitting(false);
   };
 
   return (
-    <div className="max-w-md mx-auto space-y-6">
+    <div className="max-w-md min-w-0 w-full mx-auto space-y-4 min-[360px]:space-y-6 p-3 min-[360px]:p-4">
       {/* Top Header */}
-      <div className="flex items-center justify-between bg-white p-5 rounded-2xl border border-[#D9D2CA] shadow-2xs">
+      <div className="flex min-w-0 items-center justify-between gap-2 bg-white p-3 min-[360px]:p-5 rounded-2xl border border-[#D9D2CA] shadow-2xs">
         <button
           onClick={() => onNavigate('guest_invitation')}
           className="w-10 h-10 rounded-xl bg-[#F7F5F2] hover:bg-[#EFE7DF] text-[#1E1E1C] flex items-center justify-center cursor-pointer transition-all border border-[#D9D2CA]"
@@ -50,11 +67,11 @@ export const GuestRsvpFormScreen: React.FC<GuestRsvpFormScreenProps> = ({
           <ArrowLeft className="w-5 h-5" />
         </button>
 
-        <div className="text-center">
+        <div className="text-center min-w-0">
           <span className="text-[10px] uppercase font-semibold text-[#9B7B63] tracking-wider block">
             Walimatul 'Urus
           </span>
-          <h1 className="font-title text-base font-bold text-[#1E1E1C]">
+          <h1 className="font-title text-sm min-[360px]:text-base font-bold text-[#1E1E1C] break-words">
             Pengesahan Kehadiran
           </h1>
         </div>
@@ -63,9 +80,9 @@ export const GuestRsvpFormScreen: React.FC<GuestRsvpFormScreenProps> = ({
       </div>
 
       {/* Main Form Card */}
-      <form onSubmit={handleSubmit} className="card-maiya p-6 sm:p-8 space-y-5">
+      <form onSubmit={handleSubmit} className="card-maiya p-4 min-[360px]:p-6 sm:p-8 space-y-5">
         <div className="text-center space-y-1 pb-3 border-b border-[#D9D2CA]/40">
-          <h2 className="font-serif text-2xl font-bold text-[#1E1E1C]">
+          <h2 className="font-serif text-2xl font-bold text-[#1E1E1C] break-words [overflow-wrap:anywhere]">
             {brideName} & {groomName}
           </h2>
           <p className="text-xs text-[#77736D]">
@@ -131,13 +148,13 @@ export const GuestRsvpFormScreen: React.FC<GuestRsvpFormScreenProps> = ({
               </label>
               <span className="text-xs font-bold text-[#9B7B63]">{pax} Pax</span>
             </div>
-            <div className="grid grid-cols-6 gap-2">
+            <div className="grid grid-cols-3 min-[360px]:grid-cols-6 gap-2">
               {[1, 2, 3, 4, 5, 6].map((num) => (
                 <button
                   key={num}
                   type="button"
                   onClick={() => setPax(num)}
-                  className={`h-10 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                  className={`min-h-11 rounded-xl text-sm font-bold border transition-all cursor-pointer ${
                     pax === num
                       ? 'bg-[#9B7B63] text-white border-[#9B7B63]'
                       : 'bg-white text-[#1E1E1C] border-[#D9D2CA] hover:bg-[#F7F5F2]'
@@ -160,18 +177,24 @@ export const GuestRsvpFormScreen: React.FC<GuestRsvpFormScreenProps> = ({
             value={wishes}
             onChange={(e) => setWishes(e.target.value)}
             placeholder="Tinggalkan ucapan & doa indah buat mempelai..."
-            className="w-full bg-white border border-[#D9D2CA] rounded-xl p-3 text-xs text-[#1E1E1C] focus:outline-none focus:border-[#9B7B63]"
+            className="w-full bg-white border border-[#D9D2CA] rounded-xl p-3 text-base text-[#1E1E1C] focus:outline-none focus:border-[#9B7B63] focus:ring-3 focus:ring-[#9B7B63]/10"
           />
         </div>
 
         {/* Submit */}
         <div className="pt-2">
+          {submitError && (
+            <p role="alert" className="mb-3 text-center text-xs text-rose-700">
+              {submitError}
+            </p>
+          )}
           <button
             type="submit"
-            className="w-full btn-primary cursor-pointer"
+            disabled={isSubmitting || !activeInvitation?.id}
+            className="w-full btn-primary cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <Send className="w-4 h-4" />
-            <span>Hantar RSVP</span>
+            {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin shrink-0" /> : <Send className="w-4 h-4 shrink-0" />}
+            <span>{isSubmitting ? 'Menghantar…' : 'Hantar RSVP'}</span>
           </button>
         </div>
       </form>

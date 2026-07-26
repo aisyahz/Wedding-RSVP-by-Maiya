@@ -51,8 +51,8 @@ export const AdminRsvpScreen: React.FC<AdminRsvpScreenProps> = ({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-[#D9D2CA] shadow-2xs">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 min-[360px]:p-6 rounded-2xl border border-[#D9D2CA] shadow-2xs">
+        <div className="min-w-0">
           <span className="text-[11px] uppercase tracking-wider font-semibold text-[#9B7B63]">
             Guest Analytics
           </span>
@@ -66,7 +66,7 @@ export const AdminRsvpScreen: React.FC<AdminRsvpScreenProps> = ({
 
         <button
           onClick={handleExportCsv}
-          className="btn-primary cursor-pointer shrink-0 self-start sm:self-auto"
+          className="btn-primary w-full sm:w-auto cursor-pointer self-start sm:self-auto"
         >
           <Download className="w-4 h-4" />
           <span>Export CSV</span>
@@ -131,11 +131,11 @@ export const AdminRsvpScreen: React.FC<AdminRsvpScreenProps> = ({
             return (
               <div
                 key={rsvp.id}
-                className="card-maiya p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all hover:border-[#9B7B63]/50"
+                className="card-maiya p-4 min-[360px]:p-5 flex min-w-0 flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all hover:border-[#9B7B63]/50"
               >
-                <div className="space-y-1 flex-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-serif text-lg font-bold text-[#1E1E1C]">
+                <div className="min-w-0 space-y-1 flex-1">
+                  <div className="flex min-w-0 flex-wrap items-center gap-2">
+                    <h3 className="min-w-0 font-serif text-lg font-bold text-[#1E1E1C] break-words [overflow-wrap:anywhere]">
                       {rsvp.guestName}
                     </h3>
                     <span
@@ -154,8 +154,8 @@ export const AdminRsvpScreen: React.FC<AdminRsvpScreenProps> = ({
                   </p>
 
                   {rsvp.wishes && (
-                    <p className="font-serif italic text-xs text-[#1E1E1C]/80 bg-[#F7F5F2] p-3 rounded-xl border border-[#D9D2CA] mt-2">
-                      "{rsvp.wishes}"
+                    <p className="font-serif italic text-sm leading-relaxed text-[#1E1E1C]/80 bg-[#F7F5F2] p-3 rounded-xl border border-[#D9D2CA] mt-2 break-words [overflow-wrap:anywhere]">
+                      “{rsvp.wishes}”
                     </p>
                   )}
                   <p className="text-[10px] text-[#77736D] pt-1">

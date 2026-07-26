@@ -41,7 +41,6 @@ export const InvitationListScreen: React.FC<InvitationListScreenProps> = ({
   const handleConfirmDelete = async () => {
     if (!deleteModalTarget || !onDeleteInvitation) return;
     const invId = deleteModalTarget.id;
-    console.log(`[DELETE_CONFIRMATION_ACCEPTED] ID: ${invId}`);
     setDeletingId(invId);
     try {
       await onDeleteInvitation(invId);
@@ -56,8 +55,8 @@ export const InvitationListScreen: React.FC<InvitationListScreenProps> = ({
   return (
     <div className="space-y-6">
       {/* Header & Title */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-[#D9D2CA] shadow-2xs">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 min-[360px]:p-6 rounded-2xl border border-[#D9D2CA] shadow-2xs">
+        <div className="min-w-0">
           <span className="text-[11px] uppercase tracking-wider font-semibold text-[#9B7B63]">
             Digital Cards Library
           </span>
@@ -74,7 +73,7 @@ export const InvitationListScreen: React.FC<InvitationListScreenProps> = ({
             onEditInvitation(null);
             onNavigate('create_invitation');
           }}
-          className="btn-primary cursor-pointer shrink-0 self-start sm:self-auto"
+          className="btn-primary w-full sm:w-auto cursor-pointer self-start sm:self-auto"
         >
           <Plus className="w-5 h-5" />
           <span>Create Invitation</span>
@@ -96,12 +95,12 @@ export const InvitationListScreen: React.FC<InvitationListScreenProps> = ({
         </div>
 
         {/* Filter Pills */}
-        <div className="flex space-x-2 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+        <div className="grid grid-cols-2 min-[390px]:grid-cols-4 gap-2 w-full md:w-auto">
           {(['all', 'active', 'draft', 'expired'] as const).map((status) => (
             <button
               key={status}
               onClick={() => setStatusFilter(status)}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold capitalize whitespace-nowrap cursor-pointer transition-all ${
+              className={`min-h-11 px-3 py-2 rounded-xl text-sm font-semibold capitalize whitespace-normal cursor-pointer transition-all ${
                 statusFilter === status
                   ? 'bg-[#1E1E1C] text-white shadow-xs'
                   : 'bg-white text-[#77736D] border border-[#D9D2CA] hover:text-[#1E1E1C]'
@@ -116,7 +115,7 @@ export const InvitationListScreen: React.FC<InvitationListScreenProps> = ({
       {/* Invitation Cards List */}
       <div className="space-y-4">
         {filteredInvitations.length === 0 ? (
-          <div className="card-maiya p-12 text-center my-6">
+          <div className="card-maiya p-6 min-[360px]:p-12 text-center my-6">
             <h3 className="font-title text-base font-bold text-[#1E1E1C]">
               No invitations found
             </h3>
@@ -130,12 +129,12 @@ export const InvitationListScreen: React.FC<InvitationListScreenProps> = ({
             return (
               <div
                 key={inv.id}
-                className="card-maiya p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all hover:border-[#9B7B63]/50"
+                className="card-maiya p-4 min-[360px]:p-5 flex min-w-0 flex-col md:flex-row md:items-center justify-between gap-4 transition-all hover:border-[#9B7B63]/50"
               >
                 {/* Header Info */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-serif text-lg font-bold text-[#1E1E1C]">
+                <div className="min-w-0 space-y-2">
+                  <div className="flex min-w-0 flex-wrap items-center gap-2">
+                    <h3 className="min-w-0 font-serif text-lg font-bold text-[#1E1E1C] break-words [overflow-wrap:anywhere]">
                       {inv.brideName} & {inv.groomName}
                     </h3>
                     <span
@@ -159,7 +158,7 @@ export const InvitationListScreen: React.FC<InvitationListScreenProps> = ({
                     <span>•</span>
                     <span className="flex items-center gap-1">
                       <MapPin className="w-3.5 h-3.5 text-[#9B7B63]" />
-                      <span>{inv.venueName.split(',')[0]}</span>
+                      <span className="break-words [overflow-wrap:anywhere]">{inv.venueName.split(',')[0]}</span>
                     </span>
                     <span>•</span>
                     <span className="text-xs font-semibold text-[#1E1E1C]">
@@ -173,7 +172,7 @@ export const InvitationListScreen: React.FC<InvitationListScreenProps> = ({
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center gap-2 shrink-0 pt-2 md:pt-0 border-t md:border-0 border-[#D9D2CA]/40">
+                <div className="grid grid-cols-2 min-[430px]:flex min-[430px]:flex-wrap items-center gap-2 w-full md:w-auto pt-2 md:pt-0 border-t md:border-0 border-[#D9D2CA]/40">
                   <button
                     onClick={() => {
                       onSelectInvitation(inv.id);
@@ -209,10 +208,7 @@ export const InvitationListScreen: React.FC<InvitationListScreenProps> = ({
 
                   <button
                     disabled={deletingId === inv.id}
-                    onClick={() => {
-                      console.log(`[DELETE_BUTTON_CLICKED] ID: ${inv.id}, Bride: ${inv.brideName}`);
-                      setDeleteModalTarget(inv);
-                    }}
+                    onClick={() => setDeleteModalTarget(inv)}
                     className="h-9 px-3 text-xs text-rose-600 hover:bg-rose-50 rounded-xl border border-rose-200 font-semibold inline-flex items-center gap-1 cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     title="Delete Invitation"
                   >
@@ -233,7 +229,7 @@ export const InvitationListScreen: React.FC<InvitationListScreenProps> = ({
       {/* User-Friendly Delete Confirmation Modal */}
       {deleteModalTarget && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="card-maiya p-6 max-w-md w-full bg-white space-y-5 shadow-2xl rounded-2xl border border-[#D9D2CA] animate-in zoom-in-95">
+          <div role="dialog" aria-modal="true" aria-label="Padam kad jemputan" className="card-maiya p-4 min-[360px]:p-6 max-w-md w-full min-w-0 max-h-[calc(100dvh-2rem)] overflow-y-auto bg-white space-y-5 shadow-2xl rounded-2xl border border-[#D9D2CA] animate-in zoom-in-95">
             <div className="flex items-start justify-between">
               <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center border border-rose-200 shrink-0">
                 <AlertTriangle className="w-6 h-6 text-rose-600" />
@@ -248,7 +244,7 @@ export const InvitationListScreen: React.FC<InvitationListScreenProps> = ({
 
             <div className="space-y-2">
               <h3 className="font-title text-lg font-bold text-gray-900">
-                Padam Kad Jemputan? / Delete Invitation?
+                Padam kad jemputan?
               </h3>
               <p className="text-xs text-gray-600 leading-relaxed">
                 Adakah anda pasti mahu memadamkan kad jemputan untuk{' '}
@@ -265,14 +261,14 @@ export const InvitationListScreen: React.FC<InvitationListScreenProps> = ({
               </div>
             </div>
 
-            <div className="flex items-center gap-3 pt-2">
+            <div className="flex flex-col min-[390px]:flex-row items-stretch gap-3 pt-2">
               <button
                 type="button"
                 disabled={deletingId === deleteModalTarget.id}
                 onClick={() => setDeleteModalTarget(null)}
                 className="flex-1 btn-outline h-11 text-xs cursor-pointer font-semibold"
               >
-                Batal / Cancel
+                Batal
               </button>
               <button
                 type="button"
@@ -288,7 +284,7 @@ export const InvitationListScreen: React.FC<InvitationListScreenProps> = ({
                 ) : (
                   <>
                     <Trash2 className="w-4 h-4" />
-                    <span>Ya, Padam / Confirm Delete</span>
+                    <span>Ya, padam</span>
                   </>
                 )}
               </button>

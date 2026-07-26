@@ -12,8 +12,8 @@ export const ThankYouScreen: React.FC<ThankYouScreenProps> = ({
   onNavigate,
   activeInvitation,
 }) => {
-  const brideName = activeInvitation?.brideName || 'Sofea Azman';
-  const groomName = activeInvitation?.groomName || 'Adam Harith';
+  const brideName = activeInvitation?.brideName || '';
+  const groomName = activeInvitation?.groomName || '';
   const weddingDate = activeInvitation?.weddingDate || '28 November 2026';
 
   useEffect(() => {

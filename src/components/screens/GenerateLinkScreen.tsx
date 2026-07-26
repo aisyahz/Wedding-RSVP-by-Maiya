@@ -14,9 +14,9 @@ export const GenerateLinkScreen: React.FC<GenerateLinkScreenProps> = ({
 }) => {
   const [copied, setCopied] = useState(false);
 
-  const slug = activeInvitation?.slug || 'adam-sofea';
-  const brideName = activeInvitation?.brideName || 'Sofea Azman';
-  const groomName = activeInvitation?.groomName || 'Adam Harith';
+  const slug = activeInvitation?.slug || '';
+  const brideName = activeInvitation?.brideName || '';
+  const groomName = activeInvitation?.groomName || '';
   const generatedUrl = `https://digitalcardbymaiya.com/invite/${slug}`;
 
   useEffect(() => {
@@ -45,9 +45,9 @@ export const GenerateLinkScreen: React.FC<GenerateLinkScreenProps> = ({
   };
 
   return (
-    <div className="max-w-xl mx-auto space-y-6">
+    <div className="max-w-xl min-w-0 w-full mx-auto space-y-6">
       {/* Top Banner */}
-      <div className="text-center space-y-2 bg-white p-6 rounded-2xl border border-[#D9D2CA] shadow-2xs">
+      <div className="text-center space-y-2 bg-white p-4 min-[360px]:p-6 rounded-2xl border border-[#D9D2CA] shadow-2xs">
         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-semibold border border-emerald-200">
           <CheckCircle className="w-4 h-4 text-emerald-600" />
           <span>Card Live & Active</span>
@@ -61,7 +61,7 @@ export const GenerateLinkScreen: React.FC<GenerateLinkScreenProps> = ({
       </div>
 
       {/* Main Card */}
-      <div className="card-maiya p-6 sm:p-8 space-y-6 text-center">
+      <div className="card-maiya p-4 min-[360px]:p-6 sm:p-8 space-y-6 text-center">
         <div className="w-12 h-12 rounded-xl bg-[#EFE7DF] text-[#9B7B63] flex items-center justify-center mx-auto border border-[#D9D2CA]">
           <Sparkles className="w-6 h-6" />
         </div>
@@ -76,13 +76,13 @@ export const GenerateLinkScreen: React.FC<GenerateLinkScreenProps> = ({
         </div>
 
         {/* Generated Link Field */}
-        <div className="bg-[#F7F5F2] border border-[#D9D2CA] rounded-xl p-3 flex items-center justify-between gap-2">
-          <span className="font-mono text-xs text-[#1E1E1C] truncate font-medium">
+        <div className="bg-[#F7F5F2] border border-[#D9D2CA] rounded-xl p-3 flex flex-col min-[390px]:flex-row min-w-0 items-stretch min-[390px]:items-center justify-between gap-2">
+          <span className="min-w-0 font-mono text-sm text-[#1E1E1C] break-all font-medium">
             {generatedUrl}
           </span>
           <button
             onClick={handleCopy}
-            className="btn-accent h-9 px-3 text-xs gap-1 cursor-pointer shrink-0"
+            className="btn-accent min-h-11 px-3 gap-1 cursor-pointer shrink-0"
           >
             <Copy className="w-3.5 h-3.5" />
             <span>{copied ? 'Copied Link' : 'Copy Link'}</span>
@@ -109,7 +109,7 @@ export const GenerateLinkScreen: React.FC<GenerateLinkScreenProps> = ({
         </div>
 
         {/* PIN info note */}
-        <div className="text-xs text-[#77736D] pt-3 border-t border-[#D9D2CA]/40 flex items-center justify-center gap-1.5 font-medium">
+        <div className="text-sm text-[#77736D] pt-3 border-t border-[#D9D2CA]/40 flex flex-wrap items-center justify-center gap-1.5 font-medium break-words">
           <Lock className="w-3.5 h-3.5 text-[#9B7B63]" />
           <span>Private RSVP Report PIN: <code className="bg-[#EFE7DF] px-1.5 py-0.5 rounded text-[#1E1E1C] font-mono font-bold">{activeInvitation?.privatePin || '1234'}</code></span>
         </div>

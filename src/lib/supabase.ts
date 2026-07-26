@@ -81,11 +81,6 @@ export async function loginAdmin(
   if (!supabase) return { session: null, error: 'Supabase client is not configured.' };
   const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
   const session = data.session;
-  console.info('[AUTH_DIAGNOSTIC]', {
-    sessionExists: Boolean(session),
-    userId: session?.user?.id || null,
-    accessTokenExists: Boolean(session?.access_token),
-  });
   if (error || !session || !session.access_token || !session.user) {
     return {
       session: null,
@@ -226,11 +221,6 @@ export async function createInvitationWithPin(
   try {
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
     const session = sessionData.session;
-    console.info('[AUTH_DIAGNOSTIC]', {
-      sessionExists: Boolean(session),
-      userId: session?.user?.id || null,
-      accessTokenExists: Boolean(session?.access_token),
-    });
     if (sessionError || !session || !session.access_token || !session.user) {
       return {
         data: null,
@@ -375,27 +365,13 @@ export async function updateInvitationInSupabase(
 // 5. Delete Invitation (and attached video/media files & rsvps)
 export async function deleteInvitationFromSupabase(
   id: string
-): Promise<{ success: boolean; error?: string }> {
-  console.log(`[DELETE_HANDLER_RECEIVED_ID] Starting deletion for ID: ${id}`);
-
+): Promise<{ success: boolean; mediaDeleted?: boolean; warning?: string; error?: string }> {
   if (!supabase || !isSupabaseConfigured) {
-    console.error('[DELETE_FAILED] Supabase client is not configured');
     return { success: false, error: 'Supabase is not configured' };
   }
 
   try {
-    // 1. Clean up R2 media objects (video, poster, gift-qr) for this invitation
-    console.log(`[R2_DELETE_STARTED] Deleting R2 media assets for invitation ID: ${id}`);
-    try {
-      await MediaProviderService.deleteMedia(id, 'all');
-      console.log(`[R2_DELETE_FINISHED] R2 media deletion completed for ID: ${id}`);
-    } catch (r2Err: any) {
-      console.warn(`[R2_DELETE_WARNING] R2 media deletion warning: ${r2Err?.message || r2Err}`);
-    }
-
-    console.log(`[SUPABASE_DELETE_STARTED] Deleting database records for invitation ID: ${id}`);
-
-    // 2. Explicitly delete related rsvp_entries in case ON DELETE CASCADE is missing
+    // 1. Explicitly delete related rsvp_entries in case ON DELETE CASCADE is missing
     const { error: rsvpError } = await supabase
       .from('rsvp_entries')
       .delete()
@@ -405,7 +381,7 @@ export async function deleteInvitationFromSupabase(
       console.warn(`Notice: rsvp_entries deletion notice: ${rsvpError.message}`);
     }
 
-    // 3. Explicitly delete invitation_secrets
+    // 2. Explicitly delete invitation_secrets
     const { error: secretsError } = await supabase
       .from('invitation_secrets')
       .delete()
@@ -415,21 +391,28 @@ export async function deleteInvitationFromSupabase(
       console.warn(`Notice: invitation_secrets deletion notice: ${secretsError.message}`);
     }
 
-    // 4. Delete invitation record
+    // 3. Delete the database record before removing media. If this fails, the
+    // public invitation remains intact and its R2 objects are not orphaned.
     const { error: invError } = await supabase
       .from('invitations')
       .delete()
       .eq('id', id);
 
     if (invError) {
-      console.error(`[DELETE_FAILED] Supabase delete error: ${invError.message}`);
       return { success: false, error: invError.message };
     }
 
-    console.log(`[DELETE_SUCCESS] Successfully deleted invitation ID: ${id} from Supabase and R2 storage`);
-    return { success: true };
+    // 4. Clean up R2 media after the invitation is successfully removed.
+    const mediaResult = await MediaProviderService.deleteMedia(id, 'all');
+
+    return mediaResult.success
+      ? { success: true, mediaDeleted: true }
+      : {
+          success: true,
+          mediaDeleted: false,
+          warning: mediaResult.error || 'Rekod dipadam tetapi pembersihan media R2 gagal.',
+        };
   } catch (err: any) {
-    console.error(`[DELETE_FAILED] Exception during deletion: ${err?.message || err}`);
     return { success: false, error: err?.message || 'Error deleting invitation' };
   }
 }

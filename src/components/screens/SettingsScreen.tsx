@@ -37,14 +37,14 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const storagePercentage = Math.round((settings.storageUsedMb / settings.storageLimitMb) * 100);
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-2xl min-w-0 w-full mx-auto space-y-6">
       {/* Header */}
-      <div className="bg-white p-6 rounded-2xl border border-[#D9D2CA] shadow-2xs flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="bg-white p-4 min-[360px]:p-6 rounded-2xl border border-[#D9D2CA] shadow-2xs flex flex-col min-[390px]:flex-row min-[390px]:items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
           <div className="w-12 h-12 rounded-2xl bg-[#1E1E1C] text-white font-title font-bold flex items-center justify-center text-xl shadow-xs">
             M
           </div>
-          <div>
+          <div className="min-w-0">
             <h1 className="font-title text-lg font-bold text-[#1E1E1C]">
               Brand Settings
             </h1>
@@ -61,7 +61,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
       </div>
 
       {/* Settings Form */}
-      <form onSubmit={handleSave} className="card-maiya p-6 md:p-8 space-y-5">
+      <form onSubmit={handleSave} className="card-maiya p-4 min-[360px]:p-6 md:p-8 space-y-5">
         <div className="flex items-center justify-between border-b border-[#D9D2CA]/40 pb-3">
           <h2 className="font-title text-base font-bold text-[#1E1E1C]">
             Brand Configuration

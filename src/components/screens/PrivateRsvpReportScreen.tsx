@@ -74,7 +74,7 @@ export const PrivateRsvpReportScreen: React.FC<PrivateRsvpReportScreenProps> = (
   // State 1: Locked PIN Verification Screen
   if (!isUnlocked) {
     return (
-      <div className="max-w-md mx-auto space-y-6">
+    <div className="max-w-md min-w-0 w-full mx-auto space-y-4 min-[360px]:space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between bg-white p-5 rounded-2xl border border-[#D9D2CA] shadow-2xs">
           <button
@@ -210,7 +210,7 @@ export const PrivateRsvpReportScreen: React.FC<PrivateRsvpReportScreenProps> = (
           Senarai Tetamu ({reportData.length})
         </h2>
 
-        <div className="space-y-2.5 max-h-[320px] overflow-y-auto pr-1">
+        <div className="space-y-2.5">
           {reportData.length === 0 ? (
             <p className="text-xs text-[#77736D] italic text-center py-6">
               Tiada rekod RSVP setakat ini.
@@ -219,26 +219,26 @@ export const PrivateRsvpReportScreen: React.FC<PrivateRsvpReportScreenProps> = (
             reportData.map((rsvp) => (
               <div
                 key={rsvp.id}
-                className="flex justify-between items-center bg-[#F7F5F2] p-3.5 rounded-xl border border-[#D9D2CA] text-xs"
+                className="flex min-w-0 flex-col min-[360px]:flex-row min-[360px]:items-start justify-between gap-2 bg-[#F7F5F2] p-3.5 rounded-xl border border-[#D9D2CA] text-sm"
               >
-                <div className="space-y-0.5">
-                  <div className="flex items-center gap-2">
+                <div className="min-w-0 space-y-0.5">
+                  <div className="flex min-w-0 items-start gap-2">
                     <span
                       className={`w-2 h-2 rounded-full ${
                         rsvp.attendance === 'attending' ? 'bg-emerald-600' : 'bg-rose-600'
                       }`}
                     />
-                    <span className="font-bold text-[#1E1E1C]">{rsvp.guestName}</span>
+                    <span className="min-w-0 font-bold text-[#1E1E1C] break-words [overflow-wrap:anywhere]">{rsvp.guestName}</span>
                   </div>
                   {rsvp.wishes && (
-                    <p className="text-[#77736D] italic text-[11px] truncate max-w-[220px]">
-                      "{rsvp.wishes}"
+                    <p className="text-[#77736D] italic text-sm break-words [overflow-wrap:anywhere]">
+                      “{rsvp.wishes}”
                     </p>
                   )}
                 </div>
 
                 <span
-                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                  className={`self-start max-w-full px-2.5 py-0.5 rounded-full text-xs font-bold uppercase whitespace-normal ${
                     rsvp.attendance === 'attending'
                       ? 'bg-emerald-100 text-emerald-800'
                       : 'bg-rose-100 text-rose-800'

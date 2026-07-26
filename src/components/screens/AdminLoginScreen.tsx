@@ -41,7 +41,7 @@ export const AdminLoginScreen: React.FC<AdminLoginScreenProps> = ({
   };
 
   return (
-    <div className="min-h-dvh bg-[#F7F5F2] flex flex-col items-center justify-between p-6 antialiased">
+    <div className="min-h-dvh bg-[#F7F5F2] flex flex-col items-center justify-between p-3 min-[360px]:p-6 antialiased">
       <div className="w-full max-w-md my-auto space-y-8">
         {/* Brand Header */}
         <div className="text-center space-y-2">
@@ -57,7 +57,7 @@ export const AdminLoginScreen: React.FC<AdminLoginScreenProps> = ({
         </div>
 
         {/* Login Card */}
-        <div className="card-maiya p-8 space-y-6">
+        <div className="card-maiya p-5 min-[360px]:p-8 space-y-6">
           <div>
             <h2 className="font-title text-lg font-bold text-[#1E1E1C]">
               Welcome back
@@ -68,7 +68,7 @@ export const AdminLoginScreen: React.FC<AdminLoginScreenProps> = ({
           </div>
 
           {errorMsg && (
-            <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs flex items-center gap-2">
+              <div role="alert" className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-sm flex items-start gap-2 break-words">
               <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
               <span>{errorMsg}</span>
             </div>

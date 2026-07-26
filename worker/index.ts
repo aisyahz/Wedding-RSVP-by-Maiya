@@ -115,8 +115,6 @@ async function authenticate(request: Request, env: Env): Promise<Response | null
     viteSupabaseUrlExists: Boolean(env.VITE_SUPABASE_URL?.trim()),
     viteSupabaseAnonKeyExists: Boolean(env.VITE_SUPABASE_ANON_KEY?.trim()),
   };
-  console.info('[WORKER_BINDINGS_DIAGNOSTIC]', bindingDiagnostics);
-
   const supabaseUrl = env.SUPABASE_URL?.trim() || env.VITE_SUPABASE_URL?.trim();
   const supabaseAnonKey = env.SUPABASE_ANON_KEY?.trim() || env.VITE_SUPABASE_ANON_KEY?.trim();
   if (!supabaseUrl || !supabaseAnonKey) {
