@@ -16,6 +16,7 @@ import {
   supabase,
 } from './lib/supabase';
 import { CheckCircle2, AlertCircle, Loader2, KeyRound, Copy } from 'lucide-react';
+import { SeoMetadata } from './components/SeoMetadata';
 
 // Layouts
 import { AdminLayout } from './components/layout/AdminLayout';
@@ -43,6 +44,7 @@ export default function App() {
   const [selectedInvitationId, setSelectedInvitationId] = useState<string>('');
   const [editingInvitation, setEditingInvitation] = useState<Invitation | null>(null);
   const [settings, setSettings] = useState<SystemSettings>(INITIAL_SETTINGS);
+  const [seoInvitation, setSeoInvitation] = useState<Invitation | null>(null);
 
   const [isLoadingData, setIsLoadingData] = useState<boolean>(true);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -380,9 +382,11 @@ export default function App() {
       let isMounted = true;
       async function loadBySlug() {
         if (!slug) return;
+        setSeoInvitation(null);
         const memoryInv = invitations.find((i) => i.slug === slug);
         if (memoryInv) {
           setFetchedInv(memoryInv);
+          setSeoInvitation(memoryInv);
           setLoading(false);
           return;
         }
@@ -392,8 +396,10 @@ export default function App() {
         if (isMounted) {
           if (data) {
             setFetchedInv(data);
+            setSeoInvitation(data);
             setErrorMsg('');
           } else {
+            setSeoInvitation(null);
             setErrorMsg(error || 'Kad jemputan tidak dijumpai atau telah tamat tempoh.');
           }
           setLoading(false);
@@ -435,6 +441,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <SeoMetadata invitation={seoInvitation} />
       {/* Toast Notification Banner */}
       {notification && (
         <div className="fixed top-4 right-4 z-50 max-w-sm animate-in fade-in slide-in-from-top duration-300">

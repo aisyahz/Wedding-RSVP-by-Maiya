@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /login
+Disallow: /settings
+Disallow: /rsvp
+Disallow: /report/
+Disallow: /invitations
+Disallow: /create
+Disallow: /edit
