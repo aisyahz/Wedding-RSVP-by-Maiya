@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ScreenId, Invitation, RsvpEntry } from '../../types';
-import { Clock, MapPin, Navigation, Phone, Gift, Copy, Lock, Volume2, VolumeX } from 'lucide-react';
+import { Clock, MapPin, Navigation, Phone, Gift, Copy, Lock, Volume2, VolumeX, HeartHandshake, CheckCircle2 } from 'lucide-react';
 import { BottomGuestNav } from '../common/BottomGuestNav';
 
 interface GuestInvitationScreenProps {
@@ -14,9 +14,17 @@ export const GuestInvitationScreen: React.FC<GuestInvitationScreenProps> = ({
   activeInvitation,
   rsvps,
 }) => {
+  type GuestSection = 'calendar' | 'location' | 'rsvp' | 'contact' | 'gift';
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const calendarRef = useRef<HTMLDivElement | null>(null);
+  const locationRef = useRef<HTMLDivElement | null>(null);
+  const rsvpRef = useRef<HTMLDivElement | null>(null);
+  const contactRef = useRef<HTMLDivElement | null>(null);
+  const giftRef = useRef<HTMLDivElement | null>(null);
   const [isMuted, setIsMuted] = useState(true);
   const [copiedBank, setCopiedBank] = useState(false);
+  const [copyToast, setCopyToast] = useState('');
+  const [activeTab, setActiveTab] = useState<GuestSection>('calendar');
 
   useEffect(() => {
     if (videoRef.current) {
@@ -27,11 +35,15 @@ export const GuestInvitationScreen: React.FC<GuestInvitationScreenProps> = ({
   }, [activeInvitation?.videoUrl, isMuted]);
 
   // Live countdown state
-  const targetDateStr = activeInvitation?.weddingDate || '2026-11-28';
+  const targetDateStr = activeInvitation?.weddingDate || '';
   const [timeLeft, setTimeLeft] = useState({ days: 36, hours: 22, minutes: 33, seconds: 17 });
 
   useEffect(() => {
     const calculateTime = () => {
+      if (!targetDateStr) {
+        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+        return;
+      }
       const target = new Date(`${targetDateStr}T11:00:00`).getTime();
       const now = new Date().getTime();
       const difference = target - now;
@@ -52,34 +64,91 @@ export const GuestInvitationScreen: React.FC<GuestInvitationScreenProps> = ({
     return () => clearInterval(interval);
   }, [targetDateStr]);
 
-  const brideName = activeInvitation?.brideName || 'Sofea Azman';
-  const groomName = activeInvitation?.groomName || 'Adam Harith';
-  const weddingDate = activeInvitation?.weddingDate || '28 NOVEMBER 2026';
-  const weddingTime = activeInvitation?.weddingTime || '11:00 AM – 4:00 PM';
-  const venueName = activeInvitation?.venueName || 'Glasshouse at Seputeh';
-  const venueAddress = activeInvitation?.venueAddress || '17, Jalan Syed Putra, Seputeh, 50460 Kuala Lumpur';
+  const brideName = activeInvitation?.brideName || '';
+  const groomName = activeInvitation?.groomName || '';
+  const weddingDate = activeInvitation?.weddingDate || '';
+  const weddingTime = activeInvitation?.weddingTime || '';
+  const venueName = activeInvitation?.venueName || '';
+  const venueAddress = activeInvitation?.venueAddress || '';
   const videoUrl = activeInvitation?.videoUrl || '';
   const posterUrl = activeInvitation?.posterUrl || '';
-  const bank = activeInvitation?.bankGift || {
-    bankName: 'Maybank',
-    accountNumber: '5622 4501 2345 6789',
-    accountHolder: 'MAIYA CLIENT ACCOUNT',
-    qrCodeUrl: activeInvitation?.bankGift?.qrCodeUrl || '',
-  };
+  const bank = activeInvitation?.bankGift;
 
   const cardRsvps = rsvps.filter((r) => r.invitationId === activeInvitation?.id);
 
-  const handleCopyAccount = () => {
-    navigator.clipboard.writeText(bank.accountNumber);
-    setCopiedBank(true);
-    setTimeout(() => setCopiedBank(false), 2000);
-  };
-
-  const handleSelectNavTab = (tab: 'calendar' | 'location' | 'rsvp' | 'contact' | 'gift') => {
-    if (tab === 'rsvp') {
-      onNavigate('guest_rsvp_form');
+  const safeExternalUrl = (value?: string) => {
+    if (!value) return '';
+    try {
+      const url = new URL(value);
+      return url.protocol === 'https:' ? url.toString() : '';
+    } catch {
+      return '';
     }
   };
+
+  const normalizeMalaysianPhone = (value?: string) => {
+    let digits = (value || '').replace(/\D/g, '');
+    if (digits.startsWith('0')) digits = `60${digits.slice(1)}`;
+    else if (digits.startsWith('1')) digits = `60${digits}`;
+    return /^601\d{8,9}$/.test(digits) ? digits : '';
+  };
+
+  const googleMapsUrl = safeExternalUrl(activeInvitation?.googleMapsUrl);
+  const wazeUrl = safeExternalUrl(activeInvitation?.wazeUrl);
+  const wishlistUrl = safeExternalUrl(activeInvitation?.wishlistUrl);
+  const whatsappNumber = normalizeMalaysianPhone(activeInvitation?.whatsappContact);
+  const whatsappUrl = whatsappNumber
+    ? `https://wa.me/${whatsappNumber}?text=${encodeURIComponent('Assalamualaikum, saya ingin bertanya mengenai majlis perkahwinan ini.')}`
+    : '';
+  const showGiftSection = Boolean(wishlistUrl) || activeInvitation?.enableGiftSection !== false;
+
+  const handleCopyAccount = async () => {
+    if (!bank?.accountNumber) return;
+    try {
+      await navigator.clipboard.writeText(bank.accountNumber);
+      setCopiedBank(true);
+      setCopyToast('Nombor akaun berjaya disalin.');
+      window.setTimeout(() => {
+        setCopiedBank(false);
+        setCopyToast('');
+      }, 2500);
+    } catch {
+      setCopyToast('Nombor akaun tidak dapat disalin. Sila cuba lagi.');
+      window.setTimeout(() => setCopyToast(''), 2500);
+    }
+  };
+
+  const sectionRefs: Record<GuestSection, React.RefObject<HTMLDivElement | null>> = {
+    calendar: calendarRef,
+    location: locationRef,
+    rsvp: rsvpRef,
+    contact: contactRef,
+    gift: giftRef,
+  };
+
+  const handleSelectNavTab = (tab: GuestSection) => {
+    const section = sectionRefs[tab].current;
+    if (!section) return;
+    setActiveTab(tab);
+    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  useEffect(() => {
+    const sections = (Object.entries(sectionRefs) as Array<[GuestSection, React.RefObject<HTMLDivElement | null>]>)
+      .filter(([, ref]) => ref.current);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        const matched = sections.find(([, ref]) => ref.current === visible?.target);
+        if (matched) setActiveTab(matched[0]);
+      },
+      { rootMargin: '-20% 0px -60% 0px', threshold: [0.1, 0.4, 0.7] },
+    );
+    sections.forEach(([, ref]) => ref.current && observer.observe(ref.current));
+    return () => observer.disconnect();
+  }, [activeInvitation?.id]);
 
   return (
     <div className="flex-1 bg-[#F7F5F2] flex flex-col justify-between min-h-dvh relative pb-24 text-[#1E1E1C]">
@@ -167,7 +236,7 @@ export const GuestInvitationScreen: React.FC<GuestInvitationScreenProps> = ({
 
         {/* Event Date & Venue */}
         <div className="card-maiya p-6 space-y-4 text-center">
-          <div className="space-y-1">
+          <div ref={calendarRef} id="calendar-section" className="space-y-1 scroll-mt-24">
             <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9B7B63]">
               Tarikh & Masa Majlis
             </span>
@@ -182,7 +251,7 @@ export const GuestInvitationScreen: React.FC<GuestInvitationScreenProps> = ({
 
           <div className="w-12 h-px bg-[#D9D2CA] mx-auto" />
 
-          <div className="space-y-1">
+          <div ref={locationRef} id="location-section" className="space-y-1 scroll-mt-24">
             <h3 className="font-title text-lg font-bold text-[#1E1E1C]">
               {venueName}
             </h3>
@@ -194,20 +263,28 @@ export const GuestInvitationScreen: React.FC<GuestInvitationScreenProps> = ({
           {/* Maps Navigation Buttons */}
           <div className="grid grid-cols-2 gap-3 pt-2">
             <a
-              href={activeInvitation?.googleMapsUrl || 'https://maps.google.com'}
-              target="_blank"
-              rel="noreferrer"
-              className="py-3 px-3 bg-[#F7F5F2] hover:bg-[#EFE7DF] text-[#1E1E1C] rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all border border-[#D9D2CA]"
+              href={googleMapsUrl || undefined}
+              target={googleMapsUrl ? '_blank' : undefined}
+              rel={googleMapsUrl ? 'noopener noreferrer' : undefined}
+              aria-disabled={!googleMapsUrl}
+              onClick={(event) => !googleMapsUrl && event.preventDefault()}
+              className={`py-3 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all border border-[#D9D2CA] ${
+                googleMapsUrl ? 'bg-[#F7F5F2] hover:bg-[#EFE7DF] text-[#1E1E1C]' : 'bg-[#F7F5F2] text-[#B7B1AA] cursor-not-allowed opacity-60'
+              }`}
             >
               <MapPin className="w-4 h-4 text-rose-500" />
               <span>Google Maps</span>
             </a>
 
             <a
-              href={activeInvitation?.wazeUrl || 'https://waze.com'}
-              target="_blank"
-              rel="noreferrer"
-              className="py-3 px-3 bg-[#F7F5F2] hover:bg-[#EFE7DF] text-[#1E1E1C] rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all border border-[#D9D2CA]"
+              href={wazeUrl || undefined}
+              target={wazeUrl ? '_blank' : undefined}
+              rel={wazeUrl ? 'noopener noreferrer' : undefined}
+              aria-disabled={!wazeUrl}
+              onClick={(event) => !wazeUrl && event.preventDefault()}
+              className={`py-3 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all border border-[#D9D2CA] ${
+                wazeUrl ? 'bg-[#F7F5F2] hover:bg-[#EFE7DF] text-[#1E1E1C]' : 'bg-[#F7F5F2] text-[#B7B1AA] cursor-not-allowed opacity-60'
+              }`}
             >
               <Navigation className="w-4 h-4 text-sky-500" />
               <span>Waze App</span>
@@ -216,70 +293,91 @@ export const GuestInvitationScreen: React.FC<GuestInvitationScreenProps> = ({
         </div>
 
         {/* Contact & Wishlist */}
-        <div className="card-maiya p-5 space-y-3">
+        <div ref={contactRef} id="contact-section" className="card-maiya p-5 space-y-3 scroll-mt-24">
           <h3 className="font-title text-base font-bold text-[#1E1E1C] text-center">
-            Hubungi & Wishlist
+            Hubungi Wakil Pengantin
           </h3>
 
           <div className="grid grid-cols-2 gap-3">
             <a
-              href={`https://wa.me/${(activeInvitation?.whatsappContact || '+60123456789').replace(/[^0-9]/g, '')}`}
-              target="_blank"
-              rel="noreferrer"
-              className="py-3 px-3 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all border border-[#25D366]/30"
+              href={whatsappUrl || undefined}
+              target={whatsappUrl ? '_blank' : undefined}
+              rel={whatsappUrl ? 'noopener noreferrer' : undefined}
+              aria-disabled={!whatsappUrl}
+              onClick={(event) => !whatsappUrl && event.preventDefault()}
+              className={`py-3 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all border ${
+                whatsappUrl ? 'bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 border-[#25D366]/30' : 'bg-[#F7F5F2] text-[#B7B1AA] border-[#D9D2CA] cursor-not-allowed opacity-60'
+              } col-span-2`}
             >
               <Phone className="w-4 h-4" />
               <span>WhatsApp Host</span>
             </a>
 
-            {activeInvitation?.wishlistUrl ? (
-              <a
-                href={activeInvitation.wishlistUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="py-3 px-3 bg-[#9B7B63]/10 text-[#9B7B63] hover:bg-[#9B7B63]/20 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all border border-[#9B7B63]/30"
-              >
-                <Gift className="w-4 h-4" />
-                <span>Wishlist Link</span>
-              </a>
-            ) : (
-              <div className="py-3 px-3 bg-[#F7F5F2] text-[#77736D] rounded-xl text-xs font-medium flex items-center justify-center border border-[#D9D2CA]">
-                <span>Wishlist Optional</span>
-              </div>
-            )}
           </div>
         </div>
 
+        {/* RSVP Action */}
+        <div ref={rsvpRef} id="rsvp-section" className="card-maiya p-6 text-center space-y-4 scroll-mt-24">
+          <div className="w-11 h-11 mx-auto rounded-full bg-[#9B7B63]/10 text-[#9B7B63] flex items-center justify-center">
+            <HeartHandshake className="w-5 h-5" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="font-serif text-xl font-bold text-[#1E1E1C]">Pengesahan Kehadiran</h3>
+            <p className="text-xs text-[#77736D]">
+              Sila maklumkan kehadiran anda kepada pasangan pengantin.
+            </p>
+          </div>
+          <button
+            onClick={() => onNavigate('guest_rsvp_form')}
+            className="w-full btn-primary h-11 text-xs cursor-pointer"
+          >
+            Isi RSVP
+          </button>
+        </div>
+
         {/* Digital Gift Section */}
-        {activeInvitation?.enableGiftSection !== false && (
-          <div className="card-maiya p-6 space-y-4 text-center">
+        {showGiftSection && (
+          <div ref={giftRef} id="gift-section" className="card-maiya p-6 space-y-4 text-center scroll-mt-24">
             <div className="space-y-1">
               <span className="text-[10px] uppercase font-semibold text-[#9B7B63] tracking-widest flex items-center justify-center gap-1.5">
                 <Gift className="w-3.5 h-3.5" />
                 <span>Hadiah Digital / DuitNow</span>
               </span>
               <h3 className="font-serif text-xl font-bold text-[#1E1E1C]">
-                {bank.bankName}
+                {bank?.bankName || 'Maklumat hadiah'}
               </h3>
             </div>
 
+            {wishlistUrl && (
+              <a
+                href={wishlistUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-3 px-3 bg-[#9B7B63]/10 text-[#9B7B63] hover:bg-[#9B7B63]/20 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all border border-[#9B7B63]/30"
+              >
+                <Gift className="w-4 h-4" />
+                <span>Buka Wishlist</span>
+              </a>
+            )}
+
             <div className="p-4 bg-[#EFE7DF] rounded-xl border border-[#D9D2CA] space-y-1">
-              {bank.qrCodeUrl && (
+              {bank?.qrCodeUrl && (
                 <div className="pb-2 flex justify-center">
-                  <img src={bank.qrCodeUrl} alt="DuitNow / Bank QR" className="w-32 h-32 object-contain bg-white rounded-xl p-2 border border-[#D9D2CA] shadow-2xs" />
+                  <img src={bank.qrCodeUrl} alt="Kod QR DuitNow atau akaun bank pasangan pengantin" className="w-32 h-32 object-contain bg-white rounded-xl p-2 border border-[#D9D2CA] shadow-2xs" />
                 </div>
               )}
               <span className="font-mono text-lg font-bold text-[#1E1E1C] block tracking-wider">
-                {bank.accountNumber}
+                {bank?.accountNumber || 'Nombor akaun tidak tersedia'}
               </span>
               <span className="text-xs uppercase text-[#77736D] font-semibold block">
-                {bank.accountHolder}
+                {bank?.accountHolder || ''}
               </span>
             </div>
 
             <button
               onClick={handleCopyAccount}
-              className="w-full btn-outline h-11 text-xs gap-2 cursor-pointer"
+              disabled={!bank?.accountNumber}
+              className="w-full btn-outline h-11 text-xs gap-2 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Copy className="w-4 h-4 text-[#9B7B63]" />
               <span>{copiedBank ? 'Telah Disalin!' : 'Salin Nombor Akaun'}</span>
@@ -341,13 +439,35 @@ export const GuestInvitationScreen: React.FC<GuestInvitationScreenProps> = ({
           </button>
         </div>
 
+        <footer className="pt-12 pb-4 text-center">
+          <a
+            href="https://digitalcardmaiya.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[11px] text-[#A39E98] hover:text-[#77736D] transition-colors"
+          >
+            Made with ❤️ by Aisyah Zainal Studio
+          </a>
+        </footer>
+
       </div>
+
+      {copyToast && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-24 left-1/2 z-[60] -translate-x-1/2 rounded-full bg-[#1E1E1C] px-4 py-2.5 text-xs font-semibold text-white shadow-xl flex items-center gap-2 whitespace-nowrap"
+        >
+          {copiedBank && <CheckCircle2 className="w-4 h-4 text-emerald-400" />}
+          <span>{copyToast}</span>
+        </div>
+      )}
 
       {/* Fixed Bottom Guest Navigation */}
       <BottomGuestNav
         onSelectTab={handleSelectNavTab}
-        activeTab="calendar"
-        enableGiftSection={activeInvitation?.enableGiftSection !== false}
+        activeTab={activeTab}
+        enableGiftSection={showGiftSection}
       />
 
     </div>

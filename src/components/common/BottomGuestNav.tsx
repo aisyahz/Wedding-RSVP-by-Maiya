@@ -39,9 +39,14 @@ export const BottomGuestNav: React.FC<BottomGuestNavProps> = ({
       {/* 3. RSVP (Main Centre Action) */}
       <button
         onClick={() => onSelectTab('rsvp')}
-        className="flex flex-col items-center justify-center flex-1 -mt-5 cursor-pointer group"
+        className={`flex flex-col items-center justify-center flex-1 -mt-5 cursor-pointer group ${
+          activeTab === 'rsvp' ? 'text-[#9B7B63]' : 'text-neutral-400'
+        }`}
+        aria-label="Pergi ke bahagian RSVP"
       >
-        <div className="w-12 h-12 rounded-full bg-[#9B7B63] text-white flex items-center justify-center shadow-lg border-2 border-[#1E1E1C] group-hover:scale-105 transition-transform">
+        <div className={`w-12 h-12 rounded-full text-white flex items-center justify-center shadow-lg border-2 border-[#1E1E1C] group-hover:scale-105 transition-all ${
+          activeTab === 'rsvp' ? 'bg-[#9B7B63] ring-2 ring-[#9B7B63]/30' : 'bg-[#77736D]'
+        }`}>
           <HeartHandshake className="w-5 h-5" />
         </div>
         <span className="text-[10px] font-bold text-[#9B7B63] tracking-wider mt-0.5 uppercase font-sans">
