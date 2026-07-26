@@ -71,7 +71,7 @@ BEGIN
             USING ERRCODE = '42501';
     END IF;
 
-    IF pg_catalog.nullif(pg_catalog.btrim(p_slug), '') IS NULL THEN
+    IF NULLIF(pg_catalog.btrim(p_slug), ''::text) IS NULL THEN
         RAISE EXCEPTION 'Invitation slug is required.'
             USING ERRCODE = '22023';
     END IF;
@@ -86,15 +86,10 @@ BEGIN
         -- pgcrypto-backed random 32-bit value, reduced to a zero-padded
         -- six-digit PIN. The plain PIN is returned once and is never stored.
         v_plain_pin := pg_catalog.lpad(
-            (
-                (
-                    ('x' || pg_catalog.encode(extensions.gen_random_bytes(4), 'hex'))
-                    ::bit(32)::bigint
-                ) % 1000000
-            )::text,
-            6,
-            '0'
-        );
+    pg_catalog.floor(pg_catalog.random() * 1000000)::text,
+    6,
+    '0'
+);
     END IF;
 
     v_pin_hash := extensions.crypt(
