@@ -1,5 +1,5 @@
 import { createClient, Session } from '@supabase/supabase-js';
-import { Invitation, RsvpEntry, InvitationStatus } from '../types';
+import { Invitation, InvitationContact, RsvpEntry, InvitationStatus } from '../types';
 import { MediaProviderService } from './mediaProvider';
 import { buildR2PublicUrl } from './mediaUrl';
 
@@ -23,6 +23,27 @@ export function mapDbInvitationToApp(dbRow: any): Invitation {
   const videoKey = dbRow.video_key || '';
   const posterKey = dbRow.poster_key || '';
   const giftQrKey = dbRow.gift_qr_key || '';
+  const storedContacts = Array.isArray(dbRow.contacts) ? dbRow.contacts : [];
+  const contacts: InvitationContact[] = storedContacts
+    .slice(0, 3)
+    .map((contact: any, index: number) => ({
+      id: String(contact?.id || `contact-${index + 1}`),
+      name: String(contact?.name || ''),
+      relationship: String(contact?.relationship || ''),
+      phoneNumber: String(contact?.phoneNumber || contact?.phone_number || ''),
+      whatsappNumber: String(contact?.whatsappNumber || contact?.whatsapp_number || ''),
+      enabled: contact?.enabled !== false,
+    }));
+  if (contacts.length === 0 && dbRow.whatsapp_contact) {
+    contacts.push({
+      id: 'legacy-contact',
+      name: 'Wakil Keluarga',
+      relationship: '',
+      phoneNumber: dbRow.whatsapp_contact,
+      whatsappNumber: dbRow.whatsapp_contact,
+      enabled: true,
+    });
+  }
   return {
     id: dbRow.id,
     slug: dbRow.slug || '',
@@ -35,6 +56,8 @@ export function mapDbInvitationToApp(dbRow: any): Invitation {
     googleMapsUrl: dbRow.google_maps_url || '',
     wazeUrl: dbRow.waze_url || '',
     whatsappContact: dbRow.whatsapp_contact || '',
+    contacts,
+    maxPax: Math.min(20, Math.max(1, Number(dbRow.max_pax) || 6)),
     wishlistUrl: dbRow.wishlist_url || '',
     enableGiftSection: Boolean(
       dbRow.bank_name ||
@@ -269,6 +292,8 @@ export async function createInvitationWithPin(
       p_video_file_name: invData.videoFileName || null,
       p_status: invData.status || 'draft',
       p_custom_pin: customPin || null,
+      p_contacts: invData.contacts || [],
+      p_max_pax: Math.min(20, Math.max(1, Number(invData.maxPax) || 6)),
     };
 
     const { data, error } = await supabase.rpc('create_invitation_with_pin', payload);
@@ -336,7 +361,9 @@ export async function updateInvitationInSupabase(
       ...(invData.venueAddress ? { venue_address: invData.venueAddress } : {}),
       ...(has('googleMapsUrl') ? { google_maps_url: invData.googleMapsUrl || null } : {}),
       ...(has('wazeUrl') ? { waze_url: invData.wazeUrl || null } : {}),
-      ...(invData.whatsappContact ? { whatsapp_contact: invData.whatsappContact } : {}),
+      ...(has('whatsappContact') ? { whatsapp_contact: invData.whatsappContact || '' } : {}),
+      ...(has('contacts') ? { contacts: invData.contacts || [] } : {}),
+      ...(has('maxPax') ? { max_pax: Math.min(20, Math.max(1, Number(invData.maxPax) || 6)) } : {}),
       ...(has('wishlistUrl') ? { wishlist_url: invData.wishlistUrl || null } : {}),
       ...(has('bankGift') ? {
         bank_name: invData.bankGift?.bankName || null,

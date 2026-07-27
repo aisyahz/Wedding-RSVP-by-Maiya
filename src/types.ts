@@ -24,6 +24,15 @@ export interface BankGiftInfo {
   qrCodeKey?: string;
 }
 
+export interface InvitationContact {
+  id: string;
+  name: string;
+  relationship?: string;
+  phoneNumber: string;
+  whatsappNumber: string;
+  enabled: boolean;
+}
+
 export interface Invitation {
   id: string;
   slug: string;
@@ -36,6 +45,8 @@ export interface Invitation {
   googleMapsUrl: string;
   wazeUrl: string;
   whatsappContact: string; // e.g. +60123456789
+  contacts?: InvitationContact[];
+  maxPax?: number;
   wishlistUrl?: string;
   enableGiftSection?: boolean;
   bankGift?: BankGiftInfo;
@@ -69,4 +80,6 @@ export interface SystemSettings {
   storageUsedMb: number;
   storageLimitMb: number;
   defaultExpiryDays: number;
+  googleSheetsSyncEnabled?: boolean;
+  googleSheetsConnectionStatus?: 'not_connected' | 'ready';
 }

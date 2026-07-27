@@ -97,7 +97,7 @@ export const PrivateRsvpReportScreen: React.FC<PrivateRsvpReportScreenProps> = (
         </div>
 
         {/* PIN Form Card */}
-        <form onSubmit={handleUnlockPin} className="card-maiya p-6 sm:p-8 space-y-5 text-center">
+        <form onSubmit={handleUnlockPin} className="card-maiya p-4 min-[360px]:p-6 sm:p-8 space-y-5 text-center">
           <div className="w-12 h-12 rounded-2xl bg-[#EFE7DF] text-[#9B7B63] flex items-center justify-center mx-auto border border-[#D9D2CA]">
             <KeyRound className="w-6 h-6" />
           </div>

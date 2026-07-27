@@ -502,7 +502,7 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
         </div>
 
         {/* Action Button */}
-        <div className="pt-2 border-t border-[#D9D2CA]/40 flex justify-end">
+        <div className="sticky bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-20 -mx-4 flex justify-end border-t border-[#D9D2CA]/40 bg-white/95 px-4 pb-1 pt-3 backdrop-blur-sm min-[360px]:-mx-6 min-[360px]:px-6 md:static md:mx-0 md:bg-transparent md:px-0">
           <button
             onClick={handleProceed}
             disabled={isUploading}

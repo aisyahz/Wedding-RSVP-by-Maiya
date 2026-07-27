@@ -88,7 +88,13 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
   const googleMapsUrl = safeExternalUrl(invitation?.googleMapsUrl);
   const wazeUrl = safeExternalUrl(invitation?.wazeUrl);
   const wishlistUrl = safeExternalUrl(invitation?.wishlistUrl);
-  const phone = normalizeMalaysianPhone(invitation?.whatsappContact);
+  const enabledContacts = invitation?.contacts?.filter((contact) => contact.enabled) || [];
+  const visibleContacts = invitation?.contacts?.length
+    ? enabledContacts
+    : invitation?.whatsappContact
+      ? [{ id: 'legacy-contact', name: 'Keluarga Pengantin', relationship: '', phoneNumber: invitation.whatsappContact, whatsappNumber: invitation.whatsappContact, enabled: true }]
+      : [];
+  const maxPax = Math.min(20, Math.max(1, Number(invitation?.maxPax) || 6));
   const showGift = invitation?.enableGiftSection !== false &&
     Boolean(bank?.accountNumber || bank?.qrCodeUrl || wishlistUrl);
   const invitationRsvps = rsvps.filter((entry) => entry.invitationId === invitation?.id);
@@ -99,6 +105,10 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
   }, [invitation?.weddingDate, invitation?.weddingTime]);
 
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+
+  useEffect(() => {
+    setPax((current) => Math.min(current, maxPax));
+  }, [maxPax]);
 
   useEffect(() => {
     const update = () => {
@@ -349,8 +359,8 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
                 {attendance === 'attending' && (
                   <div>
                     <label className="mb-1.5 block text-sm font-semibold">Jumlah Tetamu</label>
-                    <div className="grid grid-cols-3 min-[360px]:grid-cols-6 gap-2">
-                      {[1, 2, 3, 4, 5, 6].map((value) => (
+                    <div className="grid grid-cols-3 min-[360px]:grid-cols-4 gap-2">
+                      {Array.from({ length: maxPax }, (_, index) => index + 1).map((value) => (
                         <button type="button" key={value} onClick={() => setPax(value)} className={`min-h-11 rounded-xl border text-sm font-bold ${pax === value ? 'border-[#9B7B63] bg-[#9B7B63] text-white' : 'border-[#D9D2CA] bg-white'}`}>{value}</button>
                       ))}
                     </div>
@@ -394,13 +404,25 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
         )}
 
         {activeFeature === 'contact' && (
-          <div className="rounded-2xl border border-[#D9D2CA] bg-white/75 p-5">
+          <div className="space-y-3 rounded-2xl border border-[#D9D2CA] bg-white/75 p-4 min-[360px]:p-5">
             <p className="text-xs font-semibold uppercase tracking-wider text-[#9B7B63]">Wakil Pengantin</p>
             <h3 className="mt-1 font-serif text-2xl font-semibold">Keluarga Pengantin</h3>
-            {phone ? (
-              <div className="mt-5 grid grid-cols-1 min-[360px]:grid-cols-2 gap-3">
-                <a href={`https://wa.me/${phone}`} target="_blank" rel="noopener noreferrer" className="btn-primary w-full"><Phone className="h-5 w-5" />WhatsApp</a>
-                <a href={`tel:+${phone}`} className="btn-outline w-full"><PhoneCall className="h-5 w-5" />Panggilan</a>
+            {visibleContacts.length > 0 ? (
+              <div className="space-y-3 pt-2">
+                {visibleContacts.map((contact) => {
+                  const whatsapp = normalizeMalaysianPhone(contact.whatsappNumber);
+                  const phone = normalizeMalaysianPhone(contact.phoneNumber);
+                  return (
+                    <article key={contact.id} className="rounded-2xl border border-[#D9D2CA] bg-white p-4">
+                      <h4 className="break-words font-semibold [overflow-wrap:anywhere]">{contact.name || 'Wakil Keluarga'}</h4>
+                      {contact.relationship && <p className="mt-0.5 break-words text-sm text-[#77736D] [overflow-wrap:anywhere]">{contact.relationship}</p>}
+                      <div className="mt-3 grid grid-cols-1 gap-2 min-[360px]:grid-cols-2">
+                        {whatsapp && <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noopener noreferrer" className="btn-primary w-full"><Phone className="h-5 w-5" />WhatsApp</a>}
+                        {phone && <a href={`tel:+${phone}`} className="btn-outline w-full"><PhoneCall className="h-5 w-5" />Panggilan</a>}
+                      </div>
+                    </article>
+                  );
+                })}
               </div>
             ) : (
               <p className="mt-4 text-sm text-[#77736D]">Maklumat hubungan belum tersedia.</p>

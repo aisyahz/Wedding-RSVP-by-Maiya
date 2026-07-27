@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ScreenId, Invitation } from '../../types';
-import { ArrowLeft, ArrowRight, Upload, CheckCircle, Loader2, AlertCircle, RotateCcw } from 'lucide-react';
+import { ScreenId, Invitation, InvitationContact } from '../../types';
+import { ArrowLeft, ArrowRight, Upload, CheckCircle, Loader2, AlertCircle, RotateCcw, Plus, Trash2 } from 'lucide-react';
 import { MediaProviderService } from '../../lib/mediaProvider';
 
 interface CreateInvitationScreenProps {
@@ -9,6 +9,20 @@ interface CreateInvitationScreenProps {
   onSaveInvitation: (invitation: Partial<Invitation>) => Promise<Invitation | null>;
   onVideoFileSelected: (file: File | null) => void;
 }
+
+const createContact = (whatsappNumber = ''): InvitationContact => ({
+  id: `contact-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+  name: '',
+  relationship: '',
+  phoneNumber: whatsappNumber,
+  whatsappNumber,
+  enabled: true,
+});
+
+const initialContacts = (invitation?: Invitation | null): InvitationContact[] =>
+  invitation?.contacts?.length
+    ? invitation.contacts.slice(0, 3)
+    : [createContact(invitation?.whatsappContact || '')];
 
 export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
   onNavigate,
@@ -35,7 +49,8 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
   const [googleMapsUrl, setGoogleMapsUrl] = useState(editingInvitation?.googleMapsUrl || '');
   const [wazeUrl, setWazeUrl] = useState(editingInvitation?.wazeUrl || '');
 
-  const [whatsappContact, setWhatsappContact] = useState(editingInvitation?.whatsappContact || '');
+  const [contacts, setContacts] = useState<InvitationContact[]>(() => initialContacts(editingInvitation));
+  const [maxPax, setMaxPax] = useState(editingInvitation?.maxPax || 6);
   const [rsvpClosingDate, setRsvpClosingDate] = useState(editingInvitation?.rsvpClosingDate || '');
   const [wishlistUrl, setWishlistUrl] = useState(editingInvitation?.wishlistUrl || '');
   const [enableGiftSection, setEnableGiftSection] = useState<boolean>(
@@ -60,7 +75,8 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
       setVenueAddress(editingInvitation.venueAddress || '');
       setGoogleMapsUrl(editingInvitation.googleMapsUrl || '');
       setWazeUrl(editingInvitation.wazeUrl || '');
-      setWhatsappContact(editingInvitation.whatsappContact || '');
+      setContacts(initialContacts(editingInvitation));
+      setMaxPax(editingInvitation.maxPax || 6);
       setRsvpClosingDate(editingInvitation.rsvpClosingDate || '');
       setWishlistUrl(editingInvitation.wishlistUrl || '');
       setEnableGiftSection(editingInvitation.enableGiftSection !== undefined ? editingInvitation.enableGiftSection : true);
@@ -101,6 +117,7 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
   const handlePublish = async () => {
     if (isPublishing) return;
     setIsPublishing(true);
+    const primaryContact = contacts.find((contact) => contact.enabled && (contact.whatsappNumber || contact.phoneNumber));
     const data: Partial<Invitation> = {
       id: editingInvitation?.id || `inv-${Date.now()}`,
       slug: generatedSlug,
@@ -112,7 +129,9 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
       venueAddress,
       googleMapsUrl,
       wazeUrl,
-      whatsappContact,
+      whatsappContact: primaryContact?.whatsappNumber || primaryContact?.phoneNumber || '',
+      contacts,
+      maxPax,
       wishlistUrl,
       enableGiftSection,
       bankGift: {
@@ -326,21 +345,51 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
               Guest Contacts & Gift Registry
             </h2>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-[#1E1E1C] mb-1.5">
-                  WhatsApp Contact Number *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={whatsappContact}
-                  onChange={(e) => setWhatsappContact(e.target.value)}
-                  placeholder="+60123456789"
-                  className="w-full input-maiya"
-                />
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-[#1E1E1C]">Guest Contacts</h3>
+                  <p className="text-xs text-[#77736D]">Up to 3 contacts. Only enabled contacts appear to guests.</p>
+                </div>
+                <button
+                  type="button"
+                  disabled={contacts.length >= 3}
+                  onClick={() => setContacts((current) => [...current, createContact()])}
+                  className="btn-outline shrink-0 px-3 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Plus className="h-4 w-4" /> Add Contact
+                </button>
               </div>
+              {contacts.map((contact, index) => (
+                <div key={contact.id} className="space-y-3 rounded-xl border border-[#D9D2CA] bg-white p-3 min-[360px]:p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-xs font-semibold text-[#9B7B63]">Contact {index + 1}</span>
+                    <div className="flex items-center gap-3">
+                      <label className="flex min-h-11 cursor-pointer items-center gap-2 text-xs font-semibold">
+                        <input
+                          type="checkbox"
+                          checked={contact.enabled}
+                          onChange={(event) => setContacts((current) => current.map((item) => item.id === contact.id ? { ...item, enabled: event.target.checked } : item))}
+                          className="h-5 w-5 rounded"
+                        />
+                        Enabled
+                      </label>
+                      <button type="button" aria-label={`Remove contact ${index + 1}`} onClick={() => setContacts((current) => current.filter((item) => item.id !== contact.id))} className="flex h-11 w-11 items-center justify-center rounded-xl text-rose-700 hover:bg-rose-50">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <input required={contact.enabled} value={contact.name} onChange={(event) => setContacts((current) => current.map((item) => item.id === contact.id ? { ...item, name: event.target.value } : item))} placeholder="Name *" className="input-maiya" />
+                    <input value={contact.relationship || ''} onChange={(event) => setContacts((current) => current.map((item) => item.id === contact.id ? { ...item, relationship: event.target.value } : item))} placeholder="Relationship (optional)" className="input-maiya" />
+                    <input type="tel" inputMode="tel" required={contact.enabled && !contact.whatsappNumber} value={contact.phoneNumber} onChange={(event) => setContacts((current) => current.map((item) => item.id === contact.id ? { ...item, phoneNumber: event.target.value } : item))} placeholder="Phone number" className="input-maiya" />
+                    <input type="tel" inputMode="tel" required={contact.enabled && !contact.phoneNumber} value={contact.whatsappNumber} onChange={(event) => setContacts((current) => current.map((item) => item.id === contact.id ? { ...item, whatsappNumber: event.target.value } : item))} placeholder="WhatsApp number" className="input-maiya" />
+                  </div>
+                </div>
+              ))}
+            </div>
 
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-[#1E1E1C] mb-1.5">
                   RSVP Closing Date *
@@ -350,6 +399,20 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
                   required
                   value={rsvpClosingDate}
                   onChange={(e) => setRsvpClosingDate(e.target.value)}
+                  className="w-full input-maiya"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-[#1E1E1C] mb-1.5">
+                  Maximum RSVP Pax *
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={20}
+                  required
+                  value={maxPax}
+                  onChange={(event) => setMaxPax(Math.min(20, Math.max(1, Number(event.target.value) || 1)))}
                   className="w-full input-maiya"
                 />
               </div>
@@ -570,7 +633,7 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
         )}
 
         {/* Footer Actions */}
-            <div className="pt-4 border-t border-[#D9D2CA]/40 flex flex-col min-[390px]:flex-row justify-end gap-2">
+        <div className="sticky bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-20 -mx-4 flex flex-col justify-end gap-2 border-t border-[#D9D2CA]/40 bg-white/95 px-4 pb-1 pt-4 backdrop-blur-sm min-[390px]:flex-row md:static md:mx-0 md:bg-transparent md:px-0">
           {step < 5 ? (
             <button type="submit" className="w-full sm:w-auto btn-primary cursor-pointer">
               <span>Continue to Step {step + 1}</span>

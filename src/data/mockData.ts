@@ -8,6 +8,8 @@ export const INITIAL_SETTINGS: SystemSettings = {
   storageUsedMb: 420,
   storageLimitMb: 5000,
   defaultExpiryDays: 30,
+  googleSheetsSyncEnabled: false,
+  googleSheetsConnectionStatus: 'not_connected',
 };
 
 export const INITIAL_INVITATIONS: Invitation[] = [

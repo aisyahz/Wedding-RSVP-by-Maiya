@@ -5,6 +5,10 @@
     --font-serif: 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
     --font-title: 'Manrope', system-ui, sans-serif;
     --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --text-label: 0.875rem;
+    --text-body: 0.875rem;
+    --text-button: 0.875rem;
+    --leading-body: 1.5;
   }
   
   html {
@@ -12,7 +16,9 @@
   }
 
   body {
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--leading-body);
     color: #1E1E1C;
     background-color: #F7F5F2;
     -webkit-tap-highlight-color: transparent;
@@ -34,6 +40,24 @@
 
   button {
     min-height: 44px;
+    font-family: var(--font-sans);
+    font-size: var(--text-button);
+    font-weight: 600;
+    line-height: 1.25rem;
+  }
+
+  input,
+  select,
+  textarea {
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+
+  label {
+    font-family: var(--font-sans);
+    font-size: var(--text-label);
+    line-height: 1.35rem;
   }
 
   img,
@@ -47,15 +71,15 @@
   }
 
   .font-serif {
-    font-family: 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
+    font-family: var(--font-serif);
   }
 
   .font-title {
-    font-family: 'Manrope', system-ui, sans-serif;
+    font-family: var(--font-title);
   }
 
   .font-sans {
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-sans);
   }
 }
 
@@ -102,7 +126,7 @@
 .btn-primary {
   background-color: #1E1E1C;
   color: #FFFFFF;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-sans);
   font-weight: 600;
   height: 52px;
   padding-left: 1.5rem;
@@ -134,7 +158,7 @@
 .btn-accent {
   background-color: #9B7B63;
   color: #FFFFFF;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-sans);
   font-weight: 600;
   height: 52px;
   padding-left: 1.5rem;
@@ -166,7 +190,7 @@
   background-color: #FFFFFF;
   color: #1E1E1C;
   border: 1px solid #D9D2CA;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-sans);
   font-weight: 600;
   height: 52px;
   padding-left: 1.5rem;
@@ -204,7 +228,9 @@
   border-radius: 12px;
   padding-left: 1rem;
   padding-right: 1rem;
-  font-size: 0.875rem;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.5;
   color: #1E1E1C;
   transition: all 0.15s ease;
 }
