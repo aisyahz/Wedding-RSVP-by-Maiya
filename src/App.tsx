@@ -101,6 +101,101 @@ function DiagnosticRedirect({ to }: { to: string; reason: string }) {
   return <Navigate to={to} replace />;
 }
 
+interface EditInvitationRouteProps {
+  invitations: Invitation[];
+  editingInvitation: Invitation | null;
+  activeInvitation: Invitation | null;
+  selectedInvitationId: string;
+  setInvitations: React.Dispatch<React.SetStateAction<Invitation[]>>;
+  setEditingInvitation: React.Dispatch<React.SetStateAction<Invitation | null>>;
+  setSelectedInvitationId: React.Dispatch<React.SetStateAction<string>>;
+  onSaveInvitation: (invitation: Partial<Invitation>) => Promise<Invitation | null>;
+  onVideoFileSelected: React.Dispatch<React.SetStateAction<File | null>>;
+}
+
+function EditInvitationRoute({
+  invitations,
+  editingInvitation,
+  activeInvitation,
+  selectedInvitationId,
+  setInvitations,
+  setEditingInvitation,
+  setSelectedInvitationId,
+  onSaveInvitation,
+  onVideoFileSelected,
+}: EditInvitationRouteProps) {
+  const { id } = useParams<{ id: string }>();
+  const [fetchedInvitation, setFetchedInvitation] = useState<Invitation | null>(null);
+  const [fetchError, setFetchError] = useState('');
+  const [isFetching, setIsFetching] = useState(false);
+  const inv =
+    invitations.find((item) => item.id === id) ||
+    (editingInvitation?.id === id ? editingInvitation : null) ||
+    (fetchedInvitation?.id === id ? fetchedInvitation : null);
+
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    setIsFetching(true);
+    setFetchError('');
+
+    async function loadInvitation() {
+      const { data, error } = await getInvitationById(id!);
+      if (cancelled) return;
+      setIsFetching(false);
+      if (!data) {
+        setFetchError(error || 'Rekod jemputan tidak ditemui.');
+        return;
+      }
+
+      setFetchedInvitation(data);
+      setEditingInvitation(data);
+      setSelectedInvitationId(data.id);
+      setInvitations((previous) =>
+        previous.some((item) => item.id === data.id)
+          ? previous.map((item) => item.id === data.id ? data : item)
+          : [data, ...previous],
+      );
+    }
+
+    void loadInvitation();
+    return () => {
+      cancelled = true;
+    };
+  }, [id, setEditingInvitation, setInvitations, setSelectedInvitationId]);
+
+  if (isFetching && !inv) {
+    return (
+      <div className="max-w-2xl mx-auto card-maiya p-6 flex items-center justify-center gap-3 text-sm text-[#77736D]">
+        <Loader2 className="w-5 h-5 animate-spin text-[#9B7B63]" />
+        <span>Memuatkan maklumat jemputan…</span>
+      </div>
+    );
+  }
+
+  if (!inv && fetchError) {
+    return (
+      <div className="max-w-2xl mx-auto card-maiya p-6 text-rose-800">
+        <h1 className="font-title font-bold">Jemputan tidak dapat disunting</h1>
+        <p className="mt-2 text-sm">{fetchError}</p>
+      </div>
+    );
+  }
+
+  return (
+    <NavigationAdapter selectedInvitationId={selectedInvitationId} activeInvitation={inv || activeInvitation}>
+      {(onNavigate) => (
+        <CreateInvitationScreen
+          onNavigate={onNavigate}
+          editingInvitation={inv}
+          onSaveInvitation={onSaveInvitation}
+          onVideoFileSelected={onVideoFileSelected}
+        />
+      )}
+    </NavigationAdapter>
+  );
+}
+
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
@@ -348,79 +443,6 @@ export default function App() {
     const result = await logoutAdmin();
     if (result.success) setSession(null);
   };
-
-  // Wrapper for Edit Invitation by ID
-  function EditInvitationWrapper() {
-    const { id } = useParams<{ id: string }>();
-    const [fetchedInvitation, setFetchedInvitation] = useState<Invitation | null>(null);
-    const [fetchError, setFetchError] = useState('');
-    const [isFetching, setIsFetching] = useState(false);
-    const inv =
-      invitations.find((i) => i.id === id) ||
-      (editingInvitation?.id === id ? editingInvitation : null) ||
-      fetchedInvitation;
-
-    useEffect(() => {
-      if (!id) return;
-      let cancelled = false;
-      setIsFetching(true);
-      getInvitationById(id).then(({ data, error }) => {
-        if (cancelled) return;
-        setIsFetching(false);
-        if (data) {
-          setFetchedInvitation(data);
-          setEditingInvitation(data);
-          setSelectedInvitationId(data.id);
-          setInvitations((prev) =>
-            prev.some((item) => item.id === data.id)
-              ? prev.map((item) => item.id === data.id ? data : item)
-              : [data, ...prev],
-          );
-        } else {
-          setFetchError(error || 'Rekod jemputan tidak ditemui.');
-        }
-      });
-      return () => {
-        cancelled = true;
-      };
-    }, [id]);
-
-    useEffect(() => {
-      if (inv && editingInvitation?.id !== inv.id) {
-        setEditingInvitation(inv);
-      }
-    }, [inv, editingInvitation?.id]);
-
-    if (isFetching && !inv) {
-      return (
-        <div className="max-w-2xl mx-auto card-maiya p-6 flex items-center justify-center gap-3 text-sm text-[#77736D]">
-          <Loader2 className="w-5 h-5 animate-spin text-[#9B7B63]" />
-          <span>Memuatkan maklumat jemputan…</span>
-        </div>
-      );
-    }
-
-    if (!inv && fetchError) {
-      return (
-        <div className="max-w-2xl mx-auto card-maiya p-6 text-rose-800">
-          <h1 className="font-title font-bold">Jemputan tidak dapat disunting</h1>
-          <p className="mt-2 text-sm">{fetchError}</p>
-        </div>
-      );
-    }
-    return (
-      <NavigationAdapter selectedInvitationId={selectedInvitationId} activeInvitation={inv || activeInvitation}>
-        {(onNavigate) => (
-          <CreateInvitationScreen
-            onNavigate={onNavigate}
-            editingInvitation={inv}
-            onSaveInvitation={handleSaveInvitation}
-            onVideoFileSelected={setPendingVideoFile}
-          />
-        )}
-      </NavigationAdapter>
-    );
-  }
 
   // Wrapper for Upload Video by ID
   function UploadVideoWrapper() {
@@ -813,7 +835,22 @@ export default function App() {
             }
           />
 
-          <Route path="/invitations/:id/edit" element={<EditInvitationWrapper />} />
+          <Route
+            path="/invitations/:id/edit"
+            element={
+              <EditInvitationRoute
+                invitations={invitations}
+                editingInvitation={editingInvitation}
+                activeInvitation={activeInvitation}
+                selectedInvitationId={selectedInvitationId}
+                setInvitations={setInvitations}
+                setEditingInvitation={setEditingInvitation}
+                setSelectedInvitationId={setSelectedInvitationId}
+                onSaveInvitation={handleSaveInvitation}
+                onVideoFileSelected={setPendingVideoFile}
+              />
+            }
+          />
           <Route path="/invitations/:id/upload-video" element={<UploadVideoWrapper />} />
           <Route path="/invitations/:id/generate-link" element={<PreviewWrapper />} />
           <Route path="/invitations/:id/preview" element={<PreviewWrapper />} />
