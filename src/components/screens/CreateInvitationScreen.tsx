@@ -24,6 +24,14 @@ const initialContacts = (invitation?: Invitation | null): InvitationContact[] =>
     ? invitation.contacts.slice(0, 3)
     : [createContact(invitation?.whatsappContact || '')];
 
+const normalizeDateForInput = (value?: string | null): string => {
+  const raw = String(value || '').trim();
+  const isoDate = raw.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (isoDate) return isoDate[1];
+  const parsed = new Date(raw);
+  return Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString().slice(0, 10);
+};
+
 export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
   onNavigate,
   editingInvitation,
@@ -31,6 +39,8 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
   onVideoFileSelected,
 }) => {
   const [step, setStep] = useState<number>(1);
+  const formRef = useRef<HTMLFormElement | null>(null);
+  const [stepError, setStepError] = useState('');
   const [isPublishing, setIsPublishing] = useState(false);
   const videoPreviewRef = useRef<HTMLVideoElement | null>(null);
   const [selectedVideoPreviewUrl, setSelectedVideoPreviewUrl] = useState('');
@@ -41,7 +51,7 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
   // Form State
   const [brideName, setBrideName] = useState(editingInvitation?.brideName || '');
   const [groomName, setGroomName] = useState(editingInvitation?.groomName || '');
-  const [weddingDate, setWeddingDate] = useState(editingInvitation?.weddingDate || '');
+  const [weddingDate, setWeddingDate] = useState(normalizeDateForInput(editingInvitation?.weddingDate));
   const [weddingTime, setWeddingTime] = useState(editingInvitation?.weddingTime || '');
 
   const [venueName, setVenueName] = useState(editingInvitation?.venueName || '');
@@ -69,7 +79,7 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
     if (editingInvitation) {
       setBrideName(editingInvitation.brideName || '');
       setGroomName(editingInvitation.groomName || '');
-      setWeddingDate(editingInvitation.weddingDate || '');
+      setWeddingDate(normalizeDateForInput(editingInvitation.weddingDate));
       setWeddingTime(editingInvitation.weddingTime || '');
       setVenueName(editingInvitation.venueName || '');
       setVenueAddress(editingInvitation.venueAddress || '');
@@ -107,6 +117,28 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
 
   const handleNext = async (e: React.FormEvent) => {
     e.preventDefault();
+    setStepError('');
+    if (step === 1) {
+      const requiredFields = [
+        { value: brideName, label: 'Bride Name', id: 'bride-name' },
+        { value: groomName, label: 'Groom Name', id: 'groom-name' },
+        { value: weddingDate, label: 'Wedding Date', id: 'wedding-date' },
+        { value: weddingTime, label: 'Event Time', id: 'wedding-time' },
+      ];
+      const missing = requiredFields.find((field) => !field.value.trim());
+      if (missing) {
+        setStepError(`${missing.label} is required.`);
+        const field = document.getElementById(missing.id);
+        field?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        field?.focus();
+        return;
+      }
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(weddingDate)) {
+        setStepError('Wedding Date must be a valid date.');
+        document.getElementById('wedding-date')?.focus();
+        return;
+      }
+    }
     if (step < 5) {
       setStep(step + 1);
     } else {
@@ -203,7 +235,25 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
       </div>
 
       {/* Form Container */}
-      <form onSubmit={handleNext} className="card-maiya p-4 min-[360px]:p-6 md:p-8 space-y-6">
+      <form
+        ref={formRef}
+        onSubmit={handleNext}
+        onInvalidCapture={(event) => {
+          if (step !== 1) return;
+          const target = event.target as HTMLInputElement;
+          const firstInvalid = formRef.current?.querySelector<HTMLInputElement>(':invalid');
+          if (target !== firstInvalid) return;
+          const label = target.dataset.fieldLabel || 'This field';
+          setStepError(target.validity.valueMissing
+            ? `${label} is required.`
+            : target.validationMessage || `${label} is invalid.`);
+          window.requestAnimationFrame(() => {
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            target.focus();
+          });
+        }}
+        className="card-maiya p-4 min-[360px]:p-6 md:p-8 space-y-6"
+      >
         
         {/* STEP 1: Couple Details */}
         {step === 1 && (
@@ -218,6 +268,8 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
                   Bride Name *
                 </label>
                 <input
+                  id="bride-name"
+                  data-field-label="Bride Name"
                   type="text"
                   required
                   value={brideName}
@@ -232,6 +284,8 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
                   Groom Name *
                 </label>
                 <input
+                  id="groom-name"
+                  data-field-label="Groom Name"
                   type="text"
                   required
                   value={groomName}
@@ -248,6 +302,8 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
                   Wedding Date *
                 </label>
                 <input
+                  id="wedding-date"
+                  data-field-label="Wedding Date"
                   type="date"
                   required
                   value={weddingDate}
@@ -261,6 +317,8 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
                   Event Time *
                 </label>
                 <input
+                  id="wedding-time"
+                  data-field-label="Event Time"
                   type="text"
                   required
                   value={weddingTime}
@@ -270,6 +328,12 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
                 />
               </div>
             </div>
+            {stepError && (
+              <div role="alert" className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>{stepError}</span>
+              </div>
+            )}
           </div>
         )}
 
