@@ -1,6 +1,7 @@
 import { createClient, Session } from '@supabase/supabase-js';
 import { Invitation, RsvpEntry, InvitationStatus } from '../types';
 import { MediaProviderService } from './mediaProvider';
+import { buildR2PublicUrl } from './mediaUrl';
 
 const env = (import.meta as any).env || {};
 const supabaseUrl = env.VITE_SUPABASE_URL || '';
@@ -19,6 +20,9 @@ export const supabase = isSupabaseConfigured
 
 // Convert DB snake_case to TS camelCase
 export function mapDbInvitationToApp(dbRow: any): Invitation {
+  const videoKey = dbRow.video_key || '';
+  const posterKey = dbRow.poster_key || '';
+  const giftQrKey = dbRow.gift_qr_key || '';
   return {
     id: dbRow.id,
     slug: dbRow.slug || '',
@@ -32,22 +36,29 @@ export function mapDbInvitationToApp(dbRow: any): Invitation {
     wazeUrl: dbRow.waze_url || '',
     whatsappContact: dbRow.whatsapp_contact || '',
     wishlistUrl: dbRow.wishlist_url || '',
-    enableGiftSection: Boolean(dbRow.bank_name || dbRow.bank_account_number || dbRow.bank_account_holder),
-    bankGift: (dbRow.bank_name || dbRow.bank_account_number || dbRow.bank_account_holder)
+    enableGiftSection: Boolean(
+      dbRow.bank_name ||
+      dbRow.bank_account_number ||
+      dbRow.bank_account_holder ||
+      dbRow.qr_code_url ||
+      giftQrKey ||
+      dbRow.wishlist_url
+    ),
+    bankGift: (dbRow.bank_name || dbRow.bank_account_number || dbRow.bank_account_holder || dbRow.qr_code_url || giftQrKey)
       ? {
           bankName: dbRow.bank_name || '',
           accountNumber: dbRow.bank_account_number || '',
           accountHolder: dbRow.bank_account_holder || '',
-          qrCodeUrl: dbRow.qr_code_url || '',
-          qrCodeKey: dbRow.gift_qr_key || '',
+          qrCodeUrl: dbRow.qr_code_url || buildR2PublicUrl(giftQrKey),
+          qrCodeKey: giftQrKey,
         }
       : undefined,
     rsvpClosingDate: dbRow.rsvp_closing_date ? new Date(dbRow.rsvp_closing_date).toISOString().split('T')[0] : '',
-    videoKey: dbRow.video_key || '',
-    videoUrl: dbRow.video_url || '',
-    posterUrl: dbRow.poster_url || '',
-    posterKey: dbRow.poster_key || '',
-    giftQrKey: dbRow.gift_qr_key || '',
+    videoKey,
+    videoUrl: dbRow.video_url || buildR2PublicUrl(videoKey),
+    posterUrl: dbRow.poster_url || buildR2PublicUrl(posterKey),
+    posterKey,
+    giftQrKey,
     videoFileName: dbRow.video_file_name || 'Wedding_Video.mp4',
     status: (dbRow.status as InvitationStatus) || 'draft',
     privatePin: '', // Stored securely as pgcrypto hash in invitation_secrets; not exposed in SELECT queries

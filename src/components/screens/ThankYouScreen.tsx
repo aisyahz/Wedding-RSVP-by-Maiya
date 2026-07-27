@@ -31,7 +31,8 @@ export const ThankYouScreen: React.FC<ThankYouScreenProps> = ({
 
   const addToGoogleCalendar = () => {
     const title = encodeURIComponent(`Majlis Perkahwinan ${brideName} & ${groomName}`);
-    const details = encodeURIComponent(`Walimatul 'Urus ${brideName} & ${groomName}. Kad Digital: https://digitalcardbymaiya.com`);
+    const invitationUrl = `${window.location.origin.replace(/\/+$/, '')}/invite/${encodeURIComponent(activeInvitation?.slug || '')}`;
+    const details = encodeURIComponent(`Walimatul 'Urus ${brideName} & ${groomName}. Kad Digital: ${invitationUrl}`);
     const location = encodeURIComponent(activeInvitation?.venueName || 'Glasshouse at Seputeh');
     const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&location=${location}`;
     window.open(url, '_blank');

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ScreenId, Invitation } from '../../types';
-import { ArrowLeft, ArrowRight, Upload, CheckCircle, Loader2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Upload, CheckCircle, Loader2, AlertCircle, RotateCcw } from 'lucide-react';
 import { MediaProviderService } from '../../lib/mediaProvider';
 
 interface CreateInvitationScreenProps {
@@ -18,6 +18,11 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
 }) => {
   const [step, setStep] = useState<number>(1);
   const [isPublishing, setIsPublishing] = useState(false);
+  const videoPreviewRef = useRef<HTMLVideoElement | null>(null);
+  const [selectedVideoPreviewUrl, setSelectedVideoPreviewUrl] = useState('');
+  const [isVideoPreviewLoading, setIsVideoPreviewLoading] = useState(false);
+  const [videoPreviewError, setVideoPreviewError] = useState('');
+  const [creationSlugSuffix] = useState(() => Date.now().toString().slice(-6));
 
   // Form State
   const [brideName, setBrideName] = useState(editingInvitation?.brideName || '');
@@ -45,7 +50,7 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
   const [videoFileName, setVideoFileName] = useState(editingInvitation?.videoFileName || '');
   const [privatePin, setPrivatePin] = useState(editingInvitation?.privatePin || '');
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (editingInvitation) {
       setBrideName(editingInvitation.brideName || '');
       setGroomName(editingInvitation.groomName || '');
@@ -69,10 +74,20 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
     }
   }, [editingInvitation]);
 
-  const generatedSlug = (brideName && groomName
+  useEffect(() => {
+    return () => {
+      if (selectedVideoPreviewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(selectedVideoPreviewUrl);
+      }
+    };
+  }, [selectedVideoPreviewUrl]);
+
+  const slugBase = (brideName && groomName
     ? `${brideName.split(' ')[0]}-${groomName.split(' ')[0]}`
     : 'wedding-invite'
-  ).toLowerCase().replace(/[^a-z0-9-]/g, '');
+  ).toLowerCase().replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '');
+  const generatedSlug = editingInvitation?.slug ||
+    `${slugBase || 'wedding-invite'}-${creationSlugSuffix}`;
 
   const handleNext = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,6 +126,9 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
       status: 'active',
       videoKey: editingInvitation?.videoKey,
       videoUrl: editingInvitation?.videoUrl,
+      posterUrl: editingInvitation?.posterUrl,
+      posterKey: editingInvitation?.posterKey,
+      giftQrKey: editingInvitation?.giftQrKey,
       videoFileName: editingInvitation ? videoFileName : undefined,
     };
 
@@ -447,7 +465,13 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
                   className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0] || null;
-                    setVideoFileName(file?.name || '');
+                    if (selectedVideoPreviewUrl.startsWith('blob:')) {
+                      URL.revokeObjectURL(selectedVideoPreviewUrl);
+                    }
+                    const objectUrl = file ? URL.createObjectURL(file) : '';
+                    setSelectedVideoPreviewUrl(objectUrl);
+                    setVideoFileName(file?.name || editingInvitation?.videoFileName || '');
+                    setVideoPreviewError('');
                     onVideoFileSelected(file);
                   }}
                 />
@@ -455,19 +479,61 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
             </div>
 
             {/* Video Preview */}
-            <div className="rounded-xl overflow-hidden bg-[#24211F] max-h-[220px] relative border border-[#D9D2CA]">
-              <video
-                src={videoUrl}
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="w-full h-full object-cover"
-              />
+            <div className="rounded-xl overflow-hidden bg-[#24211F] min-h-44 max-h-[220px] relative border border-[#D9D2CA]">
+              {(selectedVideoPreviewUrl || videoUrl) ? (
+                <video
+                  ref={videoPreviewRef}
+                  key={selectedVideoPreviewUrl || videoUrl}
+                  src={selectedVideoPreviewUrl || videoUrl}
+                  poster={editingInvitation?.posterUrl || undefined}
+                  controls
+                  playsInline
+                  preload="metadata"
+                  onLoadStart={() => {
+                    setIsVideoPreviewLoading(true);
+                    setVideoPreviewError('');
+                  }}
+                  onCanPlay={() => setIsVideoPreviewLoading(false)}
+                  onError={() => {
+                    setIsVideoPreviewLoading(false);
+                    setVideoPreviewError('Video tidak dapat dimainkan. Pastikan fail MP4 menggunakan codec H.264 dan audio AAC.');
+                  }}
+                  className="w-full h-full min-h-44 object-cover"
+                />
+              ) : (
+                <div className="min-h-44 flex items-center justify-center p-5 text-center text-sm text-white/70">
+                  Tiada video tersedia untuk pratonton.
+                </div>
+              )}
+              {isVideoPreviewLoading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/45 text-white pointer-events-none">
+                  <Loader2 className="w-7 h-7 animate-spin" />
+                </div>
+              )}
               <div className="absolute bottom-3 left-3 bg-[#1E1E1C]/80 backdrop-blur-md text-white text-[10px] px-2.5 py-1 rounded-full font-sans">
                 Video Card Preview
               </div>
             </div>
+            {videoPreviewError && (
+              <div role="alert" className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>{videoPreviewError}</span>
+              </div>
+            )}
+            {(selectedVideoPreviewUrl || videoUrl) && !videoPreviewError && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (!videoPreviewRef.current) return;
+                  videoPreviewRef.current.currentTime = 0;
+                  videoPreviewRef.current.play().catch(() => undefined);
+                }}
+                className="btn-outline h-11 w-full"
+              >
+                <RotateCcw className="h-4 w-4" />
+                Main Semula
+              </button>
+            )}
           </div>
         )}
 
@@ -486,7 +552,7 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
               <p className="text-xs text-[#77736D]">Date: {weddingDate} • {weddingTime}</p>
               <p className="text-xs text-[#77736D]">Venue: {venueName}</p>
               <p className="text-xs font-mono font-semibold text-[#9B7B63] pt-1">
-                Slug: digitalcardbymaiya.com/invite/{generatedSlug}
+                Slug: /invite/{generatedSlug}
               </p>
             </div>
 

@@ -17,7 +17,11 @@ export const GenerateLinkScreen: React.FC<GenerateLinkScreenProps> = ({
   const slug = activeInvitation?.slug || '';
   const brideName = activeInvitation?.brideName || '';
   const groomName = activeInvitation?.groomName || '';
-  const generatedUrl = `https://digitalcardbymaiya.com/invite/${slug}`;
+  const configuredPublicUrl = String((import.meta as any).env?.VITE_PUBLIC_SITE_URL || '').trim();
+  const publicOrigin = configuredPublicUrl.startsWith('http')
+    ? configuredPublicUrl.replace(/\/+$/, '')
+    : window.location.origin.replace(/\/+$/, '');
+  const generatedUrl = `${publicOrigin}/invite/${encodeURIComponent(slug)}`;
 
   useEffect(() => {
     try {

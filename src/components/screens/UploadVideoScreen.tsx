@@ -16,7 +16,7 @@ import { MediaProviderService, UploadProgress } from '../../lib/mediaProvider';
 import { updateInvitationInSupabase } from '../../lib/supabase';
 
 interface UploadVideoScreenProps {
-  onNavigate: (screen: ScreenId) => void;
+  onNavigate: (screen: ScreenId, slugOrId?: string) => void;
   activeInvitation: Invitation | null;
   initialVideoFile?: File | null;
   onUpdateVideo: (
@@ -60,8 +60,23 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
 
   const [videoDuration, setVideoDuration] = useState<number | null>(null);
   const [videoErrorDetails, setVideoErrorDetails] = useState('');
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
 
   const invId = activeInvitation?.id || '';
+
+  useEffect(() => {
+    if (!activeInvitation) return;
+    if (!selectedVideoFile) {
+      setCurrentVideoUrl(activeInvitation.videoUrl || '');
+      setCurrentFileName(activeInvitation.videoFileName || '');
+    }
+    setCurrentPosterUrl(activeInvitation.posterUrl || '');
+  }, [
+    activeInvitation?.id,
+    activeInvitation?.videoUrl,
+    activeInvitation?.videoFileName,
+    activeInvitation?.posterUrl,
+  ]);
 
   useEffect(() => {
     if (!initialVideoFile || localPreviewUrl) return;
@@ -184,6 +199,7 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
 
       setIsUploading(false);
       setCurrentVideoUrl(publicUrl);
+      setLocalPreviewUrl('');
       setUploadSuccess('Video MP4 berjaya dimuat naik & disimpan di Cloudflare R2 CDN!');
       setSelectedVideoFile(null);
       onPendingVideoCleared?.('R2 PUT and Supabase persistence succeeded');
@@ -246,7 +262,7 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
       {/* Top Header */}
       <div className="flex min-w-0 items-center justify-between gap-2 bg-white p-3 min-[360px]:p-5 rounded-2xl border border-[#D9D2CA] shadow-2xs">
         <button
-          onClick={() => onNavigate('create_invitation')}
+          onClick={() => onNavigate('create_invitation', activeInvitation?.id)}
           className="w-10 h-10 rounded-xl bg-[#F7F5F2] hover:bg-[#EFE7DF] text-[#1E1E1C] flex items-center justify-center cursor-pointer transition-all border border-[#D9D2CA]"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -318,26 +334,44 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
           </div>
 
           <div className="relative rounded-2xl overflow-hidden bg-[#24211F] aspect-[9/14] max-h-[320px] mx-auto w-full max-w-[240px] shadow-md border border-[#D9D2CA]">
-            <video
-              ref={videoRef}
-              key={activeVideoSrc}
-              src={activeVideoSrc}
-              poster={currentPosterUrl || undefined}
-              controls
-              playsInline
-              preload="metadata"
-              onLoadedMetadata={(e) => {
-                const duration = e.currentTarget.duration;
-                setVideoDuration(Number.isFinite(duration) ? duration : null);
-                setVideoErrorDetails('');
-              }}
-              onError={(e) => {
-                const err = e.currentTarget.error;
-                const msg = err?.message || 'This MP4 codec is not supported. Please export the video as H.264 video with AAC audio.';
-                setVideoErrorDetails(msg);
-              }}
-              className="w-full h-full object-cover"
-            />
+            {activeVideoSrc ? (
+              <video
+                ref={videoRef}
+                key={activeVideoSrc}
+                src={activeVideoSrc}
+                poster={currentPosterUrl || undefined}
+                controls
+                playsInline
+                preload="metadata"
+                onLoadStart={() => {
+                  setIsPreviewLoading(true);
+                  setVideoErrorDetails('');
+                }}
+                onCanPlay={() => setIsPreviewLoading(false)}
+                onLoadedMetadata={(e) => {
+                  const duration = e.currentTarget.duration;
+                  setVideoDuration(Number.isFinite(duration) ? duration : null);
+                  setVideoErrorDetails('');
+                }}
+                onError={(e) => {
+                  setIsPreviewLoading(false);
+                  const err = e.currentTarget.error;
+                  const msg = err?.message || 'Video ini tidak dapat dimainkan. Sila eksport sebagai video H.264 dengan audio AAC.';
+                  setVideoErrorDetails(msg);
+                }}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="flex h-full min-h-72 items-center justify-center p-5 text-center text-sm text-white/70">
+                Tiada video tersedia. Pilih fail MP4 untuk memulakan pratonton.
+              </div>
+            )}
+
+            {isPreviewLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/45 text-white pointer-events-none">
+                <Loader2 className="w-7 h-7 animate-spin" />
+              </div>
+            )}
 
             <div className="absolute top-2 left-2 right-2 flex items-center justify-between pointer-events-none">
               <span className="text-[9px] bg-black/70 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/20 text-white font-mono">
@@ -350,6 +384,21 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
               )}
             </div>
           </div>
+
+          {activeVideoSrc && !videoErrorDetails && (
+            <button
+              type="button"
+              onClick={() => {
+                if (!videoRef.current) return;
+                videoRef.current.currentTime = 0;
+                videoRef.current.play().catch(() => undefined);
+              }}
+              className="btn-outline h-11 w-full"
+            >
+              <Play className="h-4 w-4" />
+              Main Semula
+            </button>
+          )}
 
           {selectedVideoFile && (
             <div className="text-[11px] font-mono text-[#77736D] text-center space-y-0.5 pt-1">

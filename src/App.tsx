@@ -31,9 +31,7 @@ import { InvitationListScreen } from './components/screens/InvitationListScreen'
 import { CreateInvitationScreen } from './components/screens/CreateInvitationScreen';
 import { UploadVideoScreen } from './components/screens/UploadVideoScreen';
 import { GenerateLinkScreen } from './components/screens/GenerateLinkScreen';
-import { GuestOpeningScreen } from './components/screens/GuestOpeningScreen';
-import { GuestInvitationScreen } from './components/screens/GuestInvitationScreen';
-import { GuestRsvpFormScreen } from './components/screens/GuestRsvpFormScreen';
+import { PremiumGuestExperienceScreen } from './components/screens/PremiumGuestExperienceScreen';
 import { ThankYouScreen } from './components/screens/ThankYouScreen';
 import { PrivateRsvpReportScreen } from './components/screens/PrivateRsvpReportScreen';
 import { AdminRsvpScreen } from './components/screens/AdminRsvpScreen';
@@ -55,7 +53,9 @@ function NavigationAdapter({
       case 'login': target = '/login'; break;
       case 'dashboard': target = '/dashboard'; break;
       case 'invitation_list': target = '/invitations'; break;
-      case 'create_invitation': target = '/invitations/new'; break;
+      case 'create_invitation':
+        target = slugOrId ? `/invitations/${slugOrId}/edit` : '/invitations/new';
+        break;
       case 'upload_video': target = `/invitations/${slugOrId || selectedInvitationId}/upload-video`; break;
       case 'generate_link': target = `/invitations/${slugOrId || selectedInvitationId}/generate-link`; break;
       case 'guest_opening': {
@@ -352,9 +352,64 @@ export default function App() {
   // Wrapper for Edit Invitation by ID
   function EditInvitationWrapper() {
     const { id } = useParams<{ id: string }>();
-    const inv = invitations.find((i) => i.id === id) || editingInvitation;
+    const [fetchedInvitation, setFetchedInvitation] = useState<Invitation | null>(null);
+    const [fetchError, setFetchError] = useState('');
+    const [isFetching, setIsFetching] = useState(false);
+    const inv =
+      invitations.find((i) => i.id === id) ||
+      (editingInvitation?.id === id ? editingInvitation : null) ||
+      fetchedInvitation;
+
+    useEffect(() => {
+      if (!id) return;
+      let cancelled = false;
+      setIsFetching(true);
+      getInvitationById(id).then(({ data, error }) => {
+        if (cancelled) return;
+        setIsFetching(false);
+        if (data) {
+          setFetchedInvitation(data);
+          setEditingInvitation(data);
+          setSelectedInvitationId(data.id);
+          setInvitations((prev) =>
+            prev.some((item) => item.id === data.id)
+              ? prev.map((item) => item.id === data.id ? data : item)
+              : [data, ...prev],
+          );
+        } else {
+          setFetchError(error || 'Rekod jemputan tidak ditemui.');
+        }
+      });
+      return () => {
+        cancelled = true;
+      };
+    }, [id]);
+
+    useEffect(() => {
+      if (inv && editingInvitation?.id !== inv.id) {
+        setEditingInvitation(inv);
+      }
+    }, [inv, editingInvitation?.id]);
+
+    if (isFetching && !inv) {
+      return (
+        <div className="max-w-2xl mx-auto card-maiya p-6 flex items-center justify-center gap-3 text-sm text-[#77736D]">
+          <Loader2 className="w-5 h-5 animate-spin text-[#9B7B63]" />
+          <span>Memuatkan maklumat jemputan…</span>
+        </div>
+      );
+    }
+
+    if (!inv && fetchError) {
+      return (
+        <div className="max-w-2xl mx-auto card-maiya p-6 text-rose-800">
+          <h1 className="font-title font-bold">Jemputan tidak dapat disunting</h1>
+          <p className="mt-2 text-sm">{fetchError}</p>
+        </div>
+      );
+    }
     return (
-      <NavigationAdapter selectedInvitationId={selectedInvitationId} activeInvitation={activeInvitation}>
+      <NavigationAdapter selectedInvitationId={selectedInvitationId} activeInvitation={inv || activeInvitation}>
         {(onNavigate) => (
           <CreateInvitationScreen
             onNavigate={onNavigate}
@@ -436,9 +491,57 @@ export default function App() {
   // Wrapper for Generate/Preview Link by ID
   function PreviewWrapper() {
     const { id } = useParams<{ id: string }>();
-    const inv = invitations.find((i) => i.id === id) || activeInvitation;
+    const [fetchedInvitation, setFetchedInvitation] = useState<Invitation | null>(null);
+    const [fetchError, setFetchError] = useState('');
+    const [isFetching, setIsFetching] = useState(false);
+    const inv =
+      invitations.find((i) => i.id === id) ||
+      (activeInvitation?.id === id ? activeInvitation : null) ||
+      fetchedInvitation;
+
+    useEffect(() => {
+      if (!id) return;
+      let cancelled = false;
+      setIsFetching(true);
+      getInvitationById(id).then(({ data, error }) => {
+        if (cancelled) return;
+        setIsFetching(false);
+        if (data) {
+          setFetchedInvitation(data);
+          setSelectedInvitationId(data.id);
+          setInvitations((prev) =>
+            prev.some((item) => item.id === data.id)
+              ? prev.map((item) => item.id === data.id ? data : item)
+              : [data, ...prev],
+          );
+        } else {
+          setFetchError(error || 'Rekod jemputan tidak ditemui.');
+        }
+      });
+      return () => {
+        cancelled = true;
+      };
+    }, [id]);
+
+    if (isFetching && !inv) {
+      return (
+        <div className="max-w-xl mx-auto card-maiya p-6 flex items-center justify-center gap-3 text-sm text-[#77736D]">
+          <Loader2 className="w-5 h-5 animate-spin text-[#9B7B63]" />
+          <span>Memuatkan pautan jemputan…</span>
+        </div>
+      );
+    }
+
+    if (!inv && fetchError) {
+      return (
+        <div className="max-w-xl mx-auto card-maiya p-6 text-rose-800">
+          <h1 className="font-title font-bold">Pautan tidak dapat dijana</h1>
+          <p className="mt-2 text-sm">{fetchError}</p>
+        </div>
+      );
+    }
     return (
-      <NavigationAdapter selectedInvitationId={selectedInvitationId} activeInvitation={activeInvitation}>
+      <NavigationAdapter selectedInvitationId={selectedInvitationId} activeInvitation={inv || activeInvitation}>
         {(onNavigate) => (
           <GenerateLinkScreen
             onNavigate={onNavigate}
@@ -757,7 +860,11 @@ export default function App() {
             element={
               <GuestRouteWrapper
                 renderScreen={(inv, onNavigate) => (
-                  <GuestOpeningScreen onNavigate={onNavigate} activeInvitation={inv} />
+                  <PremiumGuestExperienceScreen
+                    activeInvitation={inv}
+                    rsvps={rsvps}
+                    onAddRsvp={handleAddRsvp}
+                  />
                 )}
               />
             }
@@ -767,7 +874,11 @@ export default function App() {
             element={
               <GuestRouteWrapper
                 renderScreen={(inv, onNavigate) => (
-                  <GuestOpeningScreen onNavigate={onNavigate} activeInvitation={inv} />
+                  <PremiumGuestExperienceScreen
+                    activeInvitation={inv}
+                    rsvps={rsvps}
+                    onAddRsvp={handleAddRsvp}
+                  />
                 )}
               />
             }
@@ -777,10 +888,11 @@ export default function App() {
             element={
               <GuestRouteWrapper
                 renderScreen={(inv, onNavigate) => (
-                  <GuestInvitationScreen
-                    onNavigate={onNavigate}
+                  <PremiumGuestExperienceScreen
                     activeInvitation={inv}
                     rsvps={rsvps}
+                    onAddRsvp={handleAddRsvp}
+                    initiallyOpened
                   />
                 )}
               />
@@ -791,10 +903,12 @@ export default function App() {
             element={
               <GuestRouteWrapper
                 renderScreen={(inv, onNavigate) => (
-                  <GuestRsvpFormScreen
-                    onNavigate={onNavigate}
+                  <PremiumGuestExperienceScreen
                     activeInvitation={inv}
+                    rsvps={rsvps}
                     onAddRsvp={handleAddRsvp}
+                    initiallyOpened
+                    initialFeature="rsvp"
                   />
                 )}
               />
