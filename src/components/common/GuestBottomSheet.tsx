@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 
 interface GuestBottomSheetProps {
@@ -9,6 +9,22 @@ interface GuestBottomSheetProps {
   contentClassName?: string;
 }
 
+type SheetSnap = 'compact' | 'expanded';
+
+interface DragSession {
+  pointerId: number;
+  startY: number;
+  previousY: number;
+  previousTime: number;
+  velocity: number;
+  startHeight: number;
+}
+
+const CLOSE_DISTANCE = 110;
+const SNAP_DISTANCE = 64;
+const CLOSE_VELOCITY = 0.7;
+const SNAP_VELOCITY = 0.45;
+
 export const GuestBottomSheet: React.FC<GuestBottomSheetProps> = ({
   open,
   title,
@@ -16,21 +32,63 @@ export const GuestBottomSheet: React.FC<GuestBottomSheetProps> = ({
   children,
   contentClassName = '',
 }) => {
-  const [dragOffset, setDragOffset] = useState(0);
-  const dragStartY = useRef<number | null>(null);
+  const [snap, setSnap] = useState<SheetSnap>('compact');
+  const [compactHeight, setCompactHeight] = useState(0);
+  const [expandedHeight, setExpandedHeight] = useState(0);
+  const [liveHeight, setLiveHeight] = useState<number | null>(null);
+  const [dragTranslate, setDragTranslate] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragRef = useRef<DragSession | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const sheetRef = useRef<HTMLElement | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const contentTouchRef = useRef<DragSession | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
 
+  const settleAt = (nextSnap: SheetSnap) => {
+    setSnap(nextSnap);
+    setLiveHeight(nextSnap === 'expanded' ? expandedHeight : compactHeight);
+    setDragTranslate(0);
+    setIsDragging(false);
+    dragRef.current = null;
+  };
+
+  useLayoutEffect(() => {
+    if (!open || !sheetRef.current) return;
+    const viewportHeight = window.visualViewport?.height || window.innerHeight;
+    const nextExpandedHeight = Math.max(320, Math.floor(viewportHeight * 0.9));
+
+    setLiveHeight(null);
+    setDragTranslate(0);
+    setSnap('compact');
+
+    const frame = window.requestAnimationFrame(() => {
+      if (!sheetRef.current) return;
+      const measuredCompactHeight = Math.min(
+        sheetRef.current.scrollHeight,
+        Math.floor(viewportHeight * 0.62),
+        nextExpandedHeight,
+      );
+      setCompactHeight(measuredCompactHeight);
+      setExpandedHeight(nextExpandedHeight);
+      setLiveHeight(measuredCompactHeight);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [open, title]);
+
   useEffect(() => {
     if (!open) return;
-    setDragOffset(0);
     previousFocusRef.current = document.activeElement instanceof HTMLElement
       ? document.activeElement
       : null;
     closeButtonRef.current?.focus();
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousBodyOverscroll = document.body.style.overscrollBehavior;
+    document.body.style.overflow = 'hidden';
+    document.body.style.overscrollBehavior = 'none';
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onCloseRef.current();
@@ -53,33 +111,155 @@ export const GuestBottomSheet: React.FC<GuestBottomSheetProps> = ({
         first.focus();
       }
     };
+
     document.addEventListener('keydown', handleKeyDown);
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = previousBodyOverflow;
+      document.body.style.overscrollBehavior = previousBodyOverscroll;
       previousFocusRef.current?.focus();
     };
   }, [open]);
 
   if (!open) return null;
 
-  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    dragStartY.current = event.clientY;
+  const beginDrag = (event: React.PointerEvent<HTMLElement>) => {
+    if (event.button !== 0 || !liveHeight) return;
+    if ((event.target as HTMLElement).closest('button, a, input, select, textarea')) return;
+    const now = performance.now();
+    dragRef.current = {
+      pointerId: event.pointerId,
+      startY: event.clientY,
+      previousY: event.clientY,
+      previousTime: now,
+      velocity: 0,
+      startHeight: liveHeight,
+    };
+    setIsDragging(true);
     event.currentTarget.setPointerCapture(event.pointerId);
   };
 
-  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (dragStartY.current === null) return;
-    setDragOffset(Math.max(0, event.clientY - dragStartY.current));
+  const moveDrag = (event: React.PointerEvent<HTMLElement>) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const now = performance.now();
+    const elapsed = Math.max(1, now - drag.previousTime);
+    drag.velocity = (event.clientY - drag.previousY) / elapsed;
+    drag.previousY = event.clientY;
+    drag.previousTime = now;
+
+    const distance = event.clientY - drag.startY;
+    if (distance < 0) {
+      setDragTranslate(0);
+      setLiveHeight(Math.min(expandedHeight, drag.startHeight - distance));
+      return;
+    }
+
+    if (drag.startHeight > compactHeight + 8) {
+      setLiveHeight(Math.max(compactHeight, drag.startHeight - distance));
+      setDragTranslate(Math.max(0, distance - (drag.startHeight - compactHeight)));
+    } else {
+      setDragTranslate(distance);
+    }
   };
 
-  const handlePointerEnd = () => {
-    if (dragOffset > 90) onClose();
-    setDragOffset(0);
-    dragStartY.current = null;
+  const finishDrag = (drag: DragSession, endY: number) => {
+    const distance = endY - drag.startY;
+    const startedExpanded = drag.startHeight > compactHeight + 8;
+
+    if (!startedExpanded && (distance > CLOSE_DISTANCE || drag.velocity > CLOSE_VELOCITY)) {
+      setIsDragging(false);
+      dragRef.current = null;
+      onCloseRef.current();
+      return;
+    }
+
+    if (startedExpanded) {
+      if (distance > (drag.startHeight - compactHeight) + CLOSE_DISTANCE) {
+        setIsDragging(false);
+        dragRef.current = null;
+        onCloseRef.current();
+        return;
+      }
+      if (distance > SNAP_DISTANCE || drag.velocity > SNAP_VELOCITY) {
+        settleAt('compact');
+      } else {
+        settleAt('expanded');
+      }
+      return;
+    }
+
+    if (distance < -SNAP_DISTANCE || drag.velocity < -SNAP_VELOCITY) {
+      settleAt('expanded');
+    } else {
+      settleAt('compact');
+    }
+  };
+
+  const endDrag = (event?: React.PointerEvent<HTMLElement>) => {
+    const drag = dragRef.current;
+    if (!drag || (event && drag.pointerId !== event.pointerId)) return;
+    finishDrag(drag, event?.clientY ?? drag.previousY);
+  };
+
+  const beginContentTouch = (event: React.TouchEvent<HTMLDivElement>) => {
+    if (!liveHeight || !contentRef.current || contentRef.current.scrollTop > 0) return;
+    if ((event.target as HTMLElement).closest('button, a, input, select, textarea')) return;
+    const touch = event.touches[0];
+    const now = performance.now();
+    contentTouchRef.current = {
+      pointerId: -1,
+      startY: touch.clientY,
+      previousY: touch.clientY,
+      previousTime: now,
+      velocity: 0,
+      startHeight: liveHeight,
+    };
+  };
+
+  const moveContentTouch = (event: React.TouchEvent<HTMLDivElement>) => {
+    const drag = contentTouchRef.current;
+    const touch = event.touches[0];
+    if (!drag || !touch || !contentRef.current || contentRef.current.scrollTop > 0) return;
+    const distance = touch.clientY - drag.startY;
+    if (distance <= 6) return;
+    event.preventDefault();
+    setIsDragging(true);
+    const now = performance.now();
+    const elapsed = Math.max(1, now - drag.previousTime);
+    drag.velocity = (touch.clientY - drag.previousY) / elapsed;
+    drag.previousY = touch.clientY;
+    drag.previousTime = now;
+
+    if (drag.startHeight > compactHeight + 8) {
+      setLiveHeight(Math.max(compactHeight, drag.startHeight - distance));
+      setDragTranslate(Math.max(0, distance - (drag.startHeight - compactHeight)));
+    } else {
+      setDragTranslate(distance);
+    }
+  };
+
+  const endContentTouch = (event: React.TouchEvent<HTMLDivElement>) => {
+    const drag = contentTouchRef.current;
+    if (!drag) return;
+    const endY = event.changedTouches[0]?.clientY ?? drag.previousY;
+    contentTouchRef.current = null;
+    finishDrag(drag, endY);
+  };
+
+  const handleHeaderKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      settleAt('expanded');
+    } else if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      if (snap === 'expanded') settleAt('compact');
+      else onCloseRef.current();
+    }
   };
 
   return (
-    <div className="absolute inset-0 z-40 flex items-end" role="presentation">
+    <div className="absolute inset-0 z-40 flex items-end overflow-hidden" role="presentation">
       <button
         type="button"
         aria-label="Tutup panel"
@@ -92,20 +272,39 @@ export const GuestBottomSheet: React.FC<GuestBottomSheetProps> = ({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        style={{ transform: `translateY(${dragOffset}px)` }}
-        className="relative z-10 flex max-h-[86dvh] w-full min-w-0 flex-col overflow-hidden rounded-t-[30px] border border-white/70 bg-[#F7F1E8]/97 text-[#211E1B] shadow-[0_-18px_55px_rgba(32,27,23,0.24)] backdrop-blur-2xl transition-transform duration-200 ease-out animate-in slide-in-from-bottom"
+        data-snap={snap}
+        style={{
+          height: liveHeight ? `${liveHeight}px` : undefined,
+          maxHeight: 'calc(90dvh - env(safe-area-inset-top))',
+          transform: `translateY(${dragTranslate}px)`,
+          transition: isDragging
+            ? 'none'
+            : 'height 320ms cubic-bezier(0.22, 1, 0.36, 1), transform 320ms cubic-bezier(0.22, 1, 0.36, 1)',
+          willChange: isDragging ? 'height, transform' : undefined,
+        }}
+        className="relative z-10 flex w-full min-w-0 flex-col overflow-hidden rounded-t-[30px] border border-white/70 bg-[#F7F1E8]/97 pb-[env(safe-area-inset-bottom)] text-[#211E1B] shadow-[0_-18px_55px_rgba(32,27,23,0.24)] backdrop-blur-2xl"
       >
         <div
-          className="touch-none cursor-grab px-5 pb-2 pt-3 active:cursor-grabbing"
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerEnd}
-          onPointerCancel={handlePointerEnd}
+          role="button"
+          tabIndex={0}
+          aria-label={snap === 'expanded' ? 'Panel dikembangkan. Seret ke bawah untuk mengecilkan.' : 'Panel ringkas. Seret ke atas untuk mengembangkan.'}
+          className="touch-none cursor-grab px-5 pb-2 pt-3 outline-none active:cursor-grabbing"
+          onPointerDown={beginDrag}
+          onPointerMove={moveDrag}
+          onPointerUp={endDrag}
+          onPointerCancel={endDrag}
+          onKeyDown={handleHeaderKeyDown}
         >
           <div className="mx-auto h-1 w-12 rounded-full bg-[#302C28]/75" />
         </div>
 
-        <header className="flex min-w-0 items-center justify-between gap-3 border-b border-[#D9D2CA]/70 px-4 pb-3 min-[360px]:px-6">
+        <header
+          className="flex min-w-0 touch-none items-center justify-between gap-3 border-b border-[#D9D2CA]/70 px-4 pb-3 min-[360px]:px-6"
+          onPointerDown={beginDrag}
+          onPointerMove={moveDrag}
+          onPointerUp={endDrag}
+          onPointerCancel={endDrag}
+        >
           <h2 className="min-w-0 break-words font-serif text-2xl font-semibold leading-tight">
             {title}
           </h2>
@@ -120,7 +319,14 @@ export const GuestBottomSheet: React.FC<GuestBottomSheetProps> = ({
           </button>
         </header>
 
-        <div className={`min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5 min-[360px]:px-6 ${contentClassName}`}>
+        <div
+          ref={contentRef}
+          onTouchStart={beginContentTouch}
+          onTouchMove={moveContentTouch}
+          onTouchEnd={endContentTouch}
+          onTouchCancel={endContentTouch}
+          className={`min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-4 py-5 min-[360px]:px-6 ${contentClassName}`}
+        >
           {children}
         </div>
       </section>
