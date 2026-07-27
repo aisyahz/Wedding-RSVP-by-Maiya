@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+﻿import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 
 interface GuestBottomSheetProps {
@@ -299,13 +299,13 @@ export const GuestBottomSheet: React.FC<GuestBottomSheetProps> = ({
         </div>
 
         <header
-          className="flex min-w-0 touch-none items-center justify-between gap-3 border-b border-[#D9D2CA]/70 px-4 pb-3 min-[360px]:px-6"
+          className="flex min-w-0 touch-none items-center justify-between gap-3 border-b border-system/70 px-4 pb-3 min-[360px]:px-6"
           onPointerDown={beginDrag}
           onPointerMove={moveDrag}
           onPointerUp={endDrag}
           onPointerCancel={endDrag}
         >
-          <h2 className="min-w-0 break-words font-serif text-2xl font-semibold leading-tight">
+          <h2 className="min-w-0 break-words font-serif text-heading-1 leading-tight">
             {title}
           </h2>
           <button
@@ -313,7 +313,7 @@ export const GuestBottomSheet: React.FC<GuestBottomSheetProps> = ({
             type="button"
             onClick={onClose}
             aria-label={`Tutup ${title}`}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#D9D2CA] bg-white/80 text-[#1E1E1C] transition-colors hover:bg-white"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-system bg-white/80 text-primary transition-colors hover:bg-white"
           >
             <X className="h-5 w-5" />
           </button>

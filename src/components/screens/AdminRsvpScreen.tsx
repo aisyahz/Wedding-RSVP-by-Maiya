@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { ScreenId, Invitation, RsvpEntry } from '../../types';
 import { Search, Download, Trash2, Users } from 'lucide-react';
 
@@ -51,15 +51,15 @@ export const AdminRsvpScreen: React.FC<AdminRsvpScreenProps> = ({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 min-[360px]:p-6 rounded-2xl border border-[#D9D2CA] shadow-2xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 min-[360px]:p-6 rounded-2xl border border-system shadow-2xs">
         <div className="min-w-0">
-          <span className="text-[11px] uppercase tracking-wider font-semibold text-[#9B7B63]">
+          <span className="text-caption uppercase tracking-wider font-semibold text-accent">
             Guest Analytics
           </span>
-          <h1 className="font-title text-2xl font-bold text-[#1E1E1C] tracking-tight mt-0.5">
+          <h1 className="text-heading-1 text-primary tracking-tight mt-0.5">
             RSVP Management ({rsvps.length})
           </h1>
-          <p className="text-xs text-[#77736D] mt-1">
+          <p className="text-xs text-secondary mt-1">
             Track guest attendances, total pax and warm wedding wishes.
           </p>
         </div>
@@ -84,7 +84,7 @@ export const AdminRsvpScreen: React.FC<AdminRsvpScreenProps> = ({
             placeholder="Search guest name or wishes..."
             className="w-full input-maiya pl-10"
           />
-          <Search className="w-4 h-4 text-[#77736D] absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-secondary absolute left-3.5 top-1/2 -translate-y-1/2" />
         </div>
 
         {/* Invitation Selector */}
@@ -117,11 +117,11 @@ export const AdminRsvpScreen: React.FC<AdminRsvpScreenProps> = ({
       <div className="space-y-3">
         {filteredRsvps.length === 0 ? (
           <div className="card-maiya p-12 text-center">
-            <Users className="w-8 h-8 text-[#9B7B63] mx-auto mb-2" />
-            <h3 className="font-title text-base font-bold text-[#1E1E1C]">
+            <Users className="w-8 h-8 text-accent mx-auto mb-2" />
+            <h3 className="text-title text-primary">
               No RSVP responses found
             </h3>
-            <p className="text-xs text-[#77736D] mt-1">
+            <p className="text-xs text-secondary mt-1">
               Adjust your filters or share the invitation link with guests.
             </p>
           </div>
@@ -131,15 +131,15 @@ export const AdminRsvpScreen: React.FC<AdminRsvpScreenProps> = ({
             return (
               <div
                 key={rsvp.id}
-                className="card-maiya p-4 min-[360px]:p-5 flex min-w-0 flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all hover:border-[#9B7B63]/50"
+                className="card-maiya card-comfortable flex min-w-0 flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all hover:border-[#9B7B63]/50"
               >
                 <div className="min-w-0 space-y-1 flex-1">
                   <div className="flex min-w-0 flex-wrap items-center gap-2">
-                    <h3 className="min-w-0 font-serif text-lg font-bold text-[#1E1E1C] break-words [overflow-wrap:anywhere]">
+                    <h3 className="min-w-0 text-heading-3 text-primary break-words [overflow-wrap:anywhere]">
                       {rsvp.guestName}
                     </h3>
                     <span
-                      className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                      className={`text-caption px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider ${
                         rsvp.attendance === 'attending'
                           ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                           : 'bg-rose-100 text-rose-800 border border-rose-200'
@@ -149,16 +149,16 @@ export const AdminRsvpScreen: React.FC<AdminRsvpScreenProps> = ({
                     </span>
                   </div>
 
-                  <p className="text-xs font-semibold text-[#9B7B63]">
+                  <p className="text-xs font-semibold text-accent">
                     Card: {inv ? `${inv.brideName} & ${inv.groomName}` : 'Wedding Card'}
                   </p>
 
                   {rsvp.wishes && (
-                    <p className="font-serif italic text-sm leading-relaxed text-[#1E1E1C]/80 bg-[#F7F5F2] p-3 rounded-xl border border-[#D9D2CA] mt-2 break-words [overflow-wrap:anywhere]">
+                    <p className="font-title italic text-sm leading-relaxed text-primary/80 bg-app p-3 rounded-xl border border-system mt-2 break-words [overflow-wrap:anywhere]">
                       “{rsvp.wishes}”
                     </p>
                   )}
-                  <p className="text-[10px] text-[#77736D] pt-1">
+                  <p className="text-caption text-secondary pt-1">
                     Submitted: {rsvp.submittedAt}
                   </p>
                 </div>

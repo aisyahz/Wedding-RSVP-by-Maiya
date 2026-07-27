@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Calendar, MapPin, HeartHandshake, PhoneCall, Gift } from 'lucide-react';
 
 interface BottomGuestNavProps {
@@ -24,7 +24,7 @@ export const BottomGuestNav: React.FC<BottomGuestNavProps> = ({
         }`}
       >
         <Calendar className="w-4 h-4 mb-0.5" />
-        <span className="text-[11px] leading-tight tracking-tight font-sans">Kalendar</span>
+        <span className="text-caption leading-tight tracking-tight font-sans">Kalendar</span>
       </button>
 
       {/* 2. Lokasi */}
@@ -36,7 +36,7 @@ export const BottomGuestNav: React.FC<BottomGuestNavProps> = ({
         }`}
       >
         <MapPin className="w-4 h-4 mb-0.5" />
-        <span className="text-[11px] leading-tight tracking-tight font-sans">Lokasi</span>
+        <span className="text-caption leading-tight tracking-tight font-sans">Lokasi</span>
       </button>
 
       {/* 3. RSVP (Main Centre Action) */}
@@ -49,7 +49,7 @@ export const BottomGuestNav: React.FC<BottomGuestNavProps> = ({
         aria-label="Pergi ke bahagian RSVP"
       >
         <HeartHandshake className="w-4 h-4 mb-0.5" />
-        <span className="text-[11px] leading-tight tracking-tight font-sans">
+        <span className="text-caption leading-tight tracking-tight font-sans">
           RSVP
         </span>
       </button>
@@ -63,7 +63,7 @@ export const BottomGuestNav: React.FC<BottomGuestNavProps> = ({
         }`}
       >
         <PhoneCall className="w-4 h-4 mb-0.5" />
-        <span className="text-[11px] leading-tight tracking-tight font-sans">Hubungi</span>
+        <span className="text-caption leading-tight tracking-tight font-sans">Hubungi</span>
       </button>
 
       {/* 5. Hadiah */}
@@ -76,7 +76,7 @@ export const BottomGuestNav: React.FC<BottomGuestNavProps> = ({
           }`}
         >
           <Gift className="w-4 h-4 mb-0.5" />
-          <span className="text-[11px] leading-tight tracking-tight font-sans">Hadiah</span>
+          <span className="text-caption leading-tight tracking-tight font-sans">Hadiah</span>
         </button>
       )}
       </div>

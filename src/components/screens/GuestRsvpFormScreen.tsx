@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { ScreenId, Invitation, RsvpEntry } from '../../types';
 import { ArrowLeft, Check, X, Send, Loader2 } from 'lucide-react';
 
@@ -59,19 +59,19 @@ export const GuestRsvpFormScreen: React.FC<GuestRsvpFormScreenProps> = ({
   return (
     <div className="max-w-md min-w-0 w-full mx-auto space-y-4 min-[360px]:space-y-6 p-3 min-[360px]:p-4">
       {/* Top Header */}
-      <div className="flex min-w-0 items-center justify-between gap-2 bg-white p-3 min-[360px]:p-5 rounded-2xl border border-[#D9D2CA] shadow-2xs">
+      <div className="flex min-w-0 items-center justify-between gap-2 bg-white p-3 min-[360px]:p-5 rounded-2xl border border-system shadow-2xs">
         <button
           onClick={() => onNavigate('guest_invitation')}
-          className="w-10 h-10 rounded-xl bg-[#F7F5F2] hover:bg-[#EFE7DF] text-[#1E1E1C] flex items-center justify-center cursor-pointer transition-all border border-[#D9D2CA]"
+          className="w-10 h-10 rounded-xl bg-app hover:bg-[#EFE7DF] text-primary flex items-center justify-center cursor-pointer transition-all border border-system"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
 
         <div className="text-center min-w-0">
-          <span className="text-[10px] uppercase font-semibold text-[#9B7B63] tracking-wider block">
+          <span className="text-caption uppercase font-semibold text-accent tracking-wider block">
             Walimatul 'Urus
           </span>
-          <h1 className="font-title text-sm min-[360px]:text-base font-bold text-[#1E1E1C] break-words">
+          <h1 className="font-title text-sm min-[360px]:text-base font-bold text-primary break-words">
             Pengesahan Kehadiran
           </h1>
         </div>
@@ -80,19 +80,19 @@ export const GuestRsvpFormScreen: React.FC<GuestRsvpFormScreenProps> = ({
       </div>
 
       {/* Main Form Card */}
-      <form onSubmit={handleSubmit} className="card-maiya p-4 min-[360px]:p-6 sm:p-8 space-y-5">
-        <div className="text-center space-y-1 pb-3 border-b border-[#D9D2CA]/40">
-          <h2 className="font-serif text-2xl font-bold text-[#1E1E1C] break-words [overflow-wrap:anywhere]">
+      <form onSubmit={handleSubmit} className="card-maiya card-form space-y-5">
+        <div className="text-center space-y-1 pb-3 border-b border-system/40">
+          <h2 className="font-serif text-heading-1 text-primary break-words [overflow-wrap:anywhere]">
             {brideName} & {groomName}
           </h2>
-          <p className="text-xs text-[#77736D]">
+          <p className="text-xs text-secondary">
             Sila sahkan kehadiran anda untuk memudahkan urusan tuan rumah.
           </p>
         </div>
 
         {/* Guest Name */}
         <div>
-          <label className="block text-xs font-semibold text-[#1E1E1C] mb-1.5">
+          <label className="form-label block">
             Nama Tetamu *
           </label>
           <input
@@ -107,7 +107,7 @@ export const GuestRsvpFormScreen: React.FC<GuestRsvpFormScreenProps> = ({
 
         {/* Attendance Toggle */}
         <div>
-          <label className="block text-xs font-semibold text-[#1E1E1C] mb-1.5">
+          <label className="form-label block">
             Kehadiran *
           </label>
           <div className="grid grid-cols-2 gap-3">
@@ -117,7 +117,7 @@ export const GuestRsvpFormScreen: React.FC<GuestRsvpFormScreenProps> = ({
               className={`h-[50px] rounded-xl text-xs font-semibold flex items-center justify-center gap-2 border cursor-pointer transition-all ${
                 attendance === 'attending'
                   ? 'bg-emerald-700 text-white border-emerald-700 shadow-xs'
-                  : 'bg-white text-[#77736D] border-[#D9D2CA] hover:bg-[#F7F5F2]'
+                  : 'bg-white text-secondary border-system hover:bg-app'
               }`}
             >
               <Check className="w-4 h-4" />
@@ -130,7 +130,7 @@ export const GuestRsvpFormScreen: React.FC<GuestRsvpFormScreenProps> = ({
               className={`h-[50px] rounded-xl text-xs font-semibold flex items-center justify-center gap-2 border cursor-pointer transition-all ${
                 attendance === 'declined'
                   ? 'bg-rose-700 text-white border-rose-700 shadow-xs'
-                  : 'bg-white text-[#77736D] border-[#D9D2CA] hover:bg-[#F7F5F2]'
+                  : 'bg-white text-secondary border-system hover:bg-app'
               }`}
             >
               <X className="w-4 h-4" />
@@ -143,10 +143,10 @@ export const GuestRsvpFormScreen: React.FC<GuestRsvpFormScreenProps> = ({
         {attendance === 'attending' && (
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-semibold text-[#1E1E1C]">
+              <label className="text-xs font-semibold text-primary">
                 Jumlah Tetamu (Pax)
               </label>
-              <span className="text-xs font-bold text-[#9B7B63]">{pax} Pax</span>
+              <span className="text-xs font-bold text-accent">{pax} Pax</span>
             </div>
             <div className="grid grid-cols-3 min-[360px]:grid-cols-6 gap-2">
               {[1, 2, 3, 4, 5, 6].map((num) => (
@@ -157,7 +157,7 @@ export const GuestRsvpFormScreen: React.FC<GuestRsvpFormScreenProps> = ({
                   className={`min-h-11 rounded-xl text-sm font-bold border transition-all cursor-pointer ${
                     pax === num
                       ? 'bg-[#9B7B63] text-white border-[#9B7B63]'
-                      : 'bg-white text-[#1E1E1C] border-[#D9D2CA] hover:bg-[#F7F5F2]'
+                      : 'bg-white text-primary border-system hover:bg-app'
                   }`}
                 >
                   {num}
@@ -169,7 +169,7 @@ export const GuestRsvpFormScreen: React.FC<GuestRsvpFormScreenProps> = ({
 
         {/* Wishes Input */}
         <div>
-          <label className="block text-xs font-semibold text-[#1E1E1C] mb-1.5">
+          <label className="form-label block">
             Ucapan dan Doa
           </label>
           <textarea
@@ -177,7 +177,7 @@ export const GuestRsvpFormScreen: React.FC<GuestRsvpFormScreenProps> = ({
             value={wishes}
             onChange={(e) => setWishes(e.target.value)}
             placeholder="Tinggalkan ucapan & doa indah buat mempelai..."
-            className="w-full bg-white border border-[#D9D2CA] rounded-xl p-3 text-base text-[#1E1E1C] focus:outline-none focus:border-[#9B7B63] focus:ring-3 focus:ring-[#9B7B63]/10"
+            className="input-maiya"
           />
         </div>
 

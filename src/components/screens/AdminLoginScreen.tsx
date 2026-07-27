@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { AlertCircle, ArrowRight, Loader2, Lock, Mail } from 'lucide-react';
 import { ScreenId } from '../../types';
@@ -41,22 +41,22 @@ export const AdminLoginScreen: React.FC<AdminLoginScreenProps> = ({
   };
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-[#F7F5F2] p-3 antialiased min-[360px]:p-6">
+    <div className="flex min-h-dvh items-center justify-center bg-app p-3 antialiased min-[360px]:p-6">
       <div className="w-full max-w-md space-y-5">
         <header className="space-y-2 text-center">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#1E1E1C] text-white shadow-sm">
-            <span className="font-title text-2xl font-bold">M</span>
+            <span className="text-heading-1">M</span>
           </div>
-          <h1 className="font-title text-2xl font-bold tracking-tight text-[#1E1E1C]">
+          <h1 className="text-heading-1 tracking-tight text-primary">
             Digital Card by Maiya
           </h1>
-          <p className="text-sm text-[#77736D]">Admin Portal</p>
+          <p className="text-sm text-secondary">Admin Portal</p>
         </header>
 
         <main className="card-maiya space-y-6 p-5 min-[360px]:p-8">
           <div>
-            <h2 className="font-title text-lg font-bold text-[#1E1E1C]">Welcome back</h2>
-            <p className="mt-1 text-sm text-[#77736D]">Sign in to continue</p>
+            <h2 className="text-heading-3 text-primary">Welcome back</h2>
+            <p className="mt-1 text-sm text-secondary">Sign in to continue</p>
           </div>
 
           {errorMsg && (
@@ -68,11 +68,11 @@ export const AdminLoginScreen: React.FC<AdminLoginScreenProps> = ({
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="admin-email" className="mb-1.5 block text-sm font-semibold text-[#1E1E1C]">
+              <label htmlFor="admin-email" className="mb-1.5 block text-sm font-semibold text-primary">
                 Email Address
               </label>
               <div className="relative">
-                <Mail aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-[#77736D]" />
+                <Mail aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-secondary" />
                 <input
                   id="admin-email"
                   type="email"
@@ -86,11 +86,11 @@ export const AdminLoginScreen: React.FC<AdminLoginScreenProps> = ({
             </div>
 
             <div>
-              <label htmlFor="admin-password" className="mb-1.5 block text-sm font-semibold text-[#1E1E1C]">
+              <label htmlFor="admin-password" className="mb-1.5 block text-sm font-semibold text-primary">
                 Password
               </label>
               <div className="relative">
-                <Lock aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-[#77736D]" />
+                <Lock aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-secondary" />
                 <input
                   id="admin-password"
                   type="password"

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { ScreenId, Invitation } from '../../types';
 import {
   ArrowLeft,
@@ -260,19 +260,19 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
   return (
     <div className="max-w-2xl min-w-0 w-full mx-auto space-y-4 min-[360px]:space-y-6">
       {/* Top Header */}
-      <div className="flex min-w-0 items-center justify-between gap-2 bg-white p-3 min-[360px]:p-5 rounded-2xl border border-[#D9D2CA] shadow-2xs">
+      <div className="flex min-w-0 items-center justify-between gap-2 bg-white p-3 min-[360px]:p-5 rounded-2xl border border-system shadow-2xs">
         <button
           onClick={() => onNavigate('create_invitation', activeInvitation?.id)}
-          className="w-10 h-10 rounded-xl bg-[#F7F5F2] hover:bg-[#EFE7DF] text-[#1E1E1C] flex items-center justify-center cursor-pointer transition-all border border-[#D9D2CA]"
+          className="w-10 h-10 rounded-xl bg-app hover:bg-[#EFE7DF] text-primary flex items-center justify-center cursor-pointer transition-all border border-system"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
 
         <div className="text-center min-w-0">
-          <span className="text-[10px] uppercase font-semibold text-[#9B7B63] tracking-wider block">
+          <span className="text-caption uppercase font-semibold text-accent tracking-wider block">
             Media Storage • Cloudflare R2 CDN
           </span>
-          <h1 className="font-title text-base font-bold text-[#1E1E1C]">
+          <h1 className="text-title text-primary">
             Upload Video & Poster
           </h1>
         </div>
@@ -281,7 +281,7 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
       </div>
 
       {/* Main Card */}
-      <div className="card-maiya p-4 min-[360px]:p-6 md:p-8 space-y-6">
+      <div className="card-maiya card-form space-y-6">
         {/* Status Alerts */}
         {uploadError && (
           <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-800 text-xs rounded-xl flex items-center gap-2 font-medium">
@@ -318,22 +318,22 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
         {/* Admin Local / Public Video Preview Box with Interactive Controls */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-[#1E1E1C] flex items-center gap-1.5">
-              <Film className="w-4 h-4 text-[#9B7B63]" />
+            <span className="text-xs font-bold text-primary flex items-center gap-1.5">
+              <Film className="w-4 h-4 text-accent" />
               <span>Pratonton Admin (Uji Bunyi & Video)</span>
             </span>
             {selectedVideoFile ? (
-              <span className="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-bold border border-amber-300">
+              <span className="text-caption bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-bold border border-amber-300">
                 Lokal (Belum Dimuat Naik)
               </span>
             ) : (
-              <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold border border-emerald-300">
+              <span className="text-caption bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold border border-emerald-300">
                 R2 CDN Aktif
               </span>
             )}
           </div>
 
-          <div className="relative rounded-2xl overflow-hidden bg-[#24211F] aspect-[9/14] max-h-[320px] mx-auto w-full max-w-[240px] shadow-md border border-[#D9D2CA]">
+          <div className="relative rounded-2xl overflow-hidden bg-[#24211F] aspect-[9/14] max-h-[320px] mx-auto w-full max-w-[240px] shadow-md border border-system">
             {activeVideoSrc ? (
               <video
                 ref={videoRef}
@@ -374,11 +374,11 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
             )}
 
             <div className="absolute top-2 left-2 right-2 flex items-center justify-between pointer-events-none">
-              <span className="text-[9px] bg-black/70 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/20 text-white font-mono">
+              <span className="text-caption bg-black/70 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/20 text-white font-title tabular-nums">
                 {selectedVideoFile ? 'MP4 Lokal' : 'MP4 R2 CDN'}
               </span>
               {videoDuration && (
-                <span className="text-[9px] bg-black/70 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/20 text-white font-mono">
+                <span className="text-caption bg-black/70 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/20 text-white font-title tabular-nums">
                   {videoDuration.toFixed(1)}s
                 </span>
               )}
@@ -401,19 +401,19 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
           )}
 
           {selectedVideoFile && (
-            <div className="text-[11px] font-mono text-[#77736D] text-center space-y-0.5 pt-1">
-              <div>MIME Type: <span className="font-bold text-[#1E1E1C]">{selectedVideoFile.type || 'video/mp4'}</span></div>
-              <div>File Size: <span className="font-bold text-[#1E1E1C]">{(selectedVideoFile.size / (1024 * 1024)).toFixed(2)} MB</span></div>
+            <div className="text-caption font-title tabular-nums text-secondary text-center space-y-0.5 pt-1">
+              <div>MIME Type: <span className="font-bold text-primary">{selectedVideoFile.type || 'video/mp4'}</span></div>
+              <div>File Size: <span className="font-bold text-primary">{(selectedVideoFile.size / (1024 * 1024)).toFixed(2)} MB</span></div>
             </div>
           )}
         </div>
 
         {/* Upload Progress Bar */}
         {isUploading && uploadProgress && (
-          <div className="p-4 bg-[#F7F5F2] rounded-xl border border-[#D9D2CA] space-y-2">
-            <div className="flex min-w-0 flex-wrap justify-between items-center gap-2 text-sm text-[#1E1E1C] font-semibold">
+          <div className="p-4 bg-app rounded-xl border border-system space-y-2">
+            <div className="flex min-w-0 flex-wrap justify-between items-center gap-2 text-sm text-primary font-semibold">
               <span>Memuat naik ke Cloudflare R2...</span>
-              <span className="font-mono text-[#9B7B63]">{uploadProgress.percentage}%</span>
+              <span className="font-title tabular-nums text-accent">{uploadProgress.percentage}%</span>
             </div>
             <div className="w-full bg-[#EFE7DF] h-2 rounded-full overflow-hidden">
               <div
@@ -421,7 +421,7 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
                 style={{ width: `${uploadProgress.percentage}%` }}
               />
             </div>
-            <div className="text-[10px] text-[#77736D] text-right font-mono">
+            <div className="text-caption text-secondary text-right font-title tabular-nums">
               {(uploadProgress.loadedBytes / (1024 * 1024)).toFixed(1)} MB / {(uploadProgress.totalBytes / (1024 * 1024)).toFixed(1)} MB
             </div>
           </div>
@@ -440,15 +440,15 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
             <div className="flex flex-col items-center justify-center space-y-2">
               <div className="w-10 h-10 rounded-xl bg-[#1E1E1C] text-white flex items-center justify-center shadow-xs">
                 {isUploading ? (
-                  <Loader2 className="w-5 h-5 animate-spin text-[#9B7B63]" />
+                  <Loader2 className="w-5 h-5 animate-spin text-accent" />
                 ) : (
                   <UploadCloud className="w-5 h-5" />
                 )}
               </div>
-              <p className="font-title text-sm font-bold text-[#1E1E1C] break-words [overflow-wrap:anywhere]">
+              <p className="font-title text-sm font-bold text-primary break-words [overflow-wrap:anywhere]">
                 {selectedVideoFile ? 'Tukar Fail Video MP4' : 'Pilih Fail Video Jemputan (MP4)'}
               </p>
-              <p className="text-xs text-[#77736D]">
+              <p className="text-xs text-secondary">
                 Format: MP4 sahaja • Maksimum 50MB (Had Keras) • Amaran jika &gt;15MB
               </p>
             </div>
@@ -468,25 +468,25 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
         </div>
 
         {/* Optional WebP Poster Image Upload Zone */}
-        <div className="p-4 bg-white rounded-2xl border border-[#D9D2CA] space-y-3">
+        <div className="p-4 bg-white rounded-2xl border border-system space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex min-w-0 items-center gap-2">
-              <ImageIcon className="w-4 h-4 text-[#9B7B63]" />
-              <span className="text-xs font-bold text-[#1E1E1C]">
+              <ImageIcon className="w-4 h-4 text-accent" />
+              <span className="text-xs font-bold text-primary">
                 WebP Poster Image (Sebelum Video Dimainkan)
               </span>
             </div>
             {currentPosterUrl && (
-              <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md font-semibold">
+              <span className="text-caption bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md font-semibold">
                 Poster Aktif
               </span>
             )}
           </div>
-          <p className="text-xs text-[#77736D]">
+          <p className="text-xs text-secondary">
             Paparkan poster imej pantas sebelum video penuh dimuatkan oleh tetamu.
           </p>
 
-          <div className="relative border border-dashed border-[#D9D2CA] rounded-xl p-3 text-center bg-[#F7F5F2] hover:bg-[#EFE7DF]/50 transition-all cursor-pointer">
+          <div className="relative border border-dashed border-system rounded-xl p-3 text-center bg-app hover:bg-[#EFE7DF]/50 transition-all cursor-pointer">
             <input
               type="file"
               accept="image/*"
@@ -494,15 +494,15 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
               onChange={handlePosterUpload}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
             />
-            <div className="flex items-center justify-center gap-2 text-xs font-semibold text-[#1E1E1C]">
-              <Sparkles className="w-4 h-4 text-[#9B7B63]" />
+            <div className="flex items-center justify-center gap-2 text-xs font-semibold text-primary">
+              <Sparkles className="w-4 h-4 text-accent" />
               <span>Muat Naik Imej Poster (WebP / JPG / PNG)</span>
             </div>
           </div>
         </div>
 
         {/* Action Button */}
-        <div className="sticky bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-20 -mx-4 flex justify-end border-t border-[#D9D2CA]/40 bg-white/95 px-4 pb-1 pt-3 backdrop-blur-sm min-[360px]:-mx-6 min-[360px]:px-6 md:static md:mx-0 md:bg-transparent md:px-0">
+        <div className="sticky bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-20 -mx-4 flex justify-end border-t border-system/40 bg-white/95 px-4 pb-1 pt-3 backdrop-blur-sm min-[360px]:-mx-6 min-[360px]:px-6 md:static md:mx-0 md:bg-transparent md:px-0">
           <button
             onClick={handleProceed}
             disabled={isUploading}

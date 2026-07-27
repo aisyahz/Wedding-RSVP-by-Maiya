@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+﻿import React, { useEffect } from 'react';
 import { ScreenId, Invitation } from '../../types';
 import confetti from 'canvas-confetti';
 import { Heart, Calendar, ArrowLeft, CheckCircle2 } from 'lucide-react';
@@ -50,23 +50,23 @@ export const ThankYouScreen: React.FC<ThankYouScreenProps> = ({
 
       {/* Main Card */}
       <div className="card-maiya p-6 sm:p-8 space-y-6">
-        <div className="w-14 h-14 rounded-2xl bg-[#EFE7DF] text-[#9B7B63] flex items-center justify-center mx-auto border border-[#D9D2CA]">
+        <div className="w-14 h-14 rounded-2xl bg-[#EFE7DF] text-accent flex items-center justify-center mx-auto border border-system">
           <Heart className="w-7 h-7 fill-[#9B7B63]" />
         </div>
 
         <div className="space-y-1">
-          <h1 className="font-serif text-3xl font-bold text-[#1E1E1C]">
+          <h1 className="font-serif text-heading-1 text-primary">
             Terima Kasih
           </h1>
-          <p className="font-serif italic text-xs text-[#77736D] max-w-xs mx-auto">
+          <p className="font-serif italic text-xs text-secondary max-w-xs mx-auto">
             "Pengesahan kehadiran anda telah diterima dengan setinggi-tinggi penghargaan."
           </p>
         </div>
 
         <div className="w-12 h-px bg-[#D9D2CA] mx-auto" />
 
-        <div className="text-xs text-[#77736D] space-y-1">
-          <p className="font-title font-bold text-[#1E1E1C] text-base">
+        <div className="text-xs text-secondary space-y-1">
+          <p className="font-title font-bold text-primary text-base">
             {brideName} & {groomName}
           </p>
           <p>{weddingDate} • {activeInvitation?.venueName || 'Glasshouse at Seputeh'}</p>
@@ -75,9 +75,9 @@ export const ThankYouScreen: React.FC<ThankYouScreenProps> = ({
         <div className="space-y-3 pt-2">
           <button
             onClick={addToGoogleCalendar}
-            className="w-full btn-outline h-[52px] text-xs gap-2 cursor-pointer"
+            className="btn-outline w-full cursor-pointer"
           >
-            <Calendar className="w-4 h-4 text-[#9B7B63]" />
+            <Calendar className="w-4 h-4 text-accent" />
             <span>Simpan ke Google Calendar</span>
           </button>
 
@@ -91,9 +91,9 @@ export const ThankYouScreen: React.FC<ThankYouScreenProps> = ({
         </div>
       </div>
 
-      <div className="text-xs text-[#77736D] pt-2">
+      <div className="text-xs text-secondary pt-2">
         <span>Digital Wedding Card Powered by </span>
-        <strong className="text-[#1E1E1C] font-semibold">Digital Card by Maiya</strong>
+        <strong className="text-primary font-semibold">Digital Card by Maiya</strong>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate } from 'react-router-dom';
 import { Invitation, RsvpEntry, SystemSettings, ScreenId } from './types';
@@ -166,8 +166,8 @@ function EditInvitationRoute({
 
   if (isFetching && !inv) {
     return (
-      <div className="max-w-2xl mx-auto card-maiya p-6 flex items-center justify-center gap-3 text-sm text-[#77736D]">
-        <Loader2 className="w-5 h-5 animate-spin text-[#9B7B63]" />
+      <div className="max-w-2xl mx-auto card-maiya p-6 flex items-center justify-center gap-3 text-sm text-secondary">
+        <Loader2 className="w-5 h-5 animate-spin text-accent" />
         <span>Memuatkan maklumat jemputan…</span>
       </div>
     );
@@ -489,8 +489,8 @@ export default function App() {
 
     if (!inv && isFetching) {
       return (
-        <div className="max-w-2xl mx-auto card-maiya p-6 flex items-center justify-center gap-3 text-sm text-[#77736D]">
-          <Loader2 className="w-5 h-5 animate-spin text-[#9B7B63]" />
+        <div className="max-w-2xl mx-auto card-maiya p-6 flex items-center justify-center gap-3 text-sm text-secondary">
+          <Loader2 className="w-5 h-5 animate-spin text-accent" />
           <span>Memuatkan jemputan…</span>
         </div>
       );
@@ -547,8 +547,8 @@ export default function App() {
 
     if (isFetching && !inv) {
       return (
-        <div className="max-w-xl mx-auto card-maiya p-6 flex items-center justify-center gap-3 text-sm text-[#77736D]">
-          <Loader2 className="w-5 h-5 animate-spin text-[#9B7B63]" />
+        <div className="max-w-xl mx-auto card-maiya p-6 flex items-center justify-center gap-3 text-sm text-secondary">
+          <Loader2 className="w-5 h-5 animate-spin text-accent" />
           <span>Memuatkan pautan jemputan…</span>
         </div>
       );
@@ -633,8 +633,8 @@ export default function App() {
           if (loading) {
             return (
               <div className="min-h-dvh bg-[#1E1E1C] flex flex-col items-center justify-center p-6 text-white text-center space-y-3">
-                <Loader2 className="w-8 h-8 animate-spin text-[#9B7B63]" />
-                <p className="font-serif text-sm">Memuatkan kad jemputan...</p>
+                <Loader2 className="w-8 h-8 animate-spin text-accent" />
+                <p className="font-title text-sm">Memuatkan kad jemputan...</p>
               </div>
             );
           }
@@ -642,7 +642,7 @@ export default function App() {
             return (
               <div className="min-h-dvh bg-[#1E1E1C] flex flex-col items-center justify-center p-6 text-white text-center space-y-4">
                 <AlertCircle className="w-10 h-10 text-rose-500 mx-auto" />
-                <h1 className="font-title text-xl font-bold">Kad Tidak Dijumpai</h1>
+                <h1 className="text-heading-2">Kad Tidak Dijumpai</h1>
                 <p className="text-xs text-[#D9D2CA] max-w-xs">{errorMsg}</p>
               </div>
             );
@@ -679,31 +679,31 @@ export default function App() {
       {/* 6-Digit Generated PIN Overlay Modal */}
       {createdPinModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div role="dialog" aria-modal="true" aria-label="PIN keselamatan jemputan" className="card-maiya p-4 min-[360px]:p-6 max-w-md w-full min-w-0 max-h-[calc(100dvh-2rem)] overflow-y-auto bg-white space-y-5 text-center shadow-2xl rounded-2xl border border-[#D9D2CA] animate-in zoom-in-95">
-            <div className="w-14 h-14 rounded-2xl bg-[#EFE7DF] text-[#9B7B63] flex items-center justify-center mx-auto border border-[#D9D2CA]">
+          <div role="dialog" aria-modal="true" aria-label="PIN keselamatan jemputan" className="card-maiya p-4 min-[360px]:p-6 max-w-md w-full min-w-0 max-h-[calc(100dvh-2rem)] overflow-y-auto bg-white space-y-5 text-center shadow-2xl rounded-2xl border border-system animate-in zoom-in-95">
+            <div className="w-14 h-14 rounded-2xl bg-[#EFE7DF] text-accent flex items-center justify-center mx-auto border border-system">
               <KeyRound className="w-7 h-7" />
             </div>
 
             <div className="space-y-1">
-              <span className="text-[10px] uppercase font-bold text-[#9B7B63] tracking-widest">
+              <span className="text-caption uppercase font-bold text-accent tracking-widest">
                 Kad Berjaya Dicipta
               </span>
-              <h2 className="font-title text-xl font-bold text-[#1E1E1C]">
+              <h2 className="text-heading-2 text-primary">
                 PIN Keselamatan Peribadi Pasangan
               </h2>
-              <p className="text-xs text-[#77736D]">
+              <p className="text-xs text-secondary">
                 For <strong>{createdPinModal.brideName} & {createdPinModal.groomName}</strong>
               </p>
             </div>
 
-            <div className="p-4 bg-[#F7F5F2] rounded-xl border border-[#D9D2CA] space-y-2">
-              <span className="text-xs font-semibold text-[#77736D] block uppercase">
+            <div className="p-4 bg-app rounded-xl border border-system space-y-2">
+              <span className="text-xs font-semibold text-secondary block uppercase">
                 PIN Keselamatan 6 Digit
               </span>
-              <div className="font-mono text-3xl font-extrabold tracking-[0.4em] text-[#1E1E1C]">
+              <div className="font-title tabular-nums text-3xl font-bold tracking-[0.4em] text-primary">
                 {createdPinModal.pin}
               </div>
-              <p className="text-[11px] text-amber-900 bg-amber-50 p-2.5 rounded-lg border border-amber-200 mt-2 text-left">
+              <p className="text-caption text-amber-900 bg-amber-50 p-2.5 rounded-lg border border-amber-200 mt-2 text-left">
                 ⚠️ <strong>PENTING:</strong> Simpan atau catat PIN 6-digit ini. PIN ini dipaparkan <strong>SEKALI SAHAJA</strong> dan tidak disimpan dalam teks biasa untuk keselamatan.
               </p>
             </div>
@@ -716,7 +716,7 @@ export default function App() {
                 }}
                 className="flex-1 btn-outline h-11 text-xs gap-1.5 cursor-pointer"
               >
-                <Copy className="w-4 h-4 text-[#9B7B63]" />
+                <Copy className="w-4 h-4 text-accent" />
                 <span>Salin PIN</span>
               </button>
               <button
@@ -732,8 +732,8 @@ export default function App() {
 
       {/* Database Connection Info Banner */}
       {isLoadingData && (
-        <div className="bg-[#1E1E1C] text-white py-1.5 px-4 text-center text-[11px] font-medium flex items-center justify-center gap-2">
-          <Loader2 className="w-3.5 h-3.5 animate-spin text-[#9B7B63]" />
+        <div className="bg-[#1E1E1C] text-white py-1.5 px-4 text-center text-caption font-medium flex items-center justify-center gap-2">
+          <Loader2 className="w-3.5 h-3.5 animate-spin text-accent" />
           <span>Sistem sedang memuatkan data jemputan dari Supabase Database...</span>
         </div>
       )}
@@ -765,8 +765,8 @@ export default function App() {
         <Route
           element={
             !isAuthReady ? (
-              <div className="min-h-dvh flex flex-col items-center justify-center gap-3 p-6 text-center text-[#77736D]">
-                <Loader2 className="w-7 h-7 animate-spin text-[#9B7B63]" />
+              <div className="min-h-dvh flex flex-col items-center justify-center gap-3 p-6 text-center text-secondary">
+                <Loader2 className="w-7 h-7 animate-spin text-accent" />
                 <span className="text-sm">Menyemak sesi pentadbir…</span>
               </div>
             ) : session?.access_token && session.user ? (

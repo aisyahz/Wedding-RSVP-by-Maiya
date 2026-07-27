@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   CalendarDays,
   Check,
@@ -262,7 +262,7 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
             <p className="mb-5 text-xs font-semibold uppercase tracking-[0.32em] text-[#77685C]">
               Raikan Cinta
             </p>
-            <h1 className="max-w-full break-words font-serif text-[clamp(2rem,10vw,3.25rem)] font-semibold leading-[1.05] text-[#211E1B] [overflow-wrap:anywhere]">
+            <h1 className="text-display-xl max-w-full break-words text-[#211E1B] [overflow-wrap:anywhere]">
               {invitation?.brideName}
               <span className="my-2 block text-2xl font-normal italic text-[#C9A98E]">&</span>
               {invitation?.groomName}
@@ -308,9 +308,9 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
                 ['Minit', timeLeft.minutes],
                 ['Saat', timeLeft.seconds],
               ].map(([label, value]) => (
-                <div key={label} className="rounded-2xl border border-[#D9D2CA] bg-white/75 p-3 text-center">
-                  <strong className="block font-serif text-2xl text-[#1E1E1C]">{value}</strong>
-                  <span className="text-xs font-semibold uppercase tracking-wider text-[#77736D]">{label}</span>
+                <div key={label} className="rounded-2xl border border-system bg-white/75 p-3 text-center">
+                  <strong className="block font-serif text-2xl text-primary">{value}</strong>
+                  <span className="text-xs font-semibold uppercase tracking-wider text-secondary">{label}</span>
                 </div>
               ))}
             </div>
@@ -330,9 +330,9 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
         {activeFeature === 'location' && (
           <div className="space-y-5">
             <div className="rounded-2xl bg-white/75 p-5 text-center">
-              <MapPin className="mx-auto mb-3 h-6 w-6 text-[#9B7B63]" />
-              <h3 className="break-words font-serif text-2xl font-semibold [overflow-wrap:anywhere]">{invitation?.venueName || 'Lokasi belum tersedia'}</h3>
-              {invitation?.venueAddress && <p className="mt-2 break-words text-sm leading-relaxed text-[#77736D] [overflow-wrap:anywhere]">{invitation.venueAddress}</p>}
+              <MapPin className="mx-auto mb-3 h-6 w-6 text-accent" />
+              <h3 className="break-words font-serif text-heading-1 [overflow-wrap:anywhere]">{invitation?.venueName || 'Lokasi belum tersedia'}</h3>
+              {invitation?.venueAddress && <p className="mt-2 break-words text-sm leading-relaxed text-secondary [overflow-wrap:anywhere]">{invitation.venueAddress}</p>}
             </div>
             <div className="grid grid-cols-1 min-[360px]:grid-cols-2 gap-3">
               {googleMapsUrl && <a href={googleMapsUrl} target="_blank" rel="noopener noreferrer" className="btn-primary w-full"><MapPin className="h-5 w-5" />Google Maps</a>}
@@ -352,8 +352,8 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
                 <div>
                   <label className="mb-1.5 block text-sm font-semibold">Kehadiran *</label>
                   <div className="grid grid-cols-2 gap-3">
-                    <button type="button" aria-pressed={attendance === 'attending'} onClick={() => setAttendance('attending')} className={`flex min-h-12 items-center justify-center gap-2 rounded-xl border text-sm font-semibold ${attendance === 'attending' ? 'border-emerald-700 bg-emerald-700 text-white' : 'border-[#D9D2CA] bg-white'}`}><Check className="h-4 w-4" />Hadir</button>
-                    <button type="button" aria-pressed={attendance === 'declined'} onClick={() => setAttendance('declined')} className={`flex min-h-12 items-center justify-center gap-2 rounded-xl border text-sm font-semibold ${attendance === 'declined' ? 'border-rose-700 bg-rose-700 text-white' : 'border-[#D9D2CA] bg-white'}`}><X className="h-4 w-4" />Tidak Hadir</button>
+                    <button type="button" aria-pressed={attendance === 'attending'} onClick={() => setAttendance('attending')} className={`flex min-h-12 items-center justify-center gap-2 rounded-xl border text-sm font-semibold ${attendance === 'attending' ? 'border-emerald-700 bg-emerald-700 text-white' : 'border-system bg-white'}`}><Check className="h-4 w-4" />Hadir</button>
+                    <button type="button" aria-pressed={attendance === 'declined'} onClick={() => setAttendance('declined')} className={`flex min-h-12 items-center justify-center gap-2 rounded-xl border text-sm font-semibold ${attendance === 'declined' ? 'border-rose-700 bg-rose-700 text-white' : 'border-system bg-white'}`}><X className="h-4 w-4" />Tidak Hadir</button>
                   </div>
                 </div>
                 {attendance === 'attending' && (
@@ -361,14 +361,14 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
                     <label className="mb-1.5 block text-sm font-semibold">Jumlah Tetamu</label>
                     <div className="grid grid-cols-3 min-[360px]:grid-cols-4 gap-2">
                       {Array.from({ length: maxPax }, (_, index) => index + 1).map((value) => (
-                        <button type="button" key={value} onClick={() => setPax(value)} className={`min-h-11 rounded-xl border text-sm font-bold ${pax === value ? 'border-[#9B7B63] bg-[#9B7B63] text-white' : 'border-[#D9D2CA] bg-white'}`}>{value}</button>
+                        <button type="button" key={value} onClick={() => setPax(value)} className={`min-h-11 rounded-xl border text-sm font-bold ${pax === value ? 'border-[#9B7B63] bg-[#9B7B63] text-white' : 'border-system bg-white'}`}>{value}</button>
                       ))}
                     </div>
                   </div>
                 )}
                 <div>
                   <label className="mb-1.5 block text-sm font-semibold">Ucapan dan Doa</label>
-                  <textarea value={wishes} onChange={(event) => setWishes(event.target.value)} rows={3} className="w-full rounded-xl border border-[#D9D2CA] bg-white p-3 text-base focus:border-[#9B7B63] focus:outline-none" placeholder="Titipkan ucapan buat mempelai…" />
+                  <textarea value={wishes} onChange={(event) => setWishes(event.target.value)} rows={3} className="input-maiya" placeholder="Titipkan ucapan buat mempelai…" />
                 </div>
                 {submitError && <p role="alert" className="break-words text-sm text-rose-700">{submitError}</p>}
                 <button type="submit" disabled={isSubmitting} className="btn-primary w-full">
@@ -379,21 +379,21 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
             ) : (
               <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-center text-emerald-900">
                 <CheckCircle2 className="mx-auto mb-2 h-8 w-8" />
-                <h3 className="font-serif text-xl font-semibold">Terima kasih</h3>
+                <h3 className="font-serif text-heading-2">Terima kasih</h3>
                 <p className="mt-1 text-sm">RSVP anda berjaya direkodkan.</p>
               </div>
             )}
 
-            <div className="border-t border-[#D9D2CA] pt-5">
+            <div className="border-t border-system pt-5">
               <div className="mb-3 flex items-center justify-between gap-3">
-                <h3 className="font-serif text-xl font-semibold">Ucapan Tetamu</h3>
-                <span className="text-sm font-semibold text-[#9B7B63]">{invitationRsvps.length}</span>
+                <h3 className="font-serif text-heading-2">Ucapan Tetamu</h3>
+                <span className="text-sm font-semibold text-accent">{invitationRsvps.length}</span>
               </div>
               <div className="max-h-56 space-y-3 overflow-y-auto overscroll-contain pr-1">
                 {invitationRsvps.length === 0 ? (
-                  <p className="py-6 text-center text-sm text-[#77736D]">Belum ada ucapan. Jadilah yang pertama.</p>
+                  <p className="py-6 text-center text-sm text-secondary">Belum ada ucapan. Jadilah yang pertama.</p>
                 ) : invitationRsvps.map((entry) => (
-                  <article key={entry.id} className="min-w-0 rounded-2xl border border-[#D9D2CA] bg-white/75 p-4">
+                  <article key={entry.id} className="min-w-0 rounded-2xl border border-system bg-white/75 p-4">
                     <strong className="block break-words text-sm [overflow-wrap:anywhere]">{entry.guestName}</strong>
                     {entry.wishes && <p className="mt-1 break-words font-serif text-sm italic leading-relaxed text-[#5F5A55] [overflow-wrap:anywhere]">“{entry.wishes}”</p>}
                   </article>
@@ -404,18 +404,18 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
         )}
 
         {activeFeature === 'contact' && (
-          <div className="space-y-3 rounded-2xl border border-[#D9D2CA] bg-white/75 p-4 min-[360px]:p-5">
-            <p className="text-xs font-semibold uppercase tracking-wider text-[#9B7B63]">Wakil Pengantin</p>
-            <h3 className="mt-1 font-serif text-2xl font-semibold">Keluarga Pengantin</h3>
+          <div className="space-y-3 rounded-2xl border border-system bg-white/75 p-4 min-[360px]:p-5">
+            <p className="text-xs font-semibold uppercase tracking-wider text-accent">Wakil Pengantin</p>
+            <h3 className="mt-1 font-serif text-heading-1">Keluarga Pengantin</h3>
             {visibleContacts.length > 0 ? (
               <div className="space-y-3 pt-2">
                 {visibleContacts.map((contact) => {
                   const whatsapp = normalizeMalaysianPhone(contact.whatsappNumber);
                   const phone = normalizeMalaysianPhone(contact.phoneNumber);
                   return (
-                    <article key={contact.id} className="rounded-2xl border border-[#D9D2CA] bg-white p-4">
+                    <article key={contact.id} className="rounded-2xl border border-system bg-white p-4">
                       <h4 className="break-words font-semibold [overflow-wrap:anywhere]">{contact.name || 'Wakil Keluarga'}</h4>
-                      {contact.relationship && <p className="mt-0.5 break-words text-sm text-[#77736D] [overflow-wrap:anywhere]">{contact.relationship}</p>}
+                      {contact.relationship && <p className="mt-0.5 break-words text-sm text-secondary [overflow-wrap:anywhere]">{contact.relationship}</p>}
                       <div className="mt-3 grid grid-cols-1 gap-2 min-[360px]:grid-cols-2">
                         {whatsapp && <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noopener noreferrer" className="btn-primary w-full"><Phone className="h-5 w-5" />WhatsApp</a>}
                         {phone && <a href={`tel:+${phone}`} className="btn-outline w-full"><PhoneCall className="h-5 w-5" />Panggilan</a>}
@@ -425,18 +425,18 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
                 })}
               </div>
             ) : (
-              <p className="mt-4 text-sm text-[#77736D]">Maklumat hubungan belum tersedia.</p>
+              <p className="mt-4 text-sm text-secondary">Maklumat hubungan belum tersedia.</p>
             )}
           </div>
         )}
 
         {activeFeature === 'gift' && showGift && (
           <div className="space-y-4 text-center">
-            {bank?.qrCodeUrl && <img src={bank.qrCodeUrl} alt="Kod QR hadiah" className="mx-auto aspect-square w-44 max-w-full rounded-2xl border border-[#D9D2CA] bg-white object-contain p-3" />}
+            {bank?.qrCodeUrl && <img src={bank.qrCodeUrl} alt="Kod QR hadiah" className="mx-auto aspect-square w-44 max-w-full rounded-2xl border border-system bg-white object-contain p-3" />}
             {bank?.accountNumber && (
-              <div className="rounded-2xl border border-[#D9D2CA] bg-white/75 p-5">
-                <p className="text-sm font-semibold text-[#77736D]">{bank.bankName}</p>
-                <p className="mt-1 break-all font-mono text-xl font-bold tracking-wide">{bank.accountNumber}</p>
+              <div className="rounded-2xl border border-system bg-white/75 p-5">
+                <p className="text-sm font-semibold text-secondary">{bank.bankName}</p>
+                <p className="mt-1 break-all font-title tabular-nums text-xl font-bold tracking-wide">{bank.accountNumber}</p>
                 <p className="mt-1 break-words text-sm [overflow-wrap:anywhere]">{bank.accountHolder}</p>
               </div>
             )}

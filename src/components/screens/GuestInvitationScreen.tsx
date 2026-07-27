@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { ScreenId, Invitation, RsvpEntry } from '../../types';
 import { Clock, MapPin, Navigation, Phone, Gift, Copy, Lock, Volume2, VolumeX, HeartHandshake, CheckCircle2 } from 'lucide-react';
 import { BottomGuestNav } from '../common/BottomGuestNav';
@@ -151,13 +151,13 @@ export const GuestInvitationScreen: React.FC<GuestInvitationScreenProps> = ({
   }, [activeInvitation?.id]);
 
   return (
-    <div className="flex-1 min-w-0 bg-[#F7F5F2] flex flex-col justify-between min-h-dvh relative pb-[calc(6.5rem+env(safe-area-inset-bottom))] text-[#1E1E1C]">
+    <div className="flex-1 min-w-0 bg-app flex flex-col justify-between min-h-dvh relative pb-[calc(6.5rem+env(safe-area-inset-bottom))] text-primary">
       
       {/* Scrollable Container */}
       <div className="max-w-xl min-w-0 mx-auto space-y-7 p-3 min-[360px]:p-4 sm:p-6 w-full">
         
         {/* Top Hero Video Card */}
-        <div className="relative rounded-2xl overflow-hidden bg-[#1E1E1C] aspect-[9/12] shadow-md border border-[#D9D2CA]">
+        <div className="relative rounded-2xl overflow-hidden bg-[#1E1E1C] aspect-[9/12] shadow-md border border-system">
           {videoUrl ? (
             <video
               ref={videoRef}
@@ -181,7 +181,7 @@ export const GuestInvitationScreen: React.FC<GuestInvitationScreenProps> = ({
 
           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-black/50 p-5 flex flex-col justify-between text-white">
             <div className="flex justify-between items-center">
-              <span className="text-[10px] uppercase tracking-widest text-[#EFE7DF] bg-black/50 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 font-semibold">
+              <span className="text-caption uppercase tracking-widest text-[#EFE7DF] bg-black/50 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 font-semibold">
                 Digital Card by Maiya
               </span>
 
@@ -190,55 +190,55 @@ export const GuestInvitationScreen: React.FC<GuestInvitationScreenProps> = ({
                 disabled={!videoUrl}
                 className="w-9 h-9 rounded-full bg-black/50 backdrop-blur-md border border-white/20 text-[#EFE7DF] flex items-center justify-center cursor-pointer hover:scale-105 transition-transform"
               >
-                {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4 text-[#9B7B63]" />}
+                {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4 text-accent" />}
               </button>
             </div>
 
             <div className="text-center py-4 space-y-1">
-              <p className="text-[10px] uppercase tracking-[0.25em] text-[#EFE7DF] font-semibold">
+              <p className="text-caption uppercase tracking-[0.25em] text-[#EFE7DF] font-semibold">
                 Walimatul 'Urus
               </p>
-              <h1 className="font-serif text-[clamp(1.65rem,8vw,2rem)] leading-tight font-bold tracking-tight text-white break-words [overflow-wrap:anywhere]">
-                {brideName} <span className="text-[#9B7B63]">&</span> {groomName}
+              <h1 className="text-display-l break-words text-white [overflow-wrap:anywhere]">
+                {brideName} <span className="text-accent">&</span> {groomName}
               </h1>
             </div>
           </div>
         </div>
 
         {/* Live Countdown */}
-        <div className="card-maiya p-4 min-[360px]:p-5 text-center space-y-3">
-          <span className="text-[10px] uppercase tracking-widest font-semibold text-[#9B7B63] flex items-center justify-center gap-1.5">
+        <div className="card-maiya card-comfortable text-center space-y-3">
+          <span className="text-caption uppercase tracking-widest font-semibold text-accent flex items-center justify-center gap-1.5">
             <Clock className="w-3.5 h-3.5" />
             <span>Countdown to Wedding Day</span>
           </span>
 
           <div className="grid grid-cols-2 min-[350px]:grid-cols-4 gap-2 pt-1">
-            <div className="bg-[#EFE7DF] p-3 rounded-xl border border-[#D9D2CA]">
-              <span className="font-title text-xl font-bold text-[#1E1E1C] block">
+            <div className="bg-[#EFE7DF] p-3 rounded-xl border border-system">
+              <span className="text-heading-2 text-primary block">
                 {timeLeft.days}
               </span>
-              <span className="text-[11px] uppercase tracking-wider text-[#77736D] font-bold">HARI</span>
+              <span className="text-caption uppercase tracking-wider text-secondary font-bold">HARI</span>
             </div>
 
-            <div className="bg-[#EFE7DF] p-3 rounded-xl border border-[#D9D2CA]">
-              <span className="font-title text-xl font-bold text-[#1E1E1C] block">
+            <div className="bg-[#EFE7DF] p-3 rounded-xl border border-system">
+              <span className="text-heading-2 text-primary block">
                 {timeLeft.hours}
               </span>
-              <span className="text-[11px] uppercase tracking-wider text-[#77736D] font-bold">JAM</span>
+              <span className="text-caption uppercase tracking-wider text-secondary font-bold">JAM</span>
             </div>
 
-            <div className="bg-[#EFE7DF] p-3 rounded-xl border border-[#D9D2CA]">
-              <span className="font-title text-xl font-bold text-[#1E1E1C] block">
+            <div className="bg-[#EFE7DF] p-3 rounded-xl border border-system">
+              <span className="text-heading-2 text-primary block">
                 {timeLeft.minutes}
               </span>
-              <span className="text-[11px] uppercase tracking-wider text-[#77736D] font-bold">MINIT</span>
+              <span className="text-caption uppercase tracking-wider text-secondary font-bold">MINIT</span>
             </div>
 
-            <div className="bg-[#EFE7DF] p-3 rounded-xl border border-[#D9D2CA]">
-              <span className="font-title text-xl font-bold text-[#1E1E1C] block">
+            <div className="bg-[#EFE7DF] p-3 rounded-xl border border-system">
+              <span className="text-heading-2 text-primary block">
                 {timeLeft.seconds}
               </span>
-              <span className="text-[11px] uppercase tracking-wider text-[#77736D] font-bold">SAAT</span>
+              <span className="text-caption uppercase tracking-wider text-secondary font-bold">SAAT</span>
             </div>
           </div>
         </div>
@@ -246,14 +246,14 @@ export const GuestInvitationScreen: React.FC<GuestInvitationScreenProps> = ({
         {/* Event Date & Venue */}
         <div className="card-maiya p-4 min-[360px]:p-6 space-y-4 text-center">
           <div ref={calendarRef} id="calendar-section" className="space-y-1 scroll-mt-24">
-            <span className="text-[10px] font-semibold uppercase tracking-widest text-[#9B7B63]">
+            <span className="text-caption font-semibold uppercase tracking-widest text-accent">
               Tarikh & Masa Majlis
             </span>
-            <h2 className="font-serif text-2xl font-bold text-[#1E1E1C] break-words [overflow-wrap:anywhere]">
+            <h2 className="font-serif text-heading-1 text-primary break-words [overflow-wrap:anywhere]">
               {weddingDate}
             </h2>
-            <p className="text-xs text-[#77736D] flex items-center justify-center gap-1 font-medium">
-              <Clock className="w-3.5 h-3.5 text-[#9B7B63]" />
+            <p className="text-xs text-secondary flex items-center justify-center gap-1 font-medium">
+              <Clock className="w-3.5 h-3.5 text-accent" />
               <span>{weddingTime}</span>
             </p>
           </div>
@@ -261,10 +261,10 @@ export const GuestInvitationScreen: React.FC<GuestInvitationScreenProps> = ({
           <div className="w-12 h-px bg-[#D9D2CA] mx-auto" />
 
           <div ref={locationRef} id="location-section" className="space-y-1 scroll-mt-24">
-            <h3 className="font-title text-lg font-bold text-[#1E1E1C] break-words [overflow-wrap:anywhere]">
+            <h3 className="text-heading-3 text-primary break-words [overflow-wrap:anywhere]">
               {venueName}
             </h3>
-            <p className="text-sm leading-relaxed text-[#77736D] max-w-full mx-auto break-words [overflow-wrap:anywhere]">
+            <p className="text-sm leading-relaxed text-secondary max-w-full mx-auto break-words [overflow-wrap:anywhere]">
               {venueAddress}
             </p>
           </div>
@@ -277,8 +277,8 @@ export const GuestInvitationScreen: React.FC<GuestInvitationScreenProps> = ({
               rel={googleMapsUrl ? 'noopener noreferrer' : undefined}
               aria-disabled={!googleMapsUrl}
               onClick={(event) => !googleMapsUrl && event.preventDefault()}
-              className={`min-h-11 py-3 px-3 rounded-xl text-sm font-semibold flex min-w-0 items-center justify-center gap-2 transition-all border border-[#D9D2CA] ${
-                googleMapsUrl ? 'bg-[#F7F5F2] hover:bg-[#EFE7DF] text-[#1E1E1C]' : 'bg-[#F7F5F2] text-[#B7B1AA] cursor-not-allowed opacity-60'
+              className={`min-h-11 py-3 px-3 rounded-xl text-sm font-semibold flex min-w-0 items-center justify-center gap-2 transition-all border border-system ${
+                googleMapsUrl ? 'bg-app hover:bg-[#EFE7DF] text-primary' : 'bg-app text-[#B7B1AA] cursor-not-allowed opacity-60'
               }`}
             >
               <MapPin className="w-4 h-4 text-rose-500" />
@@ -291,8 +291,8 @@ export const GuestInvitationScreen: React.FC<GuestInvitationScreenProps> = ({
               rel={wazeUrl ? 'noopener noreferrer' : undefined}
               aria-disabled={!wazeUrl}
               onClick={(event) => !wazeUrl && event.preventDefault()}
-              className={`min-h-11 py-3 px-3 rounded-xl text-sm font-semibold flex min-w-0 items-center justify-center gap-2 transition-all border border-[#D9D2CA] ${
-                wazeUrl ? 'bg-[#F7F5F2] hover:bg-[#EFE7DF] text-[#1E1E1C]' : 'bg-[#F7F5F2] text-[#B7B1AA] cursor-not-allowed opacity-60'
+              className={`min-h-11 py-3 px-3 rounded-xl text-sm font-semibold flex min-w-0 items-center justify-center gap-2 transition-all border border-system ${
+                wazeUrl ? 'bg-app hover:bg-[#EFE7DF] text-primary' : 'bg-app text-[#B7B1AA] cursor-not-allowed opacity-60'
               }`}
             >
               <Navigation className="w-4 h-4 text-sky-500" />
@@ -302,8 +302,8 @@ export const GuestInvitationScreen: React.FC<GuestInvitationScreenProps> = ({
         </div>
 
         {/* Contact & Wishlist */}
-        <div ref={contactRef} id="contact-section" className="card-maiya p-4 min-[360px]:p-5 space-y-3 scroll-mt-24">
-          <h3 className="font-title text-base font-bold text-[#1E1E1C] text-center">
+        <div ref={contactRef} id="contact-section" className="card-maiya card-comfortable space-y-3 scroll-mt-24">
+          <h3 className="text-title text-primary text-center">
             Hubungi Wakil Pengantin
           </h3>
 
@@ -319,19 +319,19 @@ export const GuestInvitationScreen: React.FC<GuestInvitationScreenProps> = ({
               <Phone className="w-4 h-4" />
               <span>WhatsApp Host</span>
             </a>}
-            {!whatsappUrl && <p className="text-sm text-center text-[#77736D]">Maklumat hubungan tidak tersedia.</p>}
+            {!whatsappUrl && <p className="text-sm text-center text-secondary">Maklumat hubungan tidak tersedia.</p>}
 
           </div>
         </div>
 
         {/* RSVP Action */}
         <div ref={rsvpRef} id="rsvp-section" className="card-maiya p-4 min-[360px]:p-6 text-center space-y-4 scroll-mt-24">
-          <div className="w-11 h-11 mx-auto rounded-full bg-[#9B7B63]/10 text-[#9B7B63] flex items-center justify-center">
+          <div className="w-11 h-11 mx-auto rounded-full bg-[#9B7B63]/10 text-accent flex items-center justify-center">
             <HeartHandshake className="w-5 h-5" />
           </div>
           <div className="space-y-1">
-            <h3 className="font-serif text-xl font-bold text-[#1E1E1C]">Pengesahan Kehadiran</h3>
-            <p className="text-xs text-[#77736D]">
+            <h3 className="font-serif text-heading-2 text-primary">Pengesahan Kehadiran</h3>
+            <p className="text-xs text-secondary">
               Sila maklumkan kehadiran anda kepada pasangan pengantin.
             </p>
           </div>
@@ -347,11 +347,11 @@ export const GuestInvitationScreen: React.FC<GuestInvitationScreenProps> = ({
         {showGiftSection && (
           <div ref={giftRef} id="gift-section" className="card-maiya p-4 min-[360px]:p-6 space-y-4 text-center scroll-mt-24">
             <div className="space-y-1">
-              <span className="text-[10px] uppercase font-semibold text-[#9B7B63] tracking-widest flex items-center justify-center gap-1.5">
+              <span className="text-caption uppercase font-semibold text-accent tracking-widest flex items-center justify-center gap-1.5">
                 <Gift className="w-3.5 h-3.5" />
                 <span>Hadiah Digital / DuitNow</span>
               </span>
-              <h3 className="font-serif text-xl font-bold text-[#1E1E1C]">
+              <h3 className="font-serif text-heading-2 text-primary">
                 {bank?.bankName || 'Maklumat hadiah'}
               </h3>
             </div>
@@ -368,16 +368,16 @@ export const GuestInvitationScreen: React.FC<GuestInvitationScreenProps> = ({
               </a>
             )}
 
-            <div className="p-4 bg-[#EFE7DF] rounded-xl border border-[#D9D2CA] space-y-1">
+            <div className="p-4 bg-[#EFE7DF] rounded-xl border border-system space-y-1">
               {bank?.qrCodeUrl && (
                 <div className="pb-2 flex justify-center">
-                  <img src={bank.qrCodeUrl} alt="Kod QR DuitNow atau akaun bank pasangan pengantin" className="w-32 h-32 max-w-full object-contain bg-white rounded-xl p-2 border border-[#D9D2CA] shadow-2xs" />
+                  <img src={bank.qrCodeUrl} alt="Kod QR DuitNow atau akaun bank pasangan pengantin" className="w-32 h-32 max-w-full object-contain bg-white rounded-xl p-2 border border-system shadow-2xs" />
                 </div>
               )}
-              <span className="font-mono text-base min-[360px]:text-lg font-bold text-[#1E1E1C] block tracking-wide break-all">
+              <span className="font-title tabular-nums text-base min-[360px]:text-lg font-bold text-primary block tracking-wide break-all">
                 {bank?.accountNumber || 'Nombor akaun tidak tersedia'}
               </span>
-              <span className="text-sm text-[#77736D] font-semibold block break-words [overflow-wrap:anywhere]">
+              <span className="text-sm text-secondary font-semibold block break-words [overflow-wrap:anywhere]">
                 {bank?.accountHolder || ''}
               </span>
             </div>
@@ -387,38 +387,38 @@ export const GuestInvitationScreen: React.FC<GuestInvitationScreenProps> = ({
               disabled={!bank?.accountNumber}
               className="w-full btn-outline h-11 text-xs gap-2 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <Copy className="w-4 h-4 text-[#9B7B63]" />
+              <Copy className="w-4 h-4 text-accent" />
               <span>{copiedBank ? 'Telah Disalin!' : 'Salin Nombor Akaun'}</span>
             </button>
           </div>
         )}
 
         {/* Guest Wishes Wall */}
-        <div className="card-maiya p-4 min-[360px]:p-5 space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-[#D9D2CA]/40">
-            <h3 className="font-title text-base font-bold text-[#1E1E1C]">
+        <div className="card-maiya card-comfortable space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-system/40">
+            <h3 className="text-title text-primary">
               Ucapan & Doa Tetamu
             </h3>
-            <span className="text-xs text-[#9B7B63] font-semibold">
+            <span className="text-xs text-accent font-semibold">
               {cardRsvps.length} Ucapan
             </span>
           </div>
 
           <div className="space-y-3">
             {cardRsvps.length === 0 ? (
-              <p className="text-xs text-[#77736D] italic text-center py-6">
+              <p className="text-xs text-secondary italic text-center py-6">
                 Jadilah tetamu pertama menghantar ucapan!
               </p>
             ) : (
               cardRsvps.map((rsvp) => (
                 <div
                   key={rsvp.id}
-                  className="min-w-0 p-3.5 rounded-xl bg-[#F7F5F2] border border-[#D9D2CA] space-y-1.5 text-sm break-words [overflow-wrap:anywhere]"
+                  className="min-w-0 p-3.5 rounded-xl bg-app border border-system space-y-1.5 text-sm break-words [overflow-wrap:anywhere]"
                 >
-                  <div className="flex min-w-0 flex-col min-[360px]:flex-row min-[360px]:items-start justify-between gap-2 font-bold text-[#1E1E1C]">
+                  <div className="flex min-w-0 flex-col min-[360px]:flex-row min-[360px]:items-start justify-between gap-2 font-bold text-primary">
                     <span className="min-w-0 break-words [overflow-wrap:anywhere]">{rsvp.guestName}</span>
                     <span
-                      className={`self-start max-w-full text-[11px] leading-4 px-2 py-0.5 rounded-full font-bold uppercase whitespace-normal ${
+                      className={`self-start max-w-full text-caption leading-4 px-2 py-0.5 rounded-full font-bold uppercase whitespace-normal ${
                         rsvp.attendance === 'attending'
                           ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                           : 'bg-rose-100 text-rose-800 border border-rose-200'
@@ -427,7 +427,7 @@ export const GuestInvitationScreen: React.FC<GuestInvitationScreenProps> = ({
                       {rsvp.attendance === 'attending' ? `✓ Hadir (${rsvp.pax} Pax)` : 'Tidak Hadir'}
                     </span>
                   </div>
-                  {rsvp.wishes && <p className="font-serif italic text-[#1E1E1C]/80 text-sm leading-relaxed break-words [overflow-wrap:anywhere]">
+                  {rsvp.wishes && <p className="font-serif italic text-primary/80 text-sm leading-relaxed break-words [overflow-wrap:anywhere]">
                     “{rsvp.wishes}”
                   </p>}
                 </div>
@@ -440,9 +440,9 @@ export const GuestInvitationScreen: React.FC<GuestInvitationScreenProps> = ({
         <div className="text-center pt-2">
           <button
             onClick={() => onNavigate('private_rsvp_report')}
-            className="text-xs text-[#77736D] hover:text-[#1E1E1C] inline-flex items-center gap-1.5 underline cursor-pointer font-medium"
+            className="text-xs text-secondary hover:text-primary inline-flex items-center gap-1.5 underline cursor-pointer font-medium"
           >
-            <Lock className="w-3.5 h-3.5 text-[#9B7B63]" />
+            <Lock className="w-3.5 h-3.5 text-accent" />
             <span>Laporan RSVP Pengantin (Private PIN)</span>
           </button>
         </div>
@@ -452,7 +452,7 @@ export const GuestInvitationScreen: React.FC<GuestInvitationScreenProps> = ({
             href="https://digitalcardmaiya.com"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[11px] text-[#A39E98] hover:text-[#77736D] transition-colors"
+            className="text-caption text-[#A39E98] hover:text-secondary transition-colors"
           >
             Dibina dengan penuh kasih oleh Aisyah Zainal Studio
           </a>

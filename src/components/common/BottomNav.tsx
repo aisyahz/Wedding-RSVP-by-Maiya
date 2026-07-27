@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Mail, Users, Settings } from 'lucide-react';
 
@@ -13,7 +13,7 @@ export const BottomNav: React.FC = () => {
   ];
 
   return (
-    <nav aria-label="Navigasi pentadbir" className="md:hidden sticky bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-[#D9D2CA] px-1 min-[360px]:px-3 py-2 flex items-center justify-around shadow-sm pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
+    <nav aria-label="Navigasi pentadbir" className="md:hidden sticky bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-system px-1 min-[360px]:px-3 py-2 flex items-center justify-around shadow-sm pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
       {items.map((item) => {
         const Icon = item.icon;
         const isActive = location.pathname === item.path || (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
@@ -22,7 +22,7 @@ export const BottomNav: React.FC = () => {
             key={item.path}
             to={item.path}
             className={`flex min-w-0 min-h-11 flex-col items-center justify-center flex-1 py-1 px-1 min-[360px]:px-2 rounded-xl transition-all ${
-              isActive ? 'text-[#9B7B63] font-semibold' : 'text-[#77736D] hover:text-[#1E1E1C]'
+              isActive ? 'text-accent font-semibold' : 'text-secondary hover:text-primary'
             }`}
           >
             <div
@@ -32,7 +32,7 @@ export const BottomNav: React.FC = () => {
             >
               <Icon className="w-5 h-5" />
             </div>
-            <span className="text-[11px] leading-tight tracking-tight mt-0.5 font-sans">{item.label}</span>
+            <span className="text-caption leading-tight tracking-tight mt-0.5 font-sans">{item.label}</span>
           </Link>
         );
       })}

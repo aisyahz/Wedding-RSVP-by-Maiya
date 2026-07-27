@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { ScreenId, Invitation } from '../../types';
 import { Volume2, VolumeX, Menu, Play, X } from 'lucide-react';
 import { BottomGuestNav } from '../common/BottomGuestNav';
@@ -92,19 +92,19 @@ export const GuestOpeningScreen: React.FC<GuestOpeningScreenProps> = ({
           aria-label={isMuted ? 'Hidupkan audio video' : 'Senyapkan audio video'}
           title={isMuted ? 'Unmute Audio' : 'Mute Audio'}
         >
-          {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5 text-[#9B7B63]" />}
+          {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5 text-accent" />}
         </button>
       </div>
 
       {/* Center Hero: Minimal Couple Names & Play Button */}
       <div className="relative z-10 min-w-0 text-center py-12 my-auto space-y-5 px-4 min-[360px]:px-6">
-        <p className="text-[10px] font-sans uppercase tracking-[0.3em] text-[#EFE7DF] bg-black/40 backdrop-blur-md px-3.5 py-1 rounded-full inline-block border border-white/10 font-semibold">
+        <p className="text-caption font-sans uppercase tracking-[0.3em] text-[#EFE7DF] bg-black/40 backdrop-blur-md px-3.5 py-1 rounded-full inline-block border border-white/10 font-semibold">
           Walimatul 'Urus
         </p>
 
-        <h1 className="font-serif text-[clamp(1.75rem,9vw,2.5rem)] font-bold tracking-tight leading-tight text-white drop-shadow-md break-words [overflow-wrap:anywhere]">
+        <h1 className="text-display-l break-words text-white drop-shadow-md [overflow-wrap:anywhere]">
           <span className="block">{brideName}</span>
-          <div className="my-1 text-xl font-normal italic text-[#9B7B63]">&</div>
+          <div className="my-1 text-xl font-normal italic text-accent">&</div>
           <span className="block">{groomName}</span>
         </h1>
 
@@ -121,7 +121,7 @@ export const GuestOpeningScreen: React.FC<GuestOpeningScreenProps> = ({
           >
             <Play className="w-8 h-8 ml-1 fill-white text-white" />
           </button>
-          <p className="text-[11px] text-[#EFE7DF] tracking-widest uppercase font-semibold mt-3 drop-shadow-sm font-sans">
+          <p className="text-caption text-[#EFE7DF] tracking-widest uppercase font-semibold mt-3 drop-shadow-sm font-sans">
             Buka Undangan
           </p>
         </div>
@@ -130,12 +130,12 @@ export const GuestOpeningScreen: React.FC<GuestOpeningScreenProps> = ({
       {/* Drawer Menu Modal */}
       {showMenuDrawer && (
         <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex flex-col justify-end">
-          <div role="dialog" aria-modal="true" aria-label="Menu jemputan" className="bg-[#F7F5F2] text-[#1E1E1C] p-4 min-[360px]:p-6 rounded-t-2xl space-y-4 max-w-md mx-auto w-full min-w-0 max-h-[calc(100dvh-2rem)] overflow-y-auto animate-in slide-in-from-bottom">
-            <div className="flex items-center justify-between pb-3 border-b border-[#D9D2CA]">
+          <div role="dialog" aria-modal="true" aria-label="Menu jemputan" className="bg-app text-primary p-4 min-[360px]:p-6 rounded-t-2xl space-y-4 max-w-md mx-auto w-full min-w-0 max-h-[calc(100dvh-2rem)] overflow-y-auto animate-in slide-in-from-bottom">
+            <div className="flex items-center justify-between pb-3 border-b border-system">
               <span className="font-title font-bold text-base">Digital Card by Maiya</span>
               <button
                 onClick={() => setShowMenuDrawer(false)}
-                className="p-1.5 rounded-full bg-[#EFE7DF] text-[#1E1E1C] cursor-pointer"
+                className="p-1.5 rounded-full bg-[#EFE7DF] text-primary cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -144,7 +144,7 @@ export const GuestOpeningScreen: React.FC<GuestOpeningScreenProps> = ({
             <div className="space-y-2.5">
               <button
                 onClick={() => { setShowMenuDrawer(false); onNavigate('guest_invitation'); }}
-                className="w-full text-left p-3.5 rounded-xl bg-white border border-[#D9D2CA] font-semibold text-xs flex items-center justify-between cursor-pointer"
+                className="w-full text-left p-3.5 rounded-xl bg-white border border-system font-semibold text-xs flex items-center justify-between cursor-pointer"
               >
                 <span>Tarikh & Lokasi Majlis</span>
               </button>
@@ -158,7 +158,7 @@ export const GuestOpeningScreen: React.FC<GuestOpeningScreenProps> = ({
 
               <button
                 onClick={() => { setShowMenuDrawer(false); onNavigate('private_rsvp_report'); }}
-                className="w-full text-left p-3.5 rounded-xl bg-white border border-[#D9D2CA] font-semibold text-xs text-[#77736D] flex items-center justify-between cursor-pointer"
+                className="w-full text-left p-3.5 rounded-xl bg-white border border-system font-semibold text-xs text-secondary flex items-center justify-between cursor-pointer"
               >
                 <span className="break-words">Laporan RSVP Pengantin (PIN Peribadi)</span>
               </button>

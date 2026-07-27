@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+﻿import React, { useEffect, useRef, useState } from 'react';
 import { ScreenId, Invitation, InvitationContact } from '../../types';
 import { ArrowLeft, ArrowRight, Upload, CheckCircle, Loader2, AlertCircle, RotateCcw, Plus, Trash2 } from 'lucide-react';
 import { MediaProviderService } from '../../lib/mediaProvider';
@@ -195,22 +195,22 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
   return (
     <div className="max-w-2xl min-w-0 w-full mx-auto space-y-4 min-[360px]:space-y-6">
       {/* Top Header Navigation */}
-      <div className="flex min-w-0 items-center justify-between gap-2 bg-white p-3 min-[360px]:p-5 rounded-2xl border border-[#D9D2CA] shadow-2xs">
+      <div className="flex min-w-0 items-center justify-between gap-2 bg-white p-3 min-[360px]:p-5 rounded-2xl border border-system shadow-2xs">
         <button
           onClick={() => {
             if (step > 1) setStep(step - 1);
             else onNavigate('invitation_list');
           }}
-          className="w-10 h-10 rounded-xl bg-[#F7F5F2] hover:bg-[#EFE7DF] text-[#1E1E1C] flex items-center justify-center cursor-pointer transition-all border border-[#D9D2CA]"
+          className="w-10 h-10 rounded-xl bg-app hover:bg-[#EFE7DF] text-primary flex items-center justify-center cursor-pointer transition-all border border-system"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
 
         <div className="text-center min-w-0">
-          <span className="text-[10px] uppercase font-semibold text-[#9B7B63] tracking-wider block">
+          <span className="text-caption uppercase font-semibold text-accent tracking-wider block">
             Step {step} of 5
           </span>
-          <h1 className="font-title text-base font-bold text-[#1E1E1C]">
+          <h1 className="text-title text-primary">
             {step === 1 && 'Wedding & Couple Details'}
             {step === 2 && 'Venue & Map Links'}
             {step === 3 && 'Contacts & Gift Preferences'}
@@ -252,19 +252,19 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
             target.focus();
           });
         }}
-        className="card-maiya p-4 min-[360px]:p-6 md:p-8 space-y-6"
+        className="card-maiya card-form space-y-6"
       >
         
         {/* STEP 1: Couple Details */}
         {step === 1 && (
           <div className="space-y-4">
-            <h2 className="font-title text-lg font-bold text-[#1E1E1C] border-b border-[#D9D2CA]/40 pb-3">
+            <h2 className="text-heading-3 text-primary border-b border-system/40 pb-3">
               Couple Information
             </h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-[#1E1E1C] mb-1.5">
+                <label className="form-label block">
                   Bride Name *
                 </label>
                 <input
@@ -280,7 +280,7 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#1E1E1C] mb-1.5">
+                <label className="form-label block">
                   Groom Name *
                 </label>
                 <input
@@ -298,7 +298,7 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-[#1E1E1C] mb-1.5">
+                <label className="form-label block">
                   Wedding Date *
                 </label>
                 <input
@@ -313,7 +313,7 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#1E1E1C] mb-1.5">
+                <label className="form-label block">
                   Event Time *
                 </label>
                 <input
@@ -340,12 +340,12 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
         {/* STEP 2: Venue */}
         {step === 2 && (
           <div className="space-y-4">
-            <h2 className="font-title text-lg font-bold text-[#1E1E1C] border-b border-[#D9D2CA]/40 pb-3">
+            <h2 className="text-heading-3 text-primary border-b border-system/40 pb-3">
               Venue Location & Directions
             </h2>
 
             <div>
-              <label className="block text-xs font-semibold text-[#1E1E1C] mb-1.5">
+              <label className="form-label block">
                 Venue Name *
               </label>
               <input
@@ -359,7 +359,7 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-[#1E1E1C] mb-1.5">
+              <label className="form-label block">
                 Full Venue Address *
               </label>
               <textarea
@@ -368,13 +368,13 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
                 value={venueAddress}
                 onChange={(e) => setVenueAddress(e.target.value)}
                 placeholder="17, Jalan Syed Putra, Seputeh, 50460 Kuala Lumpur"
-                className="w-full bg-white border border-[#D9D2CA] rounded-xl p-3 text-base text-[#1E1E1C] focus:outline-none focus:border-[#9B7B63] focus:ring-3 focus:ring-[#9B7B63]/10"
+                className="input-maiya"
               />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-[#1E1E1C] mb-1.5">
+                <label className="form-label block">
                   Google Maps Link
                 </label>
                 <input
@@ -387,7 +387,7 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#1E1E1C] mb-1.5">
+                <label className="form-label block">
                   Waze Link
                 </label>
                 <input
@@ -405,15 +405,15 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
         {/* STEP 3: Contact & Extras */}
         {step === 3 && (
           <div className="space-y-4">
-            <h2 className="font-title text-lg font-bold text-[#1E1E1C] border-b border-[#D9D2CA]/40 pb-3">
+            <h2 className="text-heading-3 text-primary border-b border-system/40 pb-3">
               Guest Contacts & Gift Registry
             </h2>
 
             <div className="space-y-3">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-sm font-semibold text-[#1E1E1C]">Guest Contacts</h3>
-                  <p className="text-xs text-[#77736D]">Up to 3 contacts. Only enabled contacts appear to guests.</p>
+                  <h3 className="text-sm font-semibold text-primary">Guest Contacts</h3>
+                  <p className="text-xs text-secondary">Up to 3 contacts. Only enabled contacts appear to guests.</p>
                 </div>
                 <button
                   type="button"
@@ -425,9 +425,9 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
                 </button>
               </div>
               {contacts.map((contact, index) => (
-                <div key={contact.id} className="space-y-3 rounded-xl border border-[#D9D2CA] bg-white p-3 min-[360px]:p-4">
+                <div key={contact.id} className="space-y-3 rounded-xl border border-system bg-white p-3 min-[360px]:p-4">
                   <div className="flex items-center justify-between gap-3">
-                    <span className="text-xs font-semibold text-[#9B7B63]">Contact {index + 1}</span>
+                    <span className="text-xs font-semibold text-accent">Contact {index + 1}</span>
                     <div className="flex items-center gap-3">
                       <label className="flex min-h-11 cursor-pointer items-center gap-2 text-xs font-semibold">
                         <input
@@ -455,7 +455,7 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-[#1E1E1C] mb-1.5">
+                <label className="form-label block">
                   RSVP Closing Date *
                 </label>
                 <input
@@ -467,7 +467,7 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-[#1E1E1C] mb-1.5">
+                <label className="form-label block">
                   Maximum RSVP Pax *
                 </label>
                 <input
@@ -483,7 +483,7 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-[#1E1E1C] mb-1.5">
+              <label className="form-label block">
                 Wishlist URL (Optional)
               </label>
               <input
@@ -496,22 +496,22 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
             </div>
 
             {/* Gift Toggle */}
-            <div className="flex items-center justify-between p-4 bg-[#EFE7DF] rounded-xl border border-[#D9D2CA]">
+            <div className="flex items-center justify-between p-4 bg-[#EFE7DF] rounded-xl border border-system">
               <div>
-                <span className="text-xs font-semibold text-[#1E1E1C] block">Enable Gift Section</span>
-                <span className="text-[11px] text-[#77736D]">Provide bank transfer details or DuitNow QR for monetary gifts</span>
+                <span className="text-xs font-semibold text-primary block">Enable Gift Section</span>
+                <span className="text-caption text-secondary">Provide bank transfer details or DuitNow QR for monetary gifts</span>
               </div>
               <input
                 type="checkbox"
                 checked={enableGiftSection}
                 onChange={(e) => setEnableGiftSection(e.target.checked)}
-                className="w-5 h-5 rounded text-[#9B7B63] focus:ring-[#9B7B63] cursor-pointer"
+                className="w-5 h-5 rounded text-accent focus:ring-[#9B7B63] cursor-pointer"
               />
             </div>
 
             {enableGiftSection && (
-              <div className="p-4 bg-white rounded-xl border border-[#D9D2CA] space-y-3">
-                <span className="text-xs font-semibold text-[#9B7B63] block">Bank Details & Gift QR</span>
+              <div className="p-4 bg-white rounded-xl border border-system space-y-3">
+                <span className="text-xs font-semibold text-accent block">Bank Details & Gift QR</span>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 min-w-0">
                   <input
                     type="text"
@@ -537,13 +537,13 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
                 />
 
                 {/* Gift QR Image Upload */}
-                <div className="pt-2 border-t border-[#D9D2CA]/40">
-                  <label className="block text-[11px] font-semibold text-[#1E1E1C] mb-1">
+                <div className="pt-2 border-t border-system/40">
+                  <label className="block text-caption font-semibold text-primary mb-1">
                     DuitNow / Bank QR Code Image
                   </label>
                   {qrCodeUrl && (
                     <div className="mb-2 flex items-center gap-2">
-                      <img src={qrCodeUrl} alt="Gift QR" className="w-16 h-16 object-contain rounded-lg border border-[#D9D2CA] bg-white p-1" />
+                      <img src={qrCodeUrl} alt="Gift QR" className="w-16 h-16 object-contain rounded-lg border border-system bg-white p-1" />
                       <span className="text-xs text-emerald-700 font-medium break-words">Imej QR bersedia</span>
                     </div>
                   )}
@@ -559,7 +559,7 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
                         setQrCodeUrl(data.publicUrl);
                       }
                     }}
-                    className="text-xs text-[#77736D] file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[#EFE7DF] file:text-[#1E1E1C] hover:file:bg-[#9B7B63] hover:file:text-white cursor-pointer"
+                    className="text-xs text-secondary file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[#EFE7DF] file:text-primary hover:file:bg-[#9B7B63] hover:file:text-white cursor-pointer"
                   />
                 </div>
               </div>
@@ -570,18 +570,18 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
         {/* STEP 4: Upload Video */}
         {step === 4 && (
           <div className="space-y-4">
-            <h2 className="font-title text-lg font-bold text-[#1E1E1C] border-b border-[#D9D2CA]/40 pb-3">
+            <h2 className="text-heading-3 text-primary border-b border-system/40 pb-3">
               Upload Video Card
             </h2>
-            <p className="text-xs text-[#77736D]">
+            <p className="text-xs text-secondary">
               Select high quality MP4 video card file for full-screen guest opening experience.
             </p>
 
             <div className="border-2 border-dashed border-[#9B7B63]/60 rounded-2xl p-6 bg-[#EFE7DF]/50 text-center space-y-3">
-              <Upload className="w-8 h-8 text-[#9B7B63] mx-auto" />
+              <Upload className="w-8 h-8 text-accent mx-auto" />
               <div>
-                <p className="text-sm font-semibold text-[#1E1E1C] break-words [overflow-wrap:anywhere]">{videoFileName}</p>
-                <p className="text-xs text-[#77736D] mt-0.5">Format MP4 • Maksimum 50MB</p>
+                <p className="text-sm font-semibold text-primary break-words [overflow-wrap:anywhere]">{videoFileName}</p>
+                <p className="text-xs text-secondary mt-0.5">Format MP4 • Maksimum 50MB</p>
               </div>
 
               <label className="btn-outline h-10 text-xs px-4 cursor-pointer inline-flex items-center gap-1.5">
@@ -606,7 +606,7 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
             </div>
 
             {/* Video Preview */}
-            <div className="rounded-xl overflow-hidden bg-[#24211F] min-h-44 max-h-[220px] relative border border-[#D9D2CA]">
+            <div className="rounded-xl overflow-hidden bg-[#24211F] min-h-44 max-h-[220px] relative border border-system">
               {(selectedVideoPreviewUrl || videoUrl) ? (
                 <video
                   ref={videoPreviewRef}
@@ -637,7 +637,7 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
                   <Loader2 className="w-7 h-7 animate-spin" />
                 </div>
               )}
-              <div className="absolute bottom-3 left-3 bg-[#1E1E1C]/80 backdrop-blur-md text-white text-[10px] px-2.5 py-1 rounded-full font-sans">
+              <div className="absolute bottom-3 left-3 bg-[#1E1E1C]/80 backdrop-blur-md text-white text-caption px-2.5 py-1 rounded-full font-sans">
                 Video Card Preview
               </div>
             </div>
@@ -667,27 +667,27 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
         {/* STEP 5: Preview & Publish */}
         {step === 5 && (
           <div className="space-y-4">
-            <h2 className="font-title text-lg font-bold text-[#1E1E1C] border-b border-[#D9D2CA]/40 pb-3">
+            <h2 className="text-heading-3 text-primary border-b border-system/40 pb-3">
               Review & Generate Link
             </h2>
 
-            <div className="p-5 bg-[#EFE7DF] rounded-2xl border border-[#D9D2CA] space-y-2">
-              <span className="text-[10px] text-[#9B7B63] font-semibold uppercase tracking-wider block">
+            <div className="p-5 bg-[#EFE7DF] rounded-2xl border border-system space-y-2">
+              <span className="text-caption text-accent font-semibold uppercase tracking-wider block">
                 Summary Overview
               </span>
-              <p className="text-xl font-bold font-serif text-[#1E1E1C]">{brideName} & {groomName}</p>
-              <p className="text-xs text-[#77736D]">Date: {weddingDate} • {weddingTime}</p>
-              <p className="text-xs text-[#77736D]">Venue: {venueName}</p>
-              <p className="text-xs font-mono font-semibold text-[#9B7B63] pt-1">
+              <p className="text-xl font-bold font-title text-primary">{brideName} & {groomName}</p>
+              <p className="text-xs text-secondary">Date: {weddingDate} • {weddingTime}</p>
+              <p className="text-xs text-secondary">Venue: {venueName}</p>
+              <p className="text-xs font-title tabular-nums font-semibold text-accent pt-1">
                 Slug: /invite/{generatedSlug}
               </p>
             </div>
 
-            <div className="p-4 bg-white rounded-xl border border-[#D9D2CA] space-y-1">
-              <span className="text-xs font-semibold text-[#1E1E1C] block">
+            <div className="p-4 bg-white rounded-xl border border-system space-y-1">
+              <span className="text-xs font-semibold text-primary block">
                 🔒 Couple Private RSVP Report Access
               </span>
-              <p className="text-xs text-[#77736D]">
+              <p className="text-xs text-secondary">
                 {editingInvitation
                   ? 'The couple uses their 6-digit security PIN to view private guest RSVP responses.'
                   : 'A unique 6-digit PIN will be securely generated upon creation and displayed once for your records.'}
@@ -697,7 +697,7 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
         )}
 
         {/* Footer Actions */}
-        <div className="sticky bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-20 -mx-4 flex flex-col justify-end gap-2 border-t border-[#D9D2CA]/40 bg-white/95 px-4 pb-1 pt-4 backdrop-blur-sm min-[390px]:flex-row md:static md:mx-0 md:bg-transparent md:px-0">
+        <div className="sticky bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-20 -mx-4 flex flex-col justify-end gap-2 border-t border-system/40 bg-white/95 px-4 pb-1 pt-4 backdrop-blur-sm min-[390px]:flex-row md:static md:mx-0 md:bg-transparent md:px-0">
           {step < 5 ? (
             <button type="submit" className="w-full sm:w-auto btn-primary cursor-pointer">
               <span>Continue to Step {step + 1}</span>

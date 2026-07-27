@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { ScreenId, Invitation, RsvpEntry } from '../../types';
 import { Lock, Download, ArrowLeft, ShieldAlert, KeyRound, Loader2 } from 'lucide-react';
 import { getPrivateCoupleRsvpReport } from '../../lib/supabase';
@@ -76,19 +76,19 @@ export const PrivateRsvpReportScreen: React.FC<PrivateRsvpReportScreenProps> = (
     return (
     <div className="max-w-md min-w-0 w-full mx-auto space-y-4 min-[360px]:space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between bg-white p-5 rounded-2xl border border-[#D9D2CA] shadow-2xs">
+        <div className="flex items-center justify-between bg-white p-5 rounded-2xl border border-system shadow-2xs">
           <button
             onClick={() => onNavigate('guest_invitation')}
-            className="w-10 h-10 rounded-xl bg-[#F7F5F2] hover:bg-[#EFE7DF] text-[#1E1E1C] flex items-center justify-center cursor-pointer transition-all border border-[#D9D2CA]"
+            className="w-10 h-10 rounded-xl bg-app hover:bg-[#EFE7DF] text-primary flex items-center justify-center cursor-pointer transition-all border border-system"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
 
           <div className="text-center">
-            <span className="text-[10px] uppercase font-semibold text-[#9B7B63] tracking-wider block">
+            <span className="text-caption uppercase font-semibold text-accent tracking-wider block">
               Akses Pengantin
             </span>
-            <h1 className="font-title text-base font-bold text-[#1E1E1C]">
+            <h1 className="text-title text-primary">
               Laporan RSVP Sulit
             </h1>
           </div>
@@ -97,17 +97,17 @@ export const PrivateRsvpReportScreen: React.FC<PrivateRsvpReportScreenProps> = (
         </div>
 
         {/* PIN Form Card */}
-        <form onSubmit={handleUnlockPin} className="card-maiya p-4 min-[360px]:p-6 sm:p-8 space-y-5 text-center">
-          <div className="w-12 h-12 rounded-2xl bg-[#EFE7DF] text-[#9B7B63] flex items-center justify-center mx-auto border border-[#D9D2CA]">
+        <form onSubmit={handleUnlockPin} className="card-maiya card-form space-y-5 text-center">
+          <div className="w-12 h-12 rounded-2xl bg-[#EFE7DF] text-accent flex items-center justify-center mx-auto border border-system">
             <KeyRound className="w-6 h-6" />
           </div>
 
           <div>
-            <h2 className="font-title text-lg font-bold text-[#1E1E1C]">
+            <h2 className="text-heading-3 text-primary">
               Pengesahan PIN Pengantin
             </h2>
-            <p className="text-xs text-[#77736D] mt-1">
-              Masukkan 6-digit PIN keselamatan untuk melihat laporan RSVP <strong className="text-[#1E1E1C]">{brideName} & {groomName}</strong>
+            <p className="text-xs text-secondary mt-1">
+              Masukkan 6-digit PIN keselamatan untuk melihat laporan RSVP <strong className="text-primary">{brideName} & {groomName}</strong>
             </p>
           </div>
 
@@ -119,7 +119,7 @@ export const PrivateRsvpReportScreen: React.FC<PrivateRsvpReportScreenProps> = (
           )}
 
           <div>
-            <label className="block text-xs font-semibold text-[#1E1E1C] mb-1.5">
+            <label className="form-label block">
               6-Digit Security PIN
             </label>
             <input
@@ -129,7 +129,7 @@ export const PrivateRsvpReportScreen: React.FC<PrivateRsvpReportScreenProps> = (
               value={pinInput}
               onChange={(e) => setPinInput(e.target.value)}
               placeholder="••••••"
-              className="w-full text-center tracking-[0.5em] font-mono text-xl input-maiya"
+              className="w-full text-center tracking-[0.5em] font-title tabular-nums text-xl input-maiya"
             />
           </div>
 
@@ -156,20 +156,20 @@ export const PrivateRsvpReportScreen: React.FC<PrivateRsvpReportScreenProps> = (
   return (
     <div className="max-w-xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between bg-white p-5 rounded-2xl border border-[#D9D2CA] shadow-2xs">
+      <div className="flex items-center justify-between bg-white p-5 rounded-2xl border border-system shadow-2xs">
         <button
           onClick={() => setIsUnlocked(false)}
-          className="w-10 h-10 rounded-xl bg-[#F7F5F2] hover:bg-[#EFE7DF] text-[#1E1E1C] flex items-center justify-center cursor-pointer transition-all border border-[#D9D2CA]"
+          className="w-10 h-10 rounded-xl bg-app hover:bg-[#EFE7DF] text-primary flex items-center justify-center cursor-pointer transition-all border border-system"
           title="Kunci Semula"
         >
           <Lock className="w-4 h-4" />
         </button>
 
         <div className="text-center">
-          <span className="text-[10px] uppercase font-semibold text-[#9B7B63] tracking-wider block">
+          <span className="text-caption uppercase font-semibold text-accent tracking-wider block">
             Akses Pengantin • Sulit
           </span>
-          <h1 className="font-title text-base font-bold text-[#1E1E1C]">
+          <h1 className="text-title text-primary">
             Laporan RSVP ({brideName} & {groomName})
           </h1>
         </div>
@@ -186,19 +186,19 @@ export const PrivateRsvpReportScreen: React.FC<PrivateRsvpReportScreenProps> = (
       {/* KPI Stats Grid */}
       <div className="grid grid-cols-2 gap-3">
         <div className="card-maiya p-5 text-center">
-          <span className="text-[10px] uppercase font-semibold text-[#77736D] tracking-wider block">
+          <span className="text-caption uppercase font-semibold text-secondary tracking-wider block">
             Respon Hadir
           </span>
-          <span className="font-title text-2xl font-bold text-[#1E1E1C] mt-1 block">
+          <span className="text-heading-1 text-primary mt-1 block">
             {attendingRsvps.length}
           </span>
         </div>
 
         <div className="card-maiya p-5 text-center">
-          <span className="text-[10px] uppercase font-semibold text-[#77736D] tracking-wider block">
+          <span className="text-caption uppercase font-semibold text-secondary tracking-wider block">
             Jumlah Pax Hadir
           </span>
-          <span className="font-title text-2xl font-bold text-[#9B7B63] mt-1 block">
+          <span className="text-heading-1 text-accent mt-1 block">
             {totalPax} Pax
           </span>
         </div>
@@ -206,20 +206,20 @@ export const PrivateRsvpReportScreen: React.FC<PrivateRsvpReportScreenProps> = (
 
       {/* Guest Responses List */}
       <div className="card-maiya p-5 space-y-3">
-        <h2 className="font-title text-base font-bold text-[#1E1E1C] border-b border-[#D9D2CA]/40 pb-2">
+        <h2 className="text-title text-primary border-b border-system/40 pb-2">
           Senarai Tetamu ({reportData.length})
         </h2>
 
         <div className="space-y-2.5">
           {reportData.length === 0 ? (
-            <p className="text-xs text-[#77736D] italic text-center py-6">
+            <p className="text-xs text-secondary italic text-center py-6">
               Tiada rekod RSVP setakat ini.
             </p>
           ) : (
             reportData.map((rsvp) => (
               <div
                 key={rsvp.id}
-                className="flex min-w-0 flex-col min-[360px]:flex-row min-[360px]:items-start justify-between gap-2 bg-[#F7F5F2] p-3.5 rounded-xl border border-[#D9D2CA] text-sm"
+                className="flex min-w-0 flex-col min-[360px]:flex-row min-[360px]:items-start justify-between gap-2 bg-app p-3.5 rounded-xl border border-system text-sm"
               >
                 <div className="min-w-0 space-y-0.5">
                   <div className="flex min-w-0 items-start gap-2">
@@ -228,10 +228,10 @@ export const PrivateRsvpReportScreen: React.FC<PrivateRsvpReportScreenProps> = (
                         rsvp.attendance === 'attending' ? 'bg-emerald-600' : 'bg-rose-600'
                       }`}
                     />
-                    <span className="min-w-0 font-bold text-[#1E1E1C] break-words [overflow-wrap:anywhere]">{rsvp.guestName}</span>
+                    <span className="min-w-0 font-bold text-primary break-words [overflow-wrap:anywhere]">{rsvp.guestName}</span>
                   </div>
                   {rsvp.wishes && (
-                    <p className="text-[#77736D] italic text-sm break-words [overflow-wrap:anywhere]">
+                    <p className="text-secondary italic text-sm break-words [overflow-wrap:anywhere]">
                       “{rsvp.wishes}”
                     </p>
                   )}
@@ -256,16 +256,16 @@ export const PrivateRsvpReportScreen: React.FC<PrivateRsvpReportScreenProps> = (
       <div className="space-y-3 pt-1">
         <button
           onClick={handleDownloadCsv}
-          className="w-full btn-outline h-[52px] text-xs gap-2 cursor-pointer"
+          className="btn-outline w-full cursor-pointer"
         >
-          <Download className="w-4 h-4 text-[#9B7B63]" />
+          <Download className="w-4 h-4 text-accent" />
           <span>Muat Turun Laporan CSV</span>
         </button>
 
         <div className="text-center">
           <button
             onClick={() => onNavigate('guest_invitation')}
-            className="text-xs font-semibold text-[#9B7B63] hover:underline cursor-pointer"
+            className="text-xs font-semibold text-accent hover:underline cursor-pointer"
           >
             Kembali ke Kad Jemputan Tetamu
           </button>
