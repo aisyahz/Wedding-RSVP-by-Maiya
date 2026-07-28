@@ -204,6 +204,96 @@ interface EditInvitationRouteProps {
   onVideoFileSelected: React.Dispatch<React.SetStateAction<File | null>>;
 }
 
+interface GenerateLinkRouteProps {
+  invitations: Invitation[];
+  activeInvitation: Invitation | null;
+  selectedInvitationId: string;
+  setInvitations: React.Dispatch<React.SetStateAction<Invitation[]>>;
+  setSelectedInvitationId: React.Dispatch<React.SetStateAction<string>>;
+}
+
+function GenerateLinkRoute({
+  invitations,
+  activeInvitation,
+  selectedInvitationId,
+  setInvitations,
+  setSelectedInvitationId,
+}: GenerateLinkRouteProps) {
+  const { id: invitationId } = useParams<{ id: string }>();
+  const invitationFromState =
+    invitations.find((invitation) => invitation.id === invitationId) ||
+    (activeInvitation?.id === invitationId ? activeInvitation : null);
+  const [fetchedInvitation, setFetchedInvitation] = useState<Invitation | null>(invitationFromState);
+  const [fetchError, setFetchError] = useState('');
+  const [isFetching, setIsFetching] = useState(!invitationFromState);
+  const invitation = invitationFromState || fetchedInvitation;
+
+  useEffect(() => {
+    if (!invitationId) {
+      setFetchError('ID jemputan tiada pada URL.');
+      setIsFetching(false);
+      return;
+    }
+
+    let cancelled = false;
+    async function loadInvitation() {
+      setIsFetching(true);
+      setFetchError('');
+      const { data, error } = await getInvitationById(invitationId!);
+      if (cancelled) return;
+
+      setIsFetching(false);
+      if (!data) {
+        setFetchError(error || 'Rekod jemputan tidak ditemui.');
+        return;
+      }
+
+      setFetchedInvitation(data);
+      setSelectedInvitationId(data.id);
+      setInvitations((previous) => {
+        const existingIndex = previous.findIndex((item) => item.id === data.id);
+        if (existingIndex === -1) return [data, ...previous];
+        if (previous[existingIndex] === data) return previous;
+        return previous.map((item) => item.id === data.id ? data : item);
+      });
+    }
+
+    void loadInvitation();
+    return () => {
+      cancelled = true;
+    };
+  }, [invitationId]);
+
+  if (isFetching && !invitation) {
+    return (
+      <div className="max-w-xl mx-auto card-maiya p-6 flex items-center justify-center gap-3 text-sm text-secondary">
+        <Loader2 className="w-5 h-5 animate-spin text-accent" />
+        <span>Memuatkan pautan jemputan…</span>
+      </div>
+    );
+  }
+
+  if (!invitation && fetchError) {
+    return (
+      <div className="max-w-xl mx-auto card-maiya p-6 text-rose-800">
+        <h1 className="font-title font-bold">Pautan tidak dapat dijana</h1>
+        <p className="mt-2 text-sm">{fetchError}</p>
+      </div>
+    );
+  }
+
+  return (
+    <NavigationAdapter selectedInvitationId={selectedInvitationId} activeInvitation={invitation || activeInvitation}>
+      {(onNavigate) => (
+        <GenerateLinkScreen
+          onNavigate={onNavigate}
+          activeInvitation={invitation}
+        />
+      )}
+    </NavigationAdapter>
+  );
+}
+
 function EditInvitationRoute({
   invitations,
   editingInvitation,
@@ -606,70 +696,6 @@ export default function App() {
     );
   }
 
-  // Wrapper for Generate/Preview Link by ID
-  function PreviewWrapper() {
-    const { id } = useParams<{ id: string }>();
-    const [fetchedInvitation, setFetchedInvitation] = useState<Invitation | null>(null);
-    const [fetchError, setFetchError] = useState('');
-    const [isFetching, setIsFetching] = useState(false);
-    const inv =
-      invitations.find((i) => i.id === id) ||
-      (activeInvitation?.id === id ? activeInvitation : null) ||
-      fetchedInvitation;
-
-    useEffect(() => {
-      if (!id) return;
-      let cancelled = false;
-      setIsFetching(true);
-      getInvitationById(id).then(({ data, error }) => {
-        if (cancelled) return;
-        setIsFetching(false);
-        if (data) {
-          setFetchedInvitation(data);
-          setSelectedInvitationId(data.id);
-          setInvitations((prev) =>
-            prev.some((item) => item.id === data.id)
-              ? prev.map((item) => item.id === data.id ? data : item)
-              : [data, ...prev],
-          );
-        } else {
-          setFetchError(error || 'Rekod jemputan tidak ditemui.');
-        }
-      });
-      return () => {
-        cancelled = true;
-      };
-    }, [id]);
-
-    if (isFetching && !inv) {
-      return (
-        <div className="max-w-xl mx-auto card-maiya p-6 flex items-center justify-center gap-3 text-sm text-secondary">
-          <Loader2 className="w-5 h-5 animate-spin text-accent" />
-          <span>Memuatkan pautan jemputan…</span>
-        </div>
-      );
-    }
-
-    if (!inv && fetchError) {
-      return (
-        <div className="max-w-xl mx-auto card-maiya p-6 text-rose-800">
-          <h1 className="font-title font-bold">Pautan tidak dapat dijana</h1>
-          <p className="mt-2 text-sm">{fetchError}</p>
-        </div>
-      );
-    }
-    return (
-      <NavigationAdapter selectedInvitationId={selectedInvitationId} activeInvitation={inv || activeInvitation}>
-        {(onNavigate) => (
-          <GenerateLinkScreen
-            onNavigate={onNavigate}
-            activeInvitation={inv}
-          />
-        )}
-      </NavigationAdapter>
-    );
-  }
-
   return (
     <BrowserRouter>
       <SeoMetadata invitation={seoInvitation} />
@@ -869,8 +895,30 @@ export default function App() {
             }
           />
           <Route path="/invitations/:id/upload-video" element={<UploadVideoWrapper />} />
-          <Route path="/invitations/:id/generate-link" element={<PreviewWrapper />} />
-          <Route path="/invitations/:id/preview" element={<PreviewWrapper />} />
+          <Route
+            path="/invitations/:id/generate-link"
+            element={
+              <GenerateLinkRoute
+                invitations={invitations}
+                activeInvitation={activeInvitation}
+                selectedInvitationId={selectedInvitationId}
+                setInvitations={setInvitations}
+                setSelectedInvitationId={setSelectedInvitationId}
+              />
+            }
+          />
+          <Route
+            path="/invitations/:id/preview"
+            element={
+              <GenerateLinkRoute
+                invitations={invitations}
+                activeInvitation={activeInvitation}
+                selectedInvitationId={selectedInvitationId}
+                setInvitations={setInvitations}
+                setSelectedInvitationId={setSelectedInvitationId}
+              />
+            }
+          />
 
           <Route
             path="/rsvp"
