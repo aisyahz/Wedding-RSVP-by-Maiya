@@ -5,6 +5,8 @@ import { CheckCircle, Copy, Eye, Share2, Sparkles, Lock } from 'lucide-react';
 import { copyText } from '../../lib/clipboard';
 
 const celebratedInvitations = new Set<string>();
+const PUBLISH_CONFETTI_DURATION_MS = 1800;
+const PUBLISH_CONFETTI_PARTICLES = 24;
 
 interface GenerateLinkScreenProps {
   onNavigate: (screen: ScreenId) => void;
@@ -32,7 +34,7 @@ export const GenerateLinkScreen: React.FC<GenerateLinkScreenProps> = ({
     let completionTimer: number | undefined;
     try {
       confetti({
-        particleCount: 28,
+        particleCount: PUBLISH_CONFETTI_PARTICLES,
         spread: 52,
         ticks: 110,
         scalar: 0.82,
@@ -42,7 +44,7 @@ export const GenerateLinkScreen: React.FC<GenerateLinkScreenProps> = ({
       completionTimer = window.setTimeout(() => {
         confetti.reset();
         celebratedInvitations.add(activeInvitation.id);
-      }, 1800);
+      }, PUBLISH_CONFETTI_DURATION_MS);
     } catch {
       // Fallback
     }
