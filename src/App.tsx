@@ -101,6 +101,10 @@ function DiagnosticRedirect({ to }: { to: string; reason: string }) {
   return <Navigate to={to} replace />;
 }
 
+function uniqueById<T extends { id: string }>(items: T[]): T[] {
+  return Array.from(new Map(items.map((item) => [item.id, item])).values());
+}
+
 interface EditInvitationRouteProps {
   invitations: Invitation[];
   editingInvitation: Invitation | null;
@@ -255,23 +259,29 @@ export default function App() {
       return;
     }
 
+    let cancelled = false;
     async function initData() {
       setIsLoadingData(true);
       const [invRes, rsvpRes] = await Promise.all([getInvitations(), getRsvps()]);
+      if (cancelled) return;
 
       if (invRes.data) {
-        setInvitations(invRes.data);
-        if (invRes.data.length > 0) {
-          setSelectedInvitationId(invRes.data[0].id);
+        const uniqueInvitations = uniqueById(invRes.data);
+        setInvitations(uniqueInvitations);
+        if (uniqueInvitations.length > 0) {
+          setSelectedInvitationId(uniqueInvitations[0].id);
         }
       }
       if (rsvpRes.data) {
-        setRsvps(rsvpRes.data);
+        setRsvps(uniqueById(rsvpRes.data));
       }
       setIsLoadingData(false);
     }
 
-    initData();
+    void initData();
+    return () => {
+      cancelled = true;
+    };
   }, [isAuthReady, session?.access_token, session?.user]);
 
   const showToast = (type: 'success' | 'error', message: string) => {
@@ -423,7 +433,7 @@ export default function App() {
       return { success: false, error: message };
     }
 
-    setRsvps((prev) => [savedRsvp, ...prev]);
+    setRsvps((prev) => uniqueById([savedRsvp, ...prev]));
     showToast('success', 'Terima kasih! Kehadiran anda telah berjaya direkodkan.');
     return { success: true };
   };

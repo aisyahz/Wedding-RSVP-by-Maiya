@@ -84,13 +84,20 @@ function objectKeyFor(
   fileName: string,
 ): string {
   if (mediaType === 'video') {
-    if (contentType !== 'video/mp4' || !fileName.toLowerCase().endsWith('.mp4')) {
-      throw new Error('Invalid video format. Only MP4 videos are supported.');
+    const lowerName = fileName.toLowerCase();
+    const isMp4 = contentType === 'video/mp4' && lowerName.endsWith('.mp4');
+    const isMov = (
+      contentType === 'video/quicktime' ||
+      contentType === 'video/x-quicktime' ||
+      contentType === 'video/mov'
+    ) && lowerName.endsWith('.mov');
+    if (!isMp4 && !isMov) {
+      throw new Error('Invalid video format. Only MP4 and MOV videos are supported.');
     }
-    if (contentLength > 50 * 1024 * 1024) {
-      throw new Error('Video file size exceeds maximum limit of 50 MB.');
+    if (contentLength > 100 * 1024 * 1024) {
+      throw new Error('Video file size exceeds maximum limit of 100 MB.');
     }
-    return `invitations/${invitationId}/video.mp4`;
+    return `invitations/${invitationId}/video.${isMov ? 'mov' : 'mp4'}`;
   }
 
   if (!contentType.startsWith('image/')) {

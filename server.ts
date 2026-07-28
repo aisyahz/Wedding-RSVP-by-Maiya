@@ -220,7 +220,7 @@ app.get('/sitemap.xml', async (req: Request, res: Response) => {
 
 // 1. Generate Presigned Upload URL (Max 15 min validity)
 app.post('/api/r2/presign', verifySupabaseAdmin, async (req: Request, res: Response): Promise<void> => {
-  const { invitationId, mediaType, contentType, contentLength } = req.body;
+  const { invitationId, mediaType, contentType, contentLength, fileName = '' } = req.body;
 
   if (!invitationId || !mediaType) {
     res.status(400).json({ error: 'Missing required parameters: invitationId and mediaType' });
@@ -236,15 +236,22 @@ app.post('/api/r2/presign', verifySupabaseAdmin, async (req: Request, res: Respo
   // Validate Media Type, Content-Type and Content-Length
   let objectKey = '';
   if (mediaType === 'video') {
-    if (contentType !== 'video/mp4') {
-      res.status(400).json({ error: 'Invalid video format. Only MP4 videos are supported.' });
+    const lowerName = String(fileName).toLowerCase();
+    const isMp4 = contentType === 'video/mp4' && lowerName.endsWith('.mp4');
+    const isMov = (
+      contentType === 'video/quicktime' ||
+      contentType === 'video/x-quicktime' ||
+      contentType === 'video/mov'
+    ) && lowerName.endsWith('.mov');
+    if (!isMp4 && !isMov) {
+      res.status(400).json({ error: 'Invalid video format. Only MP4 and MOV videos are supported.' });
       return;
     }
-    if (contentLength && contentLength > 52428800) { // 50MB
-      res.status(400).json({ error: 'Video file size exceeds maximum limit of 50 MB.' });
+    if (contentLength && contentLength > 104857600) {
+      res.status(400).json({ error: 'Video file size exceeds maximum limit of 100 MB.' });
       return;
     }
-    objectKey = `invitations/${invitationId}/video.mp4`;
+    objectKey = `invitations/${invitationId}/video.${isMov ? 'mov' : 'mp4'}`;
   } else if (mediaType === 'poster') {
     if (!contentType || !contentType.startsWith('image/')) {
       res.status(400).json({ error: 'Invalid poster image format.' });

@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { MediaProviderService, UploadProgress } from '../../lib/mediaProvider';
 import { updateInvitationInSupabase } from '../../lib/supabase';
+import { getSupportedVideoType, MAX_VIDEO_SIZE_BYTES, VIDEO_ACCEPT } from '../../lib/videoValidation';
 
 interface UploadVideoScreenProps {
   onNavigate: (screen: ScreenId, slugOrId?: string) => void;
@@ -110,16 +111,14 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
     setVideoErrorDetails('');
     setUploadProgress(null);
 
-    // 1. Format Validation (.mp4 / video/mp4)
-    const isMp4 = file.name.toLowerCase().endsWith('.mp4') || file.type === 'video/mp4';
-    if (!isMp4) {
-      setUploadError('Sila pilih fail video berformat MP4 (.mp4) sahaja.');
+    const videoType = getSupportedVideoType(file);
+    if (!videoType) {
+      setUploadError('Sila pilih fail video berformat MP4 (.mp4) atau MOV (.mov).');
       return;
     }
 
-    // 2. Hard Size Limit (50MB)
-    if (file.size > 50 * 1024 * 1024) {
-      setUploadError(`Saiz fail video (${(file.size / (1024 * 1024)).toFixed(1)} MB) melebihi had maksimum 50 MB.`);
+    if (file.size > MAX_VIDEO_SIZE_BYTES) {
+      setUploadError(`Saiz fail video (${(file.size / (1024 * 1024)).toFixed(1)} MB) melebihi had maksimum 100 MB.`);
       return;
     }
 
@@ -141,14 +140,14 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
     setLocalPreviewUrl(objectUrl);
     setCurrentFileName(file.name);
     setVideoDuration(null);
-    setUploadSuccess('Fail MP4 dipilih! Anda boleh menguji tontonan di bawah sebelum memuat naik ke R2 CDN.');
+    setUploadSuccess(`Fail ${videoType === 'video/quicktime' ? 'MOV' : 'MP4'} dipilih! Anda boleh menguji tontonan di bawah sebelum memuat naik ke R2 CDN.`);
   };
 
   // Perform actual R2 Upload
   const performR2Upload = async (): Promise<boolean> => {
     if (!selectedVideoFile) {
       if (activeInvitation?.videoKey && activeInvitation.videoUrl) return true;
-      setUploadError('Fail video tidak tersedia. Sila pilih semula fail MP4 sebelum meneruskan.');
+      setUploadError('Fail video tidak tersedia. Sila pilih semula fail MP4 atau MOV sebelum meneruskan.');
       return false;
     }
     if (!invId) {
@@ -363,7 +362,7 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
               />
             ) : (
               <div className="flex h-full min-h-72 items-center justify-center p-5 text-center text-sm text-white/70">
-                Tiada video tersedia. Pilih fail MP4 untuk memulakan pratonton.
+                Tiada video tersedia. Pilih fail MP4 atau MOV untuk memulakan pratonton.
               </div>
             )}
 
@@ -375,7 +374,7 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
 
             <div className="absolute top-2 left-2 right-2 flex items-center justify-between pointer-events-none">
               <span className="text-caption bg-black/70 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/20 text-white font-title tabular-nums">
-                {selectedVideoFile ? 'MP4 Lokal' : 'MP4 R2 CDN'}
+                {selectedVideoFile ? `${selectedVideoFile.name.toLowerCase().endsWith('.mov') ? 'MOV' : 'MP4'} Lokal` : 'Video R2 CDN'}
               </span>
               {videoDuration && (
                 <span className="text-caption bg-black/70 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/20 text-white font-title tabular-nums">
@@ -432,7 +431,7 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
           <div className="relative border-2 border-dashed border-[#9B7B63]/60 rounded-2xl p-6 text-center bg-[#EFE7DF]/40 hover:bg-[#EFE7DF]/80 transition-all cursor-pointer">
             <input
               type="file"
-              accept="video/mp4"
+              accept={VIDEO_ACCEPT}
               disabled={isUploading}
               onChange={handleFileSelect}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 disabled:cursor-not-allowed"
@@ -446,10 +445,10 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
                 )}
               </div>
               <p className="font-title text-sm font-bold text-primary break-words [overflow-wrap:anywhere]">
-                {selectedVideoFile ? 'Tukar Fail Video MP4' : 'Pilih Fail Video Jemputan (MP4)'}
+                {selectedVideoFile ? 'Tukar Fail Video' : 'Pilih Fail Video Jemputan (MP4 / MOV)'}
               </p>
               <p className="text-xs text-secondary">
-                Format: MP4 sahaja • Maksimum 50MB (Had Keras) • Amaran jika &gt;15MB
+                Format: MP4 atau MOV • Maksimum 100MB • Amaran jika &gt;15MB
               </p>
             </div>
           </div>

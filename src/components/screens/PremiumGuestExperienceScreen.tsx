@@ -203,7 +203,7 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
 
   const submitRsvp = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!invitation?.id || !guestName.trim() || isSubmitting) {
+    if (!invitation?.id || !guestName.trim() || isSubmitting || submitSuccess) {
       setSubmitError('Sila masukkan nama tetamu.');
       return;
     }
@@ -395,7 +395,10 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
               <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-center text-emerald-900">
                 <CheckCircle2 className="mx-auto mb-2 h-8 w-8" />
                 <h3 className="font-serif text-heading-2">Terima kasih</h3>
-                <p className="mt-1 text-sm">RSVP anda berjaya direkodkan.</p>
+                <p className="mt-1 text-sm">Kehadiran anda telah berjaya direkodkan.</p>
+                <button type="button" onClick={() => setActiveFeature(null)} className="btn-primary mt-5 w-full">
+                  Tutup
+                </button>
               </div>
             )}
 

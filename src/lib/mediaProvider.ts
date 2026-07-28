@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { getSupportedVideoType, MAX_VIDEO_SIZE_BYTES } from './videoValidation';
 
 export type MediaType = 'video' | 'poster' | 'gift-qr' | 'all';
 
@@ -41,12 +42,11 @@ export const MediaProviderService = {
     let warningMsg: string | undefined = undefined;
 
     if (mediaType === 'video') {
-      const isMp4 = file.name.toLowerCase().endsWith('.mp4') || file.type === 'video/mp4';
-      if (!isMp4) {
-        return { data: null, error: 'Hanya fail format MP4 (.mp4) yang disokong.' };
+      if (!getSupportedVideoType(file)) {
+        return { data: null, error: 'Hanya fail video MP4 (.mp4) atau MOV (.mov) yang disokong.' };
       }
-      if (file.size > 52428800) { // 50MB limit
-        return { data: null, error: 'Saiz fail video melebihi had maksimum 50 MB.' };
+      if (file.size > MAX_VIDEO_SIZE_BYTES) {
+        return { data: null, error: 'Saiz fail video melebihi had maksimum 100 MB.' };
       }
       if (file.size > 15728640) { // 15MB warning
         warningMsg = 'Fail video melebihi 15MB. Disyorkan saiz bawah 15MB untuk kelajuan muat naik & tontonan tetamu yang optimum.';
@@ -67,7 +67,7 @@ export const MediaProviderService = {
         return { data: null, error: 'Authentication required. Please sign in again.' };
       }
       const contentType = mediaType === 'video'
-        ? 'video/mp4'
+        ? getSupportedVideoType(file) || 'video/mp4'
         : (file.type || 'image/webp');
       const presignRes = await fetch('/api/r2/presign', {
         method: 'POST',

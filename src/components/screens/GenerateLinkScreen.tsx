@@ -2,6 +2,9 @@
 import { ScreenId, Invitation } from '../../types';
 import confetti from 'canvas-confetti';
 import { CheckCircle, Copy, Eye, Share2, Sparkles, Lock } from 'lucide-react';
+import { copyText } from '../../lib/clipboard';
+
+const celebratedInvitations = new Set<string>();
 
 interface GenerateLinkScreenProps {
   onNavigate: (screen: ScreenId) => void;
@@ -13,6 +16,7 @@ export const GenerateLinkScreen: React.FC<GenerateLinkScreenProps> = ({
   activeInvitation,
 }) => {
   const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState('');
 
   const slug = activeInvitation?.slug || '';
   const brideName = activeInvitation?.brideName || '';
@@ -24,22 +28,40 @@ export const GenerateLinkScreen: React.FC<GenerateLinkScreenProps> = ({
   const generatedUrl = `${publicOrigin}/invite/${encodeURIComponent(slug)}`;
 
   useEffect(() => {
+    if (!activeInvitation?.id || celebratedInvitations.has(activeInvitation.id)) return;
+    let completionTimer: number | undefined;
     try {
       confetti({
-        particleCount: 60,
-        spread: 70,
+        particleCount: 28,
+        spread: 52,
+        ticks: 110,
+        scalar: 0.82,
         origin: { y: 0.6 },
         colors: ['#9B7B63', '#1E1E1C', '#D9D2CA', '#EFE7DF'],
       });
+      completionTimer = window.setTimeout(() => {
+        confetti.reset();
+        celebratedInvitations.add(activeInvitation.id);
+      }, 1800);
     } catch {
       // Fallback
     }
-  }, []);
+    return () => {
+      if (completionTimer) window.clearTimeout(completionTimer);
+      confetti.reset();
+    };
+  }, [activeInvitation?.id]);
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(generatedUrl);
+  const handleCopy = async () => {
+    setCopyError('');
+    const success = await copyText(generatedUrl);
+    if (!success) {
+      setCopied(false);
+      setCopyError('Pautan tidak dapat disalin. Sila pilih dan salin secara manual.');
+      return;
+    }
     setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
+    window.setTimeout(() => setCopied(false), 2500);
   };
 
   const handleWhatsAppShare = () => {
@@ -89,9 +111,10 @@ export const GenerateLinkScreen: React.FC<GenerateLinkScreenProps> = ({
             className="btn-accent min-h-11 px-3 gap-1 cursor-pointer shrink-0"
           >
             <Copy className="w-3.5 h-3.5" />
-            <span>{copied ? 'Copied Link' : 'Copy Link'}</span>
+            <span>{copied ? 'Copied' : 'Copy Link'}</span>
           </button>
         </div>
+        {copyError && <p role="alert" className="-mt-4 text-xs text-error">{copyError}</p>}
 
         {/* Action Buttons */}
         <div className="space-y-3 pt-2">

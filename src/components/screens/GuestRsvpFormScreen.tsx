@@ -1,6 +1,6 @@
 ﻿import React, { useState } from 'react';
 import { ScreenId, Invitation, RsvpEntry } from '../../types';
-import { ArrowLeft, Check, X, Send, Loader2 } from 'lucide-react';
+import { ArrowLeft, Check, CheckCircle2, X, Send, Loader2 } from 'lucide-react';
 
 interface GuestRsvpFormScreenProps {
   onNavigate: (screen: ScreenId) => void;
@@ -21,13 +21,14 @@ export const GuestRsvpFormScreen: React.FC<GuestRsvpFormScreenProps> = ({
   const [wishes, setWishes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [submitSuccess, setSubmitSuccess] = useState(false);
 
   const brideName = activeInvitation?.brideName || '';
   const groomName = activeInvitation?.groomName || '';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return;
+    if (isSubmitting || submitSuccess) return;
     if (!guestName.trim()) {
       setSubmitError('Sila masukkan nama tetamu.');
       return;
@@ -48,7 +49,8 @@ export const GuestRsvpFormScreen: React.FC<GuestRsvpFormScreenProps> = ({
     });
 
     if (result.success) {
-      onNavigate('thank_you');
+      setSubmitSuccess(true);
+      setIsSubmitting(false);
       return;
     }
 
@@ -80,6 +82,18 @@ export const GuestRsvpFormScreen: React.FC<GuestRsvpFormScreenProps> = ({
       </div>
 
       {/* Main Form Card */}
+      {submitSuccess ? (
+        <div className="card-maiya card-form space-y-5 text-center" role="status">
+          <CheckCircle2 className="mx-auto h-12 w-12 text-success" />
+          <div>
+            <h2 className="font-serif text-heading-1 text-primary">Terima Kasih</h2>
+            <p className="mt-2 text-sm text-secondary">Kehadiran anda telah berjaya direkodkan.</p>
+          </div>
+          <button type="button" onClick={() => onNavigate('guest_invitation')} className="btn-primary w-full">
+            Tutup
+          </button>
+        </div>
+      ) : (
       <form onSubmit={handleSubmit} className="card-maiya card-form space-y-5">
         <div className="text-center space-y-1 pb-3 border-b border-system/40">
           <h2 className="font-serif text-heading-1 text-primary break-words [overflow-wrap:anywhere]">
@@ -198,6 +212,7 @@ export const GuestRsvpFormScreen: React.FC<GuestRsvpFormScreenProps> = ({
           </button>
         </div>
       </form>
+      )}
     </div>
   );
 };

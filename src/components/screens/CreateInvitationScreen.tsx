@@ -1,5 +1,6 @@
 ﻿import React, { useEffect, useRef, useState } from 'react';
 import { ScreenId, Invitation, InvitationContact } from '../../types';
+import { VIDEO_ACCEPT } from '../../lib/videoValidation';
 import { ArrowLeft, ArrowRight, Upload, CheckCircle, Loader2, AlertCircle, RotateCcw, Plus, Trash2 } from 'lucide-react';
 import { MediaProviderService } from '../../lib/mediaProvider';
 
@@ -581,14 +582,14 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
               <Upload className="w-8 h-8 text-accent mx-auto" />
               <div>
                 <p className="text-sm font-semibold text-primary break-words [overflow-wrap:anywhere]">{videoFileName}</p>
-                <p className="text-xs text-secondary mt-0.5">Format MP4 • Maksimum 50MB</p>
+                <p className="text-xs text-secondary mt-0.5">Format MP4 atau MOV • Maksimum 100MB</p>
               </div>
 
               <label className="btn-outline h-10 text-xs px-4 cursor-pointer inline-flex items-center gap-1.5">
                 <span>Replace Video File</span>
                 <input
                   type="file"
-                  accept="video/mp4"
+                  accept={VIDEO_ACCEPT}
                   className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0] || null;
