@@ -5,6 +5,11 @@
     /* Font families */
     --font-display: 'Playfair Display', Georgia, serif;
     --font-body: 'Manrope', system-ui, -apple-system, sans-serif;
+    --font-guest-script: 'Pinyon Script', cursive;
+    --font-guest-serif: 'Noto Serif', Georgia, serif;
+    --font-guest-ui: 'Arimo', Arial, sans-serif;
+    --font-guest-sheet: 'Lora', Georgia, serif;
+    --font-guest-countdown: 'BJCree', 'Arimo', Arial, sans-serif;
 
     /* Type scale */
     --type-display-xl-size: clamp(2.25rem, 9vw, 3.5rem);
@@ -145,6 +150,58 @@
   .font-admin {
     font-family: var(--font-body);
   }
+}
+
+/* Public invitation type and glass system */
+.guest-experience {
+  font-family: var(--font-guest-ui);
+}
+
+.guest-love-quote { font-family: var(--font-guest-script); }
+.guest-couple-name,
+.guest-event-date,
+.guest-location-title { font-family: var(--font-guest-serif); }
+.guest-nav-label { font-family: var(--font-guest-ui); }
+.guest-sheet-title { font-family: var(--font-guest-sheet); }
+.guest-countdown-number { font-family: var(--font-guest-countdown); }
+
+.guest-experience .font-serif {
+  font-family: var(--font-guest-sheet);
+}
+
+.guest-experience .font-title,
+.guest-experience .font-sans,
+.guest-experience input,
+.guest-experience textarea,
+.guest-experience button,
+.guest-experience a {
+  font-family: var(--font-guest-ui);
+}
+
+.guest-experience .btn-primary,
+.guest-experience .btn-outline {
+  border-radius: 999px;
+  font-family: var(--font-guest-ui);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.guest-glass {
+  border: 1px solid rgb(255 255 255 / 72%);
+  background: linear-gradient(145deg, rgb(255 255 255 / 82%), rgb(245 245 245 / 62%));
+  box-shadow: 0 14px 42px rgb(20 20 20 / 14%), inset 0 1px 0 rgb(255 255 255 / 80%);
+  backdrop-filter: blur(24px) saturate(125%);
+  -webkit-backdrop-filter: blur(24px) saturate(125%);
+}
+
+.guest-glass-control {
+  border: 1px solid rgb(255 255 255 / 78%);
+  background: rgb(255 255 255 / 76%);
+  box-shadow: 0 8px 24px rgb(20 20 20 / 12%), inset 0 1px 0 rgb(255 255 255 / 88%);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 }
 
 /* Typography primitives */

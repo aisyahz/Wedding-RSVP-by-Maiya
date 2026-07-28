@@ -282,7 +282,7 @@ export const GuestBottomSheet: React.FC<GuestBottomSheetProps> = ({
             : 'height 320ms cubic-bezier(0.22, 1, 0.36, 1), transform 320ms cubic-bezier(0.22, 1, 0.36, 1)',
           willChange: isDragging ? 'height, transform' : undefined,
         }}
-        className="relative z-10 flex w-full min-w-0 flex-col overflow-hidden rounded-t-[30px] border border-white/70 bg-[#F7F1E8]/97 pb-[env(safe-area-inset-bottom)] text-[#211E1B] shadow-[0_-18px_55px_rgba(32,27,23,0.24)] backdrop-blur-2xl"
+        className="guest-glass relative z-10 flex w-full min-w-0 flex-col overflow-hidden rounded-t-[30px] pb-[env(safe-area-inset-bottom)] text-[#111]"
       >
         <div
           role="button"
@@ -295,17 +295,17 @@ export const GuestBottomSheet: React.FC<GuestBottomSheetProps> = ({
           onPointerCancel={endDrag}
           onKeyDown={handleHeaderKeyDown}
         >
-          <div className="mx-auto h-1 w-12 rounded-full bg-[#302C28]/75" />
+          <div className="mx-auto h-1 w-12 rounded-full bg-black/55" />
         </div>
 
         <header
-          className="flex min-w-0 touch-none items-center justify-between gap-3 border-b border-system/70 px-4 pb-3 min-[360px]:px-6"
+          className="flex min-w-0 touch-none items-center justify-between gap-3 border-b border-black/10 px-4 pb-3 min-[360px]:px-6"
           onPointerDown={beginDrag}
           onPointerMove={moveDrag}
           onPointerUp={endDrag}
           onPointerCancel={endDrag}
         >
-          <h2 className="min-w-0 break-words font-serif text-heading-1 leading-tight">
+          <h2 className="guest-sheet-title min-w-0 break-words text-xl font-semibold uppercase leading-tight tracking-[0.04em]">
             {title}
           </h2>
           <button
@@ -313,7 +313,7 @@ export const GuestBottomSheet: React.FC<GuestBottomSheetProps> = ({
             type="button"
             onClick={onClose}
             aria-label={`Tutup ${title}`}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-system bg-white/80 text-primary transition-colors hover:bg-white"
+            className="guest-glass-control flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-black transition-colors hover:bg-white"
           >
             <X className="h-5 w-5" />
           </button>

@@ -7,11 +7,9 @@ import {
   Copy,
   ExternalLink,
   Gift,
-  Leaf,
   Loader2,
   MapPin,
   Navigation,
-  Phone,
   PhoneCall,
   Send,
   Volume2,
@@ -58,6 +56,23 @@ const toCalendarDate = (date: string, time: string, hoursToAdd = 0) => {
   const pad = (part: number) => String(part).padStart(2, '0');
   return `${value.getFullYear()}${pad(value.getMonth() + 1)}${pad(value.getDate())}T${pad(value.getHours())}${pad(value.getMinutes())}00`;
 };
+
+const formatInvitationDate = (value?: string) => {
+  if (!value) return '';
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat('ms-MY', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(date).replace(/\./g, '').toUpperCase();
+};
+
+const WhatsAppIcon: React.FC<{ className?: string }> = ({ className = 'h-5 w-5' }) => (
+  <svg className={className} viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
+    <path d="M12.04 2a9.84 9.84 0 0 0-8.4 14.96L2 22l5.18-1.61A9.94 9.94 0 1 0 12.04 2Zm0 17.9a8.05 8.05 0 0 1-4.1-1.12l-.3-.18-3.07.96 1-2.99-.2-.31a8.04 8.04 0 1 1 6.67 3.64Zm4.42-6.02c-.24-.12-1.43-.7-1.65-.79-.22-.08-.38-.12-.54.12-.16.25-.62.79-.76.95-.14.16-.28.18-.52.06-.24-.12-1.02-.38-1.94-1.2a7.22 7.22 0 0 1-1.34-1.67c-.14-.24-.01-.37.11-.49.11-.11.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.54-1.3-.74-1.78-.2-.47-.4-.41-.54-.42h-.46c-.16 0-.42.06-.64.3-.22.24-.84.82-.84 2s.86 2.32.98 2.48c.12.16 1.7 2.59 4.11 3.63.58.25 1.02.39 1.37.5.58.18 1.1.16 1.51.1.46-.07 1.43-.59 1.63-1.15.2-.56.2-1.04.14-1.14-.06-.1-.22-.16-.46-.28Z" />
+  </svg>
+);
 
 export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreenProps> = ({
   activeInvitation,
@@ -133,6 +148,15 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
   const openInvitation = () => {
     if (isOpening) return;
     setIsOpening(true);
+    setIsMuted(false);
+    if (videoRef.current) {
+      videoRef.current.muted = false;
+      videoRef.current.play().catch(() => {
+        if (videoRef.current) videoRef.current.muted = true;
+        setIsMuted(true);
+        videoRef.current?.play().catch(() => undefined);
+      });
+    }
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     window.setTimeout(() => {
       setIsOpened(true);
@@ -209,7 +233,7 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
   };
 
   return (
-    <div className="relative h-dvh min-h-[480px] w-full min-w-0 overflow-hidden bg-[#171513] text-white md:h-full md:min-h-0">
+    <div className="guest-experience relative h-dvh min-h-[480px] w-full min-w-0 overflow-hidden bg-[#171513] text-white md:h-full md:min-h-0">
       {videoUrl ? (
         <video
           ref={videoRef}
@@ -237,7 +261,7 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
           onClick={() => setIsMuted((value) => !value)}
           disabled={!videoUrl}
           aria-label={isMuted ? 'Hidupkan audio' : 'Senyapkan audio'}
-          className="absolute right-4 top-[calc(1rem+env(safe-area-inset-top))] z-20 flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-black/25 text-white backdrop-blur-xl transition hover:bg-black/40 disabled:opacity-40"
+          className="guest-glass-control absolute right-4 top-[calc(1rem+env(safe-area-inset-top))] z-20 flex h-12 w-12 items-center justify-center rounded-full text-black transition hover:bg-white disabled:opacity-40"
         >
           {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
         </button>
@@ -245,41 +269,30 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
 
       {!isOpened && (
         <div className={`absolute inset-0 z-30 transition-opacity duration-500 ${isOpening ? 'pointer-events-none opacity-90' : 'opacity-100'}`}>
-          <div
-            className={`absolute inset-y-0 left-0 w-1/2 overflow-hidden border-r border-[#CFC1B2] bg-[#F4EDE3] transition-transform duration-[980ms] [transition-timing-function:cubic-bezier(.77,0,.18,1)] ${isOpening ? '-translate-x-full' : 'translate-x-0'}`}
-          >
-            <Leaf className="absolute -left-8 top-[24%] h-44 w-44 rotate-[28deg] stroke-[0.7] text-[#C9A98E]/60" />
-            <Leaf className="absolute -left-9 bottom-[16%] h-40 w-40 -rotate-[18deg] stroke-[0.7] text-[#C9A98E]/45" />
-          </div>
-          <div
-            className={`absolute inset-y-0 right-0 w-1/2 overflow-hidden border-l border-[#CFC1B2] bg-[#F4EDE3] transition-transform duration-[980ms] [transition-timing-function:cubic-bezier(.77,0,.18,1)] ${isOpening ? 'translate-x-full' : 'translate-x-0'}`}
-          >
-            <Leaf className="absolute -right-8 top-[24%] h-44 w-44 -rotate-[28deg] scale-x-[-1] stroke-[0.7] text-[#C9A98E]/60" />
-            <Leaf className="absolute -right-9 bottom-[16%] h-40 w-40 rotate-[18deg] scale-x-[-1] stroke-[0.7] text-[#C9A98E]/45" />
-          </div>
+          <div className={`absolute inset-y-0 left-0 w-1/2 border-r border-black/10 bg-white/90 shadow-[inset_-18px_0_36px_rgba(0,0,0,0.035)] backdrop-blur-2xl transition-transform duration-[980ms] [transition-timing-function:cubic-bezier(.77,0,.18,1)] ${isOpening ? '-translate-x-full' : 'translate-x-0'}`} />
+          <div className={`absolute inset-y-0 right-0 w-1/2 border-l border-white/80 bg-white/90 shadow-[inset_18px_0_36px_rgba(0,0,0,0.035)] backdrop-blur-2xl transition-transform duration-[980ms] [transition-timing-function:cubic-bezier(.77,0,.18,1)] ${isOpening ? 'translate-x-full' : 'translate-x-0'}`} />
 
           <div className={`absolute inset-0 flex min-w-0 flex-col items-center justify-center px-5 text-center transition-all duration-500 ${isOpening ? 'scale-95 opacity-0' : 'scale-100 opacity-100'}`}>
-            <p className="mb-5 text-xs font-semibold uppercase tracking-[0.32em] text-[#77685C]">
+            <p className="guest-love-quote mb-6 text-[1.75rem] leading-none text-black/75">
               Raikan Cinta
             </p>
-            <h1 className="text-display-xl max-w-full break-words text-[#211E1B] [overflow-wrap:anywhere]">
+            <h1 className="guest-couple-name max-w-full break-words text-[clamp(2rem,11vw,3.25rem)] font-semibold uppercase leading-[1.08] tracking-[0.04em] text-black [overflow-wrap:anywhere]">
               {invitation?.brideName}
-              <span className="my-2 block text-2xl font-normal italic text-[#C9A98E]">&</span>
+              <span className="my-2 block text-2xl font-normal text-black/70">&</span>
               {invitation?.groomName}
             </h1>
-            <p className="mt-5 text-sm tracking-[0.18em] text-[#665B52]">
-              {invitation?.weddingDate}
+            <div className="my-6 h-px w-24 bg-black/20" />
+            <p className="guest-event-date text-sm font-semibold uppercase tracking-[0.26em] text-black/80">
+              {formatInvitationDate(invitation?.weddingDate)}
             </p>
             <button
               type="button"
               onClick={openInvitation}
-              className="mt-10 min-h-12 rounded-full border border-[#2E2925] bg-[#2E2925] px-7 text-sm font-semibold text-white shadow-xl transition hover:bg-[#443C35] active:scale-[0.98]"
+              className="guest-glass-control mt-10 min-h-[52px] rounded-full px-7 text-xs font-bold uppercase tracking-[0.1em] text-black transition hover:bg-white active:scale-[0.98]"
             >
               <span className="flex items-center justify-center gap-2">
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-[#2E2925]">
-                  <ChevronRight className="h-4 w-4" />
-                </span>
                 Buka Undangan
+                <ChevronRight className="h-4 w-4" />
               </span>
             </button>
           </div>
@@ -308,9 +321,9 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
                 ['Minit', timeLeft.minutes],
                 ['Saat', timeLeft.seconds],
               ].map(([label, value]) => (
-                <div key={label} className="rounded-2xl border border-system bg-white/75 p-3 text-center">
-                  <strong className="block font-serif text-2xl text-primary">{value}</strong>
-                  <span className="text-xs font-semibold uppercase tracking-wider text-secondary">{label}</span>
+                <div key={label} className="guest-glass-control rounded-2xl p-3 text-center">
+                  <strong className="guest-countdown-number block text-2xl font-bold tabular-nums text-black">{value}</strong>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-black/60">{label}</span>
                 </div>
               ))}
             </div>
@@ -329,10 +342,12 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
 
         {activeFeature === 'location' && (
           <div className="space-y-5">
-            <div className="rounded-2xl bg-white/75 p-5 text-center">
-              <MapPin className="mx-auto mb-3 h-6 w-6 text-accent" />
-              <h3 className="break-words font-serif text-heading-1 [overflow-wrap:anywhere]">{invitation?.venueName || 'Lokasi belum tersedia'}</h3>
-              {invitation?.venueAddress && <p className="mt-2 break-words text-sm leading-relaxed text-secondary [overflow-wrap:anywhere]">{invitation.venueAddress}</p>}
+            <div className="guest-glass-control rounded-[24px] p-6 text-center">
+              <span className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-black/10 bg-white/65">
+                <MapPin className="h-6 w-6 text-black" strokeWidth={1.7} />
+              </span>
+              <h3 className="guest-location-title break-words text-2xl font-semibold uppercase leading-tight tracking-[0.025em] text-black [overflow-wrap:anywhere]">{invitation?.venueName || 'Lokasi belum tersedia'}</h3>
+              {invitation?.venueAddress && <p className="mt-3 break-words text-xs font-semibold uppercase leading-relaxed tracking-[0.04em] text-black/60 [overflow-wrap:anywhere]">{invitation.venueAddress}</p>}
             </div>
             <div className="grid grid-cols-1 min-[360px]:grid-cols-2 gap-3">
               {googleMapsUrl && <a href={googleMapsUrl} target="_blank" rel="noopener noreferrer" className="btn-primary w-full"><MapPin className="h-5 w-5" />Google Maps</a>}
@@ -404,21 +419,20 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
         )}
 
         {activeFeature === 'contact' && (
-          <div className="space-y-3 rounded-2xl border border-system bg-white/75 p-4 min-[360px]:p-5">
-            <p className="text-xs font-semibold uppercase tracking-wider text-accent">Wakil Pengantin</p>
-            <h3 className="mt-1 font-serif text-heading-1">Keluarga Pengantin</h3>
+          <div className="space-y-3">
+            <p className="text-xs font-bold uppercase tracking-[0.12em] text-black/60">Wakil Pengantin</p>
             {visibleContacts.length > 0 ? (
               <div className="space-y-3 pt-2">
                 {visibleContacts.map((contact) => {
                   const whatsapp = normalizeMalaysianPhone(contact.whatsappNumber);
                   const phone = normalizeMalaysianPhone(contact.phoneNumber);
                   return (
-                    <article key={contact.id} className="rounded-2xl border border-system bg-white p-4">
-                      <h4 className="break-words font-semibold [overflow-wrap:anywhere]">{contact.name || 'Wakil Keluarga'}</h4>
-                      {contact.relationship && <p className="mt-0.5 break-words text-sm text-secondary [overflow-wrap:anywhere]">{contact.relationship}</p>}
-                      <div className="mt-3 grid grid-cols-1 gap-2 min-[360px]:grid-cols-2">
-                        {whatsapp && <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noopener noreferrer" className="btn-primary w-full"><Phone className="h-5 w-5" />WhatsApp</a>}
-                        {phone && <a href={`tel:+${phone}`} className="btn-outline w-full"><PhoneCall className="h-5 w-5" />Panggilan</a>}
+                    <article key={contact.id} className="guest-glass-control rounded-2xl p-4">
+                      {contact.relationship && <p className="break-words text-[10px] font-bold uppercase tracking-[0.12em] text-black/55 [overflow-wrap:anywhere]">{contact.relationship}</p>}
+                      <h4 className="mt-1 break-words text-base font-bold uppercase tracking-[0.04em] text-black [overflow-wrap:anywhere]">{contact.name || 'Wakil Pengantin'}</h4>
+                      <div className="mt-4 grid grid-cols-2 gap-2">
+                        {whatsapp && <a aria-label={`WhatsApp ${contact.name || 'wakil pengantin'}`} href={`https://wa.me/${whatsapp}`} target="_blank" rel="noopener noreferrer" className="btn-primary w-full px-2"><WhatsAppIcon className="h-5 w-5" /><span className="text-[10px] uppercase min-[360px]:text-xs">WhatsApp</span></a>}
+                        {phone && <a aria-label={`Hubungi ${contact.name || 'wakil pengantin'}`} href={`tel:+${phone}`} className="btn-outline w-full px-2"><PhoneCall className="h-5 w-5" /><span className="text-[10px] uppercase min-[360px]:text-xs">Hubungi</span></a>}
                       </div>
                     </article>
                   );

@@ -13,18 +13,18 @@ export const BottomGuestNav: React.FC<BottomGuestNavProps> = ({
   enableGiftSection = true,
 }) => {
   return (
-    <nav aria-label="Navigasi jemputan" className="absolute bottom-[calc(0.75rem+env(safe-area-inset-bottom))] left-3 right-3 z-30 min-w-0 rounded-2xl border border-white/70 bg-[#F5EDE3]/82 px-1.5 py-1.5 text-[#211E1B] shadow-[0_14px_40px_rgba(25,21,18,0.25)] backdrop-blur-2xl">
+    <nav aria-label="Navigasi jemputan" className="guest-glass absolute bottom-[calc(0.75rem+env(safe-area-inset-bottom))] left-3 right-3 z-30 min-w-0 rounded-[22px] px-1.5 py-1.5 text-[#111]">
       <div className="flex min-w-0 items-stretch justify-around">
       {/* 1. Kalendar */}
       <button
         onClick={() => onSelectTab('calendar')}
         aria-current={activeTab === 'calendar' ? 'page' : undefined}
         className={`flex min-w-0 min-h-12 flex-col items-center justify-center flex-1 rounded-xl px-0.5 py-1 transition-all cursor-pointer ${
-          activeTab === 'calendar' ? 'bg-white/75 text-[#211E1B] shadow-sm' : 'text-[#514A44] hover:bg-white/45 hover:text-[#211E1B]'
+          activeTab === 'calendar' ? 'bg-white/80 text-black shadow-sm' : 'text-black/75 hover:bg-white/45 hover:text-black'
         }`}
       >
-        <Calendar className="w-4 h-4 mb-0.5" />
-        <span className="text-caption leading-tight tracking-tight font-sans">Kalendar</span>
+        <Calendar className="mb-1 h-[18px] w-[18px]" strokeWidth={1.8} />
+        <span className="guest-nav-label text-[9px] font-bold uppercase leading-tight tracking-[0.03em]">Kalendar</span>
       </button>
 
       {/* 2. Lokasi */}
@@ -32,11 +32,11 @@ export const BottomGuestNav: React.FC<BottomGuestNavProps> = ({
         onClick={() => onSelectTab('location')}
         aria-current={activeTab === 'location' ? 'page' : undefined}
         className={`flex min-w-0 min-h-12 flex-col items-center justify-center flex-1 rounded-xl px-0.5 py-1 transition-all cursor-pointer ${
-          activeTab === 'location' ? 'bg-white/75 text-[#211E1B] shadow-sm' : 'text-[#514A44] hover:bg-white/45 hover:text-[#211E1B]'
+          activeTab === 'location' ? 'bg-white/80 text-black shadow-sm' : 'text-black/75 hover:bg-white/45 hover:text-black'
         }`}
       >
-        <MapPin className="w-4 h-4 mb-0.5" />
-        <span className="text-caption leading-tight tracking-tight font-sans">Lokasi</span>
+        <MapPin className="mb-1 h-[18px] w-[18px]" strokeWidth={1.8} />
+        <span className="guest-nav-label text-[9px] font-bold uppercase leading-tight tracking-[0.03em]">Lokasi</span>
       </button>
 
       {/* 3. RSVP (Main Centre Action) */}
@@ -44,12 +44,12 @@ export const BottomGuestNav: React.FC<BottomGuestNavProps> = ({
         onClick={() => onSelectTab('rsvp')}
         aria-current={activeTab === 'rsvp' ? 'page' : undefined}
         className={`flex min-w-0 min-h-12 flex-col items-center justify-center flex-1 rounded-xl px-0.5 py-1 transition-all cursor-pointer ${
-          activeTab === 'rsvp' ? 'bg-white/75 text-[#211E1B] shadow-sm' : 'text-[#514A44] hover:bg-white/45 hover:text-[#211E1B]'
+          activeTab === 'rsvp' ? 'bg-white/80 text-black shadow-sm' : 'text-black/75 hover:bg-white/45 hover:text-black'
         }`}
         aria-label="Pergi ke bahagian RSVP"
       >
-        <HeartHandshake className="w-4 h-4 mb-0.5" />
-        <span className="text-caption leading-tight tracking-tight font-sans">
+        <HeartHandshake className="mb-1 h-[18px] w-[18px]" strokeWidth={1.8} />
+        <span className="guest-nav-label text-[9px] font-bold uppercase leading-tight tracking-[0.03em]">
           RSVP
         </span>
       </button>
@@ -59,11 +59,11 @@ export const BottomGuestNav: React.FC<BottomGuestNavProps> = ({
         onClick={() => onSelectTab('contact')}
         aria-current={activeTab === 'contact' ? 'page' : undefined}
         className={`flex min-w-0 min-h-12 flex-col items-center justify-center flex-1 rounded-xl px-0.5 py-1 transition-all cursor-pointer ${
-          activeTab === 'contact' ? 'bg-white/75 text-[#211E1B] shadow-sm' : 'text-[#514A44] hover:bg-white/45 hover:text-[#211E1B]'
+          activeTab === 'contact' ? 'bg-white/80 text-black shadow-sm' : 'text-black/75 hover:bg-white/45 hover:text-black'
         }`}
       >
-        <PhoneCall className="w-4 h-4 mb-0.5" />
-        <span className="text-caption leading-tight tracking-tight font-sans">Hubungi</span>
+        <PhoneCall className="mb-1 h-[18px] w-[18px]" strokeWidth={1.8} />
+        <span className="guest-nav-label text-[9px] font-bold uppercase leading-tight tracking-[0.03em]">Hubungi</span>
       </button>
 
       {/* 5. Hadiah */}
@@ -72,11 +72,11 @@ export const BottomGuestNav: React.FC<BottomGuestNavProps> = ({
           onClick={() => onSelectTab('gift')}
           aria-current={activeTab === 'gift' ? 'page' : undefined}
           className={`flex min-w-0 min-h-12 flex-col items-center justify-center flex-1 rounded-xl px-0.5 py-1 transition-all cursor-pointer ${
-            activeTab === 'gift' ? 'bg-white/75 text-[#211E1B] shadow-sm' : 'text-[#514A44] hover:bg-white/45 hover:text-[#211E1B]'
+            activeTab === 'gift' ? 'bg-white/80 text-black shadow-sm' : 'text-black/75 hover:bg-white/45 hover:text-black'
           }`}
         >
-          <Gift className="w-4 h-4 mb-0.5" />
-          <span className="text-caption leading-tight tracking-tight font-sans">Hadiah</span>
+          <Gift className="mb-1 h-[18px] w-[18px]" strokeWidth={1.8} />
+          <span className="guest-nav-label text-[9px] font-bold uppercase leading-tight tracking-[0.03em]">Hadiah</span>
         </button>
       )}
       </div>
