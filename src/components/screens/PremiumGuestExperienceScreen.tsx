@@ -20,6 +20,7 @@ import { Invitation, RsvpEntry } from '../../types';
 import { GuestBottomSheet } from '../common/GuestBottomSheet';
 import { BottomGuestNav } from '../common/BottomGuestNav';
 import { useGuestLanguage } from '../../i18n/GuestLanguageProvider';
+import { rsvpSuccessCopy } from '../../i18n/guestTranslations';
 
 type GuestFeature = 'calendar' | 'location' | 'rsvp' | 'contact' | 'gift';
 
@@ -84,6 +85,7 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
 }) => {
   const { language, setLanguage, t } = useGuestLanguage();
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const rsvpSubmissionLockRef = useRef(false);
   const [isOpened, setIsOpened] = useState(initiallyOpened);
   const [isOpening, setIsOpening] = useState(false);
   const [activeFeature, setActiveFeature] = useState<GuestFeature | null>(initialFeature);
@@ -205,25 +207,31 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
 
   const submitRsvp = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!invitation?.id || !guestName.trim() || isSubmitting || submitSuccess) {
+    if (rsvpSubmissionLockRef.current || isSubmitting || submitSuccess) return;
+    if (!invitation?.id || !guestName.trim()) {
       setSubmitError(t('nameRequired'));
       return;
     }
+    rsvpSubmissionLockRef.current = true;
     setSubmitError('');
     setIsSubmitting(true);
-    const result = await onAddRsvp({
-      invitationId: invitation.id,
-      guestName: guestName.trim(),
-      attendance,
-      pax: attendance === 'attending' ? pax : 0,
-      wishes: wishes.trim(),
-    });
-    setIsSubmitting(false);
-    if (result.success) {
-      setSubmitSuccess(true);
-      return;
+    try {
+      const result = await onAddRsvp({
+        invitationId: invitation.id,
+        guestName: guestName.trim(),
+        attendance,
+        pax: attendance === 'attending' ? pax : 0,
+        wishes: wishes.trim(),
+      });
+      if (result.success) {
+        setSubmitSuccess(true);
+        return;
+      }
+      setSubmitError(t('submitError'));
+    } finally {
+      setIsSubmitting(false);
+      rsvpSubmissionLockRef.current = false;
     }
-    setSubmitError(t('submitError'));
   };
 
   const featureTitle: Record<GuestFeature, string> = {
@@ -401,12 +409,15 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
                 </button>
               </form>
             ) : (
-              <div className="py-8 text-center text-emerald-900">
+              <div className="rounded-[24px] border border-emerald-200/80 bg-gradient-to-b from-emerald-50 to-white px-5 py-8 text-center text-emerald-900 shadow-sm">
                 <span className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-700 text-white shadow-md"><CheckCircle2 className="h-9 w-9" /></span>
-                <h3 className="font-serif text-2xl font-semibold uppercase tracking-[0.08em]">{t('thankYou')}</h3>
-                <p className="mx-auto mt-4 max-w-xs text-sm leading-relaxed text-black/70">{t('successMessage')}</p>
-                <button type="button" onClick={() => setActiveFeature(null)} className="btn-primary mt-5 w-full">
-                  {t('close')}
+                <h3 className="font-serif text-2xl font-semibold uppercase tracking-[0.08em]">{rsvpSuccessCopy.titleBm}</h3>
+                <p className="mt-1 text-xs font-semibold uppercase tracking-[0.18em] text-black/55">{rsvpSuccessCopy.titleEn}</p>
+                <div className="mx-auto my-5 h-px w-14 bg-emerald-800/20" />
+                <p className="mx-auto max-w-xs text-sm leading-relaxed text-black/75">{rsvpSuccessCopy.messageBm}</p>
+                <p className="mx-auto mt-2 max-w-xs text-sm leading-relaxed text-black/55">{rsvpSuccessCopy.messageEn}</p>
+                <button type="button" onClick={() => setActiveFeature(null)} className="btn-primary mt-7 w-full uppercase tracking-[0.08em]">
+                  {rsvpSuccessCopy.close}
                 </button>
               </div>
             )}

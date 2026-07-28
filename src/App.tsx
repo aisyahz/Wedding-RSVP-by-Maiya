@@ -101,6 +101,93 @@ function DiagnosticRedirect({ to }: { to: string; reason: string }) {
   return <Navigate to={to} replace />;
 }
 
+interface GuestRouteWrapperProps {
+  invitations: Invitation[];
+  selectedInvitationId: string;
+  activeInvitation: Invitation | null;
+  setSeoInvitation: React.Dispatch<React.SetStateAction<Invitation | null>>;
+  renderScreen: (
+    inv: Invitation | null,
+    onNavigate: (screen: ScreenId) => void,
+    loading: boolean,
+    errorMsg?: string,
+  ) => React.ReactNode;
+}
+
+function GuestRouteWrapper({
+  invitations,
+  selectedInvitationId,
+  activeInvitation,
+  setSeoInvitation,
+  renderScreen,
+}: GuestRouteWrapperProps) {
+  const { slug } = useParams<{ slug: string }>();
+  const [fetchedInv, setFetchedInv] = useState<Invitation | null>(
+    invitations.find((invitation) => invitation.slug === slug) || null,
+  );
+  const [loading, setLoading] = useState<boolean>(!fetchedInv);
+  const [errorMsg, setErrorMsg] = useState('');
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadBySlug() {
+      if (!slug) return;
+      setSeoInvitation(null);
+      const memoryInv = invitations.find((invitation) => invitation.slug === slug);
+      if (memoryInv) {
+        setFetchedInv(memoryInv);
+        setSeoInvitation(memoryInv);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      const { data, error } = await getInvitationBySlug(slug);
+      if (!isMounted) return;
+      if (data) {
+        setFetchedInv(data);
+        setSeoInvitation(data);
+        setErrorMsg('');
+      } else {
+        setSeoInvitation(null);
+        setErrorMsg(error || 'Kad jemputan tidak dijumpai atau telah tamat tempoh.');
+      }
+      setLoading(false);
+    }
+
+    void loadBySlug();
+    return () => {
+      isMounted = false;
+    };
+  }, [slug, invitations, setSeoInvitation]);
+
+  return (
+    <NavigationAdapter selectedInvitationId={selectedInvitationId} activeInvitation={activeInvitation}>
+      {(onNavigate) => {
+        const navHandler = (screen: ScreenId) => onNavigate(screen, slug);
+        if (loading) {
+          return (
+            <div className="min-h-dvh bg-[#1E1E1C] flex flex-col items-center justify-center p-6 text-white text-center space-y-3">
+              <Loader2 className="w-8 h-8 animate-spin text-accent" />
+              <p className="font-title text-sm">Memuatkan kad jemputan...</p>
+            </div>
+          );
+        }
+        if (errorMsg && !fetchedInv) {
+          return (
+            <div className="min-h-dvh bg-[#1E1E1C] flex flex-col items-center justify-center p-6 text-white text-center space-y-4">
+              <AlertCircle className="w-10 h-10 text-rose-500 mx-auto" />
+              <h1 className="text-heading-2">Kad Tidak Dijumpai</h1>
+              <p className="text-xs text-[#D9D2CA] max-w-xs">{errorMsg}</p>
+            </div>
+          );
+        }
+        return <>{renderScreen(fetchedInv, navHandler, loading, errorMsg)}</>;
+      }}
+    </NavigationAdapter>
+  );
+}
+
 function uniqueById<T extends { id: string }>(items: T[]): T[] {
   return Array.from(new Map(items.map((item) => [item.id, item])).values());
 }
@@ -583,85 +670,6 @@ export default function App() {
     );
   }
 
-  // Public Guest Route Component (Dynamic fetch by slug)
-  function GuestRouteWrapper({
-    renderScreen,
-  }: {
-    renderScreen: (
-      inv: Invitation | null,
-      onNavigate: (screen: ScreenId) => void,
-      loading: boolean,
-      errorMsg?: string
-    ) => React.ReactNode;
-  }) {
-    const { slug } = useParams<{ slug: string }>();
-    const [fetchedInv, setFetchedInv] = useState<Invitation | null>(
-      invitations.find((i) => i.slug === slug) || null
-    );
-    const [loading, setLoading] = useState<boolean>(!fetchedInv);
-    const [errorMsg, setErrorMsg] = useState<string>('');
-
-    useEffect(() => {
-      let isMounted = true;
-      async function loadBySlug() {
-        if (!slug) return;
-        setSeoInvitation(null);
-        const memoryInv = invitations.find((i) => i.slug === slug);
-        if (memoryInv) {
-          setFetchedInv(memoryInv);
-          setSeoInvitation(memoryInv);
-          setLoading(false);
-          return;
-        }
-
-        setLoading(true);
-        const { data, error } = await getInvitationBySlug(slug);
-        if (isMounted) {
-          if (data) {
-            setFetchedInv(data);
-            setSeoInvitation(data);
-            setErrorMsg('');
-          } else {
-            setSeoInvitation(null);
-            setErrorMsg(error || 'Kad jemputan tidak dijumpai atau telah tamat tempoh.');
-          }
-          setLoading(false);
-        }
-      }
-
-      loadBySlug();
-      return () => {
-        isMounted = false;
-      };
-    }, [slug, invitations]);
-
-    return (
-      <NavigationAdapter selectedInvitationId={selectedInvitationId} activeInvitation={activeInvitation}>
-        {(onNavigate) => {
-          const navHandler = (screen: ScreenId) => onNavigate(screen, slug);
-          if (loading) {
-            return (
-              <div className="min-h-dvh bg-[#1E1E1C] flex flex-col items-center justify-center p-6 text-white text-center space-y-3">
-                <Loader2 className="w-8 h-8 animate-spin text-accent" />
-                <p className="font-title text-sm">Memuatkan kad jemputan...</p>
-              </div>
-            );
-          }
-          if (errorMsg && !fetchedInv) {
-            return (
-              <div className="min-h-dvh bg-[#1E1E1C] flex flex-col items-center justify-center p-6 text-white text-center space-y-4">
-                <AlertCircle className="w-10 h-10 text-rose-500 mx-auto" />
-                <h1 className="text-heading-2">Kad Tidak Dijumpai</h1>
-                <p className="text-xs text-[#D9D2CA] max-w-xs">{errorMsg}</p>
-              </div>
-            );
-          }
-          return <>{renderScreen(fetchedInv, navHandler, loading, errorMsg)}</>;
-        }}
-      </NavigationAdapter>
-    );
-  }
-
   return (
     <BrowserRouter>
       <SeoMetadata invitation={seoInvitation} />
@@ -905,6 +913,10 @@ export default function App() {
             path="/invite/:slug"
             element={
               <GuestRouteWrapper
+                invitations={invitations}
+                selectedInvitationId={selectedInvitationId}
+                activeInvitation={activeInvitation}
+                setSeoInvitation={setSeoInvitation}
                 renderScreen={(inv, onNavigate) => (
                   <PremiumGuestExperienceScreen
                     activeInvitation={inv}
@@ -919,6 +931,10 @@ export default function App() {
             path="/invite/:slug/opening"
             element={
               <GuestRouteWrapper
+                invitations={invitations}
+                selectedInvitationId={selectedInvitationId}
+                activeInvitation={activeInvitation}
+                setSeoInvitation={setSeoInvitation}
                 renderScreen={(inv, onNavigate) => (
                   <PremiumGuestExperienceScreen
                     activeInvitation={inv}
@@ -933,6 +949,10 @@ export default function App() {
             path="/invite/:slug/details"
             element={
               <GuestRouteWrapper
+                invitations={invitations}
+                selectedInvitationId={selectedInvitationId}
+                activeInvitation={activeInvitation}
+                setSeoInvitation={setSeoInvitation}
                 renderScreen={(inv, onNavigate) => (
                   <PremiumGuestExperienceScreen
                     activeInvitation={inv}
@@ -948,6 +968,10 @@ export default function App() {
             path="/invite/:slug/rsvp"
             element={
               <GuestRouteWrapper
+                invitations={invitations}
+                selectedInvitationId={selectedInvitationId}
+                activeInvitation={activeInvitation}
+                setSeoInvitation={setSeoInvitation}
                 renderScreen={(inv, onNavigate) => (
                   <PremiumGuestExperienceScreen
                     activeInvitation={inv}
@@ -964,6 +988,10 @@ export default function App() {
             path="/invite/:slug/thank-you"
             element={
               <GuestRouteWrapper
+                invitations={invitations}
+                selectedInvitationId={selectedInvitationId}
+                activeInvitation={activeInvitation}
+                setSeoInvitation={setSeoInvitation}
                 renderScreen={(inv, onNavigate) => (
                   <ThankYouScreen onNavigate={onNavigate} activeInvitation={inv} />
                 )}
@@ -974,6 +1002,10 @@ export default function App() {
             path="/report/:slug"
             element={
               <GuestRouteWrapper
+                invitations={invitations}
+                selectedInvitationId={selectedInvitationId}
+                activeInvitation={activeInvitation}
+                setSeoInvitation={setSeoInvitation}
                 renderScreen={(inv, onNavigate) => (
                   <PrivateRsvpReportScreen
                     onNavigate={onNavigate}

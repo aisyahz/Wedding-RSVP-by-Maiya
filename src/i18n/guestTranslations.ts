@@ -36,3 +36,11 @@ export const guestTranslations = {
 } as const;
 
 export type GuestTranslationKey = keyof typeof guestTranslations.bm;
+
+export const rsvpSuccessCopy = {
+  titleBm: 'TERIMA KASIH',
+  titleEn: 'THANK YOU',
+  messageBm: 'Kehadiran anda telah berjaya direkodkan.',
+  messageEn: 'Your attendance has been successfully recorded.',
+  close: 'TUTUP / CLOSE',
+} as const;
