@@ -1,5 +1,6 @@
 ﻿import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
+import { useGuestLanguage } from '../../i18n/GuestLanguageProvider';
 
 interface GuestBottomSheetProps {
   open: boolean;
@@ -32,6 +33,7 @@ export const GuestBottomSheet: React.FC<GuestBottomSheetProps> = ({
   children,
   contentClassName = '',
 }) => {
+  const { t } = useGuestLanguage();
   const [snap, setSnap] = useState<SheetSnap>('compact');
   const [compactHeight, setCompactHeight] = useState(0);
   const [expandedHeight, setExpandedHeight] = useState(0);
@@ -262,7 +264,7 @@ export const GuestBottomSheet: React.FC<GuestBottomSheetProps> = ({
     <div className="absolute inset-0 z-40 flex items-end overflow-hidden" role="presentation">
       <button
         type="button"
-        aria-label="Tutup panel"
+        aria-label={t('closePanel')}
         onClick={onClose}
         className="absolute inset-0 h-full w-full bg-black/45 backdrop-blur-[2px] animate-in fade-in duration-300"
       />
@@ -287,7 +289,7 @@ export const GuestBottomSheet: React.FC<GuestBottomSheetProps> = ({
         <div
           role="button"
           tabIndex={0}
-          aria-label={snap === 'expanded' ? 'Panel dikembangkan. Seret ke bawah untuk mengecilkan.' : 'Panel ringkas. Seret ke atas untuk mengembangkan.'}
+          aria-label={snap === 'expanded' ? t('expandedPanel') : t('compactPanel')}
           className="touch-none cursor-grab px-5 pb-2 pt-3 outline-none active:cursor-grabbing"
           onPointerDown={beginDrag}
           onPointerMove={moveDrag}
@@ -312,7 +314,7 @@ export const GuestBottomSheet: React.FC<GuestBottomSheetProps> = ({
             ref={closeButtonRef}
             type="button"
             onClick={onClose}
-            aria-label={`Tutup ${title}`}
+            aria-label={t('closeNamedPanel', { title })}
             className="guest-glass-control flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-black transition-colors hover:bg-white"
           >
             <X className="h-5 w-5" />

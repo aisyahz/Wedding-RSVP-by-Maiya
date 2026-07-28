@@ -19,6 +19,7 @@ import {
 import { Invitation, RsvpEntry } from '../../types';
 import { GuestBottomSheet } from '../common/GuestBottomSheet';
 import { BottomGuestNav } from '../common/BottomGuestNav';
+import { useGuestLanguage } from '../../i18n/GuestLanguageProvider';
 
 type GuestFeature = 'calendar' | 'location' | 'rsvp' | 'contact' | 'gift';
 
@@ -57,11 +58,11 @@ const toCalendarDate = (date: string, time: string, hoursToAdd = 0) => {
   return `${value.getFullYear()}${pad(value.getMonth() + 1)}${pad(value.getDate())}T${pad(value.getHours())}${pad(value.getMinutes())}00`;
 };
 
-const formatInvitationDate = (value?: string) => {
+const formatInvitationDate = (value: string | undefined, locale: string) => {
   if (!value) return '';
   const date = new Date(`${value}T00:00:00`);
   if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat('ms-MY', {
+  return new Intl.DateTimeFormat(locale, {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -81,6 +82,7 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
   initialFeature = null,
   initiallyOpened = false,
 }) => {
+  const { language, setLanguage, t } = useGuestLanguage();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [isOpened, setIsOpened] = useState(initiallyOpened);
   const [isOpening, setIsOpening] = useState(false);
@@ -107,7 +109,7 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
   const visibleContacts = invitation?.contacts?.length
     ? enabledContacts
     : invitation?.whatsappContact
-      ? [{ id: 'legacy-contact', name: 'Keluarga Pengantin', relationship: '', phoneNumber: invitation.whatsappContact, whatsappNumber: invitation.whatsappContact, enabled: true }]
+      ? [{ id: 'legacy-contact', name: t('weddingFamily'), relationship: '', phoneNumber: invitation.whatsappContact, whatsappNumber: invitation.whatsappContact, enabled: true }]
       : [];
   const maxPax = Math.min(20, Math.max(1, Number(invitation?.maxPax) || 6));
   const showGift = invitation?.enableGiftSection !== false &&
@@ -167,7 +169,7 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
 
   const calendarStart = toCalendarDate(invitation?.weddingDate || '', invitation?.weddingTime || '');
   const calendarEnd = toCalendarDate(invitation?.weddingDate || '', invitation?.weddingTime || '', 4);
-  const eventTitle = `Majlis Perkahwinan ${invitation?.brideName || ''} & ${invitation?.groomName || ''}`;
+  const eventTitle = t('eventTitle', { names: `${invitation?.brideName || ''} & ${invitation?.groomName || ''}` });
   const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventTitle)}&dates=${calendarStart}/${calendarEnd}&location=${encodeURIComponent(`${invitation?.venueName || ''}, ${invitation?.venueAddress || ''}`)}`;
 
   const downloadAppleCalendar = () => {
@@ -204,7 +206,7 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
   const submitRsvp = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!invitation?.id || !guestName.trim() || isSubmitting || submitSuccess) {
-      setSubmitError('Sila masukkan nama tetamu.');
+      setSubmitError(t('nameRequired'));
       return;
     }
     setSubmitError('');
@@ -221,19 +223,26 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
       setSubmitSuccess(true);
       return;
     }
-    setSubmitError(result.error || 'RSVP tidak dapat dihantar. Sila cuba lagi.');
+    setSubmitError(t('submitError'));
   };
 
   const featureTitle: Record<GuestFeature, string> = {
-    calendar: 'Menuju Hari Bahagia',
-    location: 'Lokasi Majlis',
-    rsvp: 'RSVP & Ucapan',
-    contact: 'Hubungi Keluarga',
-    gift: 'Hadiah & Tanda Kasih',
+    calendar: t('calendarTitle'),
+    location: t('locationTitle'),
+    rsvp: t('rsvpTitle'),
+    contact: t('contactTitle'),
+    gift: t('giftsTitle'),
   };
 
   return (
     <div className="guest-experience relative h-dvh min-h-[480px] w-full min-w-0 overflow-hidden bg-[#171513] text-white md:h-full md:min-h-0">
+      <div className="guest-glass-control absolute left-4 top-[calc(1rem+env(safe-area-inset-top))] z-50 flex rounded-full p-1 text-[10px] font-bold text-black shadow-sm" role="group" aria-label={t('language')}>
+        {(['bm', 'en'] as const).map((option) => (
+          <button key={option} type="button" onClick={() => setLanguage(option)} aria-pressed={language === option} className={`min-h-9 rounded-full px-3 uppercase transition ${language === option ? 'bg-black text-white' : 'text-black/65'}`}>
+            {option}
+          </button>
+        ))}
+      </div>
       {videoUrl ? (
         <video
           ref={videoRef}
@@ -260,7 +269,7 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
           type="button"
           onClick={() => setIsMuted((value) => !value)}
           disabled={!videoUrl}
-          aria-label={isMuted ? 'Hidupkan audio' : 'Senyapkan audio'}
+          aria-label={isMuted ? t('turnOnAudio') : t('muteAudio')}
           className="guest-glass-control absolute right-4 top-[calc(1rem+env(safe-area-inset-top))] z-20 flex h-12 w-12 items-center justify-center rounded-full text-black transition hover:bg-white disabled:opacity-40"
         >
           {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
@@ -274,16 +283,16 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
 
           <div className={`absolute inset-0 flex min-w-0 flex-col items-center justify-center px-5 text-center transition-all duration-500 ${isOpening ? 'scale-95 opacity-0' : 'scale-100 opacity-100'}`}>
             <p className="guest-love-quote mb-6 text-[1.75rem] leading-none text-black/75">
-              Raikan Cinta
+              {t('celebrateLove')}
             </p>
-            <h1 className="guest-couple-name max-w-full break-words text-[clamp(2rem,11vw,3.25rem)] font-semibold uppercase leading-[1.08] tracking-[0.04em] text-black [overflow-wrap:anywhere]">
+            <h1 className="guest-couple-name max-w-full break-words text-[clamp(1.75rem,9.25vw,2.8rem)] font-semibold uppercase leading-[1.08] tracking-[0.04em] text-black [overflow-wrap:anywhere]">
               {invitation?.brideName}
               <span className="my-2 block text-2xl font-normal text-black/70">&</span>
               {invitation?.groomName}
             </h1>
             <div className="my-6 h-px w-24 bg-black/20" />
             <p className="guest-event-date text-sm font-semibold uppercase tracking-[0.26em] text-black/80">
-              {formatInvitationDate(invitation?.weddingDate)}
+              {formatInvitationDate(invitation?.weddingDate, language === 'bm' ? 'ms-MY' : 'en-MY')}
             </p>
             <button
               type="button"
@@ -291,7 +300,7 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
               className="guest-glass-control mt-10 min-h-[52px] rounded-full px-7 text-xs font-bold uppercase tracking-[0.1em] text-black transition hover:bg-white active:scale-[0.98]"
             >
               <span className="flex items-center justify-center gap-2">
-                Buka Undangan
+                {t('openInvitation')}
                 <ChevronRight className="h-4 w-4" />
               </span>
             </button>
@@ -316,10 +325,10 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
           <div className="space-y-5">
             <div className="grid grid-cols-2 min-[360px]:grid-cols-4 gap-2">
               {[
-                ['Hari', timeLeft.days],
-                ['Jam', timeLeft.hours],
-                ['Minit', timeLeft.minutes],
-                ['Saat', timeLeft.seconds],
+                [t('days'), timeLeft.days],
+                [t('hours'), timeLeft.hours],
+                [t('minutes'), timeLeft.minutes],
+                [t('seconds'), timeLeft.seconds],
               ].map(([label, value]) => (
                 <div key={label} className="guest-glass-control rounded-2xl p-3 text-center">
                   <strong className="guest-countdown-number block text-2xl font-bold tabular-nums text-black">{value}</strong>
@@ -346,7 +355,7 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
               <span className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-black/10 bg-white/65">
                 <MapPin className="h-6 w-6 text-black" strokeWidth={1.7} />
               </span>
-              <h3 className="guest-location-title break-words text-2xl font-semibold uppercase leading-tight tracking-[0.025em] text-black [overflow-wrap:anywhere]">{invitation?.venueName || 'Lokasi belum tersedia'}</h3>
+              <h3 className="guest-location-title break-words text-2xl font-semibold uppercase leading-tight tracking-[0.025em] text-black [overflow-wrap:anywhere]">{invitation?.venueName || t('venueUnavailable')}</h3>
               {invitation?.venueAddress && <p className="mt-3 break-words text-xs font-semibold uppercase leading-relaxed tracking-[0.04em] text-black/60 [overflow-wrap:anywhere]">{invitation.venueAddress}</p>}
             </div>
             <div className="grid grid-cols-1 min-[360px]:grid-cols-2 gap-3">
@@ -361,19 +370,19 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
             {!submitSuccess ? (
               <form onSubmit={submitRsvp} className="space-y-4">
                 <div>
-                  <label className="mb-1.5 block text-sm font-semibold">Nama Tetamu *</label>
-                  <input value={guestName} onChange={(event) => setGuestName(event.target.value)} required className="input-maiya" placeholder="Nama anda" />
+                  <label className="mb-1.5 block text-sm font-semibold">{t('guestName')} *</label>
+                  <input value={guestName} onChange={(event) => setGuestName(event.target.value)} required className="input-maiya" placeholder={t('yourName')} />
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-sm font-semibold">Kehadiran *</label>
+                  <label className="mb-1.5 block text-sm font-semibold">{t('attendance')} *</label>
                   <div className="grid grid-cols-2 gap-3">
-                    <button type="button" aria-pressed={attendance === 'attending'} onClick={() => setAttendance('attending')} className={`flex min-h-12 items-center justify-center gap-2 rounded-xl border text-sm font-semibold ${attendance === 'attending' ? 'border-emerald-700 bg-emerald-700 text-white' : 'border-system bg-white'}`}><Check className="h-4 w-4" />Hadir</button>
-                    <button type="button" aria-pressed={attendance === 'declined'} onClick={() => setAttendance('declined')} className={`flex min-h-12 items-center justify-center gap-2 rounded-xl border text-sm font-semibold ${attendance === 'declined' ? 'border-rose-700 bg-rose-700 text-white' : 'border-system bg-white'}`}><X className="h-4 w-4" />Tidak Hadir</button>
+                    <button type="button" aria-pressed={attendance === 'attending'} onClick={() => setAttendance('attending')} className={`flex min-h-12 items-center justify-center gap-2 rounded-xl border text-sm font-semibold ${attendance === 'attending' ? 'border-emerald-700 bg-emerald-700 text-white' : 'border-system bg-white'}`}><Check className="h-4 w-4" />{t('attending')}</button>
+                    <button type="button" aria-pressed={attendance === 'declined'} onClick={() => setAttendance('declined')} className={`flex min-h-12 items-center justify-center gap-2 rounded-xl border text-sm font-semibold ${attendance === 'declined' ? 'border-rose-700 bg-rose-700 text-white' : 'border-system bg-white'}`}><X className="h-4 w-4" />{t('notAttending')}</button>
                   </div>
                 </div>
                 {attendance === 'attending' && (
                   <div>
-                    <label className="mb-1.5 block text-sm font-semibold">Jumlah Tetamu</label>
+                    <label className="mb-1.5 block text-sm font-semibold">{t('guestCount')}</label>
                     <div className="grid grid-cols-3 min-[360px]:grid-cols-4 gap-2">
                       {Array.from({ length: maxPax }, (_, index) => index + 1).map((value) => (
                         <button type="button" key={value} onClick={() => setPax(value)} className={`min-h-11 rounded-xl border text-sm font-bold ${pax === value ? 'border-[#9B7B63] bg-[#9B7B63] text-white' : 'border-system bg-white'}`}>{value}</button>
@@ -382,34 +391,34 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
                   </div>
                 )}
                 <div>
-                  <label className="mb-1.5 block text-sm font-semibold">Ucapan dan Doa</label>
-                  <textarea value={wishes} onChange={(event) => setWishes(event.target.value)} rows={3} className="input-maiya" placeholder="Titipkan ucapan buat mempelai…" />
+                  <label className="mb-1.5 block text-sm font-semibold">{t('messagePrayer')}</label>
+                  <textarea value={wishes} onChange={(event) => setWishes(event.target.value)} rows={3} className="input-maiya" placeholder={t('messagePlaceholder')} />
                 </div>
                 {submitError && <p role="alert" className="break-words text-sm text-rose-700">{submitError}</p>}
                 <button type="submit" disabled={isSubmitting} className="btn-primary w-full">
                   {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                  {isSubmitting ? 'Menghantar…' : 'Hantar RSVP'}
+                  {isSubmitting ? t('submitting') : t('submitRsvp')}
                 </button>
               </form>
             ) : (
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-center text-emerald-900">
-                <CheckCircle2 className="mx-auto mb-2 h-8 w-8" />
-                <h3 className="font-serif text-heading-2">Terima kasih</h3>
-                <p className="mt-1 text-sm">Kehadiran anda telah berjaya direkodkan.</p>
+              <div className="py-8 text-center text-emerald-900">
+                <span className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-700 text-white shadow-md"><CheckCircle2 className="h-9 w-9" /></span>
+                <h3 className="font-serif text-2xl font-semibold uppercase tracking-[0.08em]">{t('thankYou')}</h3>
+                <p className="mx-auto mt-4 max-w-xs text-sm leading-relaxed text-black/70">{t('successMessage')}</p>
                 <button type="button" onClick={() => setActiveFeature(null)} className="btn-primary mt-5 w-full">
-                  Tutup
+                  {t('close')}
                 </button>
               </div>
             )}
 
-            <div className="border-t border-system pt-5">
+            {!submitSuccess && <div className="border-t border-system pt-5">
               <div className="mb-3 flex items-center justify-between gap-3">
-                <h3 className="font-serif text-heading-2">Ucapan Tetamu</h3>
+                <h3 className="font-serif text-heading-2">{t('guestMessages')}</h3>
                 <span className="text-sm font-semibold text-accent">{invitationRsvps.length}</span>
               </div>
               <div className="max-h-56 space-y-3 overflow-y-auto overscroll-contain pr-1">
                 {invitationRsvps.length === 0 ? (
-                  <p className="py-6 text-center text-sm text-secondary">Belum ada ucapan. Jadilah yang pertama.</p>
+                  <p className="py-6 text-center text-sm text-secondary">{t('noMessages')}</p>
                 ) : invitationRsvps.map((entry) => (
                   <article key={entry.id} className="min-w-0 rounded-2xl border border-system bg-white/75 p-4">
                     <strong className="block break-words text-sm [overflow-wrap:anywhere]">{entry.guestName}</strong>
@@ -417,13 +426,13 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
                   </article>
                 ))}
               </div>
-            </div>
+            </div>}
           </div>
         )}
 
         {activeFeature === 'contact' && (
           <div className="space-y-3">
-            <p className="text-xs font-bold uppercase tracking-[0.12em] text-black/60">Wakil Pengantin</p>
+            <p className="text-xs font-bold uppercase tracking-[0.12em] text-black/60">{t('weddingRepresentative')}</p>
             {visibleContacts.length > 0 ? (
               <div className="space-y-3 pt-2">
                 {visibleContacts.map((contact) => {
@@ -432,24 +441,24 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
                   return (
                     <article key={contact.id} className="guest-glass-control rounded-2xl p-4">
                       {contact.relationship && <p className="break-words text-[10px] font-bold uppercase tracking-[0.12em] text-black/55 [overflow-wrap:anywhere]">{contact.relationship}</p>}
-                      <h4 className="mt-1 break-words text-base font-bold uppercase tracking-[0.04em] text-black [overflow-wrap:anywhere]">{contact.name || 'Wakil Pengantin'}</h4>
+                      <h4 className="mt-1 break-words text-base font-bold uppercase tracking-[0.04em] text-black [overflow-wrap:anywhere]">{contact.name || t('weddingRepresentative')}</h4>
                       <div className="mt-4 grid grid-cols-2 gap-2">
-                        {whatsapp && <a aria-label={`WhatsApp ${contact.name || 'wakil pengantin'}`} href={`https://wa.me/${whatsapp}`} target="_blank" rel="noopener noreferrer" className="btn-primary w-full px-2"><WhatsAppIcon className="h-5 w-5" /><span className="text-[10px] uppercase min-[360px]:text-xs">WhatsApp</span></a>}
-                        {phone && <a aria-label={`Hubungi ${contact.name || 'wakil pengantin'}`} href={`tel:+${phone}`} className="btn-outline w-full px-2"><PhoneCall className="h-5 w-5" /><span className="text-[10px] uppercase min-[360px]:text-xs">Hubungi</span></a>}
+                        {whatsapp && <a aria-label={`WhatsApp ${contact.name || t('weddingRepresentative')}`} href={`https://wa.me/${whatsapp}`} target="_blank" rel="noopener noreferrer" className="btn-primary w-full px-2"><WhatsAppIcon className="h-5 w-5" /><span className="text-[10px] uppercase min-[360px]:text-xs">WhatsApp</span></a>}
+                        {phone && <a aria-label={`${t('call')} ${contact.name || t('weddingRepresentative')}`} href={`tel:+${phone}`} className="btn-outline w-full px-2"><PhoneCall className="h-5 w-5" /><span className="text-[10px] uppercase min-[360px]:text-xs">{t('call')}</span></a>}
                       </div>
                     </article>
                   );
                 })}
               </div>
             ) : (
-              <p className="mt-4 text-sm text-secondary">Maklumat hubungan belum tersedia.</p>
+              <p className="mt-4 text-sm text-secondary">{t('contactUnavailable')}</p>
             )}
           </div>
         )}
 
         {activeFeature === 'gift' && showGift && (
           <div className="space-y-4 text-center">
-            {bank?.qrCodeUrl && <img src={bank.qrCodeUrl} alt="Kod QR hadiah" className="mx-auto aspect-square w-44 max-w-full rounded-2xl border border-system bg-white object-contain p-3" />}
+            {bank?.qrCodeUrl && <img src={bank.qrCodeUrl} alt={t('giftQrAlt')} className="mx-auto aspect-square w-44 max-w-full rounded-2xl border border-system bg-white object-contain p-3" />}
             {bank?.accountNumber && (
               <div className="rounded-2xl border border-system bg-white/75 p-5">
                 <p className="text-sm font-semibold text-secondary">{bank.bankName}</p>
@@ -457,8 +466,8 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
                 <p className="mt-1 break-words text-sm [overflow-wrap:anywhere]">{bank.accountHolder}</p>
               </div>
             )}
-            {bank?.accountNumber && <button type="button" onClick={copyAccount} className="btn-primary w-full"><Copy className="h-5 w-5" />{copied ? 'Telah Disalin' : 'Salin Nombor Akaun'}</button>}
-            {wishlistUrl && <a href={wishlistUrl} target="_blank" rel="noopener noreferrer" className="btn-outline w-full"><Gift className="h-5 w-5" />Buka Wishlist<ExternalLink className="h-4 w-4" /></a>}
+            {bank?.accountNumber && <button type="button" onClick={copyAccount} className="btn-primary w-full"><Copy className="h-5 w-5" />{copied ? t('copied') : t('copyAccount')}</button>}
+            {wishlistUrl && <a href={wishlistUrl} target="_blank" rel="noopener noreferrer" className="btn-outline w-full"><Gift className="h-5 w-5" />{t('openWishlist')}<ExternalLink className="h-4 w-4" /></a>}
           </div>
         )}
       </GuestBottomSheet>

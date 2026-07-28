@@ -1,12 +1,8 @@
 ﻿import React, { useEffect, useState } from 'react';
 import { ScreenId, Invitation } from '../../types';
-import confetti from 'canvas-confetti';
 import { CheckCircle, Copy, Eye, Share2, Sparkles, Lock } from 'lucide-react';
 import { copyText } from '../../lib/clipboard';
 
-const celebratedInvitations = new Set<string>();
-const PUBLISH_CONFETTI_DURATION_MS = 1800;
-const PUBLISH_CONFETTI_PARTICLES = 24;
 
 interface GenerateLinkScreenProps {
   onNavigate: (screen: ScreenId) => void;
@@ -28,31 +24,6 @@ export const GenerateLinkScreen: React.FC<GenerateLinkScreenProps> = ({
     ? configuredPublicUrl.replace(/\/+$/, '')
     : window.location.origin.replace(/\/+$/, '');
   const generatedUrl = `${publicOrigin}/invite/${encodeURIComponent(slug)}`;
-
-  useEffect(() => {
-    if (!activeInvitation?.id || celebratedInvitations.has(activeInvitation.id)) return;
-    let completionTimer: number | undefined;
-    try {
-      confetti({
-        particleCount: PUBLISH_CONFETTI_PARTICLES,
-        spread: 52,
-        ticks: 110,
-        scalar: 0.82,
-        origin: { y: 0.6 },
-        colors: ['#9B7B63', '#1E1E1C', '#D9D2CA', '#EFE7DF'],
-      });
-      completionTimer = window.setTimeout(() => {
-        confetti.reset();
-        celebratedInvitations.add(activeInvitation.id);
-      }, PUBLISH_CONFETTI_DURATION_MS);
-    } catch {
-      // Fallback
-    }
-    return () => {
-      if (completionTimer) window.clearTimeout(completionTimer);
-      confetti.reset();
-    };
-  }, [activeInvitation?.id]);
 
   const handleCopy = async () => {
     setCopyError('');

@@ -1,9 +1,7 @@
 ﻿import React, { useEffect } from 'react';
 import { ScreenId, Invitation } from '../../types';
-import confetti from 'canvas-confetti';
 import { Heart, Calendar, ArrowLeft, CheckCircle2 } from 'lucide-react';
 
-const celebratedRsvps = new Set<string>();
 
 interface ThankYouScreenProps {
   onNavigate: (screen: ScreenId) => void;
@@ -17,32 +15,6 @@ export const ThankYouScreen: React.FC<ThankYouScreenProps> = ({
   const brideName = activeInvitation?.brideName || '';
   const groomName = activeInvitation?.groomName || '';
   const weddingDate = activeInvitation?.weddingDate || '28 November 2026';
-
-  useEffect(() => {
-    const celebrationKey = activeInvitation?.id || activeInvitation?.slug;
-    if (!celebrationKey || celebratedRsvps.has(celebrationKey)) return;
-    let completionTimer: number | undefined;
-    try {
-      confetti({
-        particleCount: 24,
-        spread: 48,
-        ticks: 100,
-        scalar: 0.8,
-        origin: { y: 0.5 },
-        colors: ['#9B7B63', '#1E1E1C', '#D9D2CA', '#EFE7DF'],
-      });
-      completionTimer = window.setTimeout(() => {
-        confetti.reset();
-        celebratedRsvps.add(celebrationKey);
-      }, 1800);
-    } catch {
-      // Fallback
-    }
-    return () => {
-      if (completionTimer) window.clearTimeout(completionTimer);
-      confetti.reset();
-    };
-  }, [activeInvitation?.id, activeInvitation?.slug]);
 
   const addToGoogleCalendar = () => {
     const title = encodeURIComponent(`Majlis Perkahwinan ${brideName} & ${groomName}`);

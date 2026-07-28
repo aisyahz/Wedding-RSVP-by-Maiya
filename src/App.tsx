@@ -434,7 +434,6 @@ export default function App() {
     }
 
     setRsvps((prev) => uniqueById([savedRsvp, ...prev]));
-    showToast('success', 'Terima kasih! Kehadiran anda telah berjaya direkodkan.');
     return { success: true };
   };
 
