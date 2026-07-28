@@ -14,6 +14,7 @@ export const GenerateLinkScreen: React.FC<GenerateLinkScreenProps> = ({
   activeInvitation,
 }) => {
   const [copied, setCopied] = useState(false);
+  const [isCopying, setIsCopying] = useState(false);
   const [copyError, setCopyError] = useState('');
 
   const slug = activeInvitation?.slug || '';
@@ -26,15 +27,21 @@ export const GenerateLinkScreen: React.FC<GenerateLinkScreenProps> = ({
   const generatedUrl = `${publicOrigin}/invite/${encodeURIComponent(slug)}`;
 
   const handleCopy = async () => {
+    if (isCopying || !generatedUrl) return;
+    setIsCopying(true);
     setCopyError('');
-    const success = await copyText(generatedUrl);
-    if (!success) {
-      setCopied(false);
-      setCopyError('Pautan tidak dapat disalin. Sila pilih dan salin secara manual.');
-      return;
+    try {
+      const success = await copyText(generatedUrl);
+      if (!success) {
+        setCopied(false);
+        setCopyError('Pautan tidak dapat disalin. Sila pilih dan salin secara manual.');
+        return;
+      }
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2500);
+    } finally {
+      setIsCopying(false);
     }
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 2500);
   };
 
   const handleWhatsAppShare = () => {
@@ -80,14 +87,19 @@ export const GenerateLinkScreen: React.FC<GenerateLinkScreenProps> = ({
             {generatedUrl}
           </span>
           <button
+            type="button"
             onClick={handleCopy}
+            disabled={isCopying || !slug}
+            aria-label="Copy invitation link"
             className="btn-accent min-h-11 px-3 gap-1 cursor-pointer shrink-0"
           >
             <Copy className="w-3.5 h-3.5" />
-            <span>{copied ? 'Copied' : 'Copy Link'}</span>
+            <span>{isCopying ? 'Copying…' : copied ? 'Copied!' : 'Copy Link'}</span>
           </button>
         </div>
-        {copyError && <p role="alert" className="-mt-4 text-xs text-error">{copyError}</p>}
+        <p aria-live="polite" className={`-mt-4 text-xs ${copyError ? 'text-error' : copied ? 'text-success' : 'sr-only'}`}>
+          {copyError || (copied ? 'Invitation link copied.' : '')}
+        </p>
 
         {/* Action Buttons */}
         <div className="space-y-3 pt-2">
