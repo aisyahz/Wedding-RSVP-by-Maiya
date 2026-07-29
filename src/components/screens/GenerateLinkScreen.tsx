@@ -13,7 +13,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { copyText } from '../../lib/clipboard';
-import { generateInvitationPin, getInvitationPinStatus } from '../../lib/supabase';
+import { generateInvitationPin, getInvitationPin } from '../../lib/supabase';
 
 
 interface GenerateLinkScreenProps {
@@ -47,10 +47,6 @@ export const GenerateLinkScreen: React.FC<GenerateLinkScreenProps> = ({
   const publicOrigin = window.location.origin.replace(/\/+$/, '');
   const generatedUrl = `${publicOrigin}/invite/${encodeURIComponent(slug)}`;
   const reportUrl = `${publicOrigin}/report/${encodeURIComponent(slug)}`;
-  const pinStorageKey = activeInvitation?.id
-    ? `maiya-dashboard-pin:${activeInvitation.id}`
-    : '';
-
   useEffect(() => {
     if (!activeInvitation?.id) {
       setPinStatus('error');
@@ -58,36 +54,28 @@ export const GenerateLinkScreen: React.FC<GenerateLinkScreenProps> = ({
       return;
     }
 
-    const inMemoryPin = /^\d{6}$/.test(activeInvitation.privatePin || '')
-      ? activeInvitation.privatePin
-      : '';
-    const sessionPin = pinStorageKey
-      ? window.sessionStorage.getItem(pinStorageKey) || ''
-      : '';
-    if (inMemoryPin && pinStorageKey) {
-      window.sessionStorage.setItem(pinStorageKey, inMemoryPin);
-    }
-    setSecurityPin(inMemoryPin || (/^\d{6}$/.test(sessionPin) ? sessionPin : ''));
+    setSecurityPin('');
     setPinStatus('loading');
     setPinError('');
     let cancelled = false;
 
-    async function loadPinStatus() {
-      const result = await getInvitationPinStatus(activeInvitation!.id);
+    async function loadPin() {
+      const result = await getInvitationPin(activeInvitation!.id);
       if (cancelled) return;
       if (result.error) {
         setPinStatus('error');
         setPinError(result.error);
         return;
       }
+      setSecurityPin(result.plainPin || '');
       setPinStatus(result.hasPin ? 'exists' : 'missing');
     }
 
-    void loadPinStatus();
+    void loadPin();
     return () => {
       cancelled = true;
     };
-  }, [activeInvitation?.id, activeInvitation?.privatePin, pinStatusRefresh, pinStorageKey]);
+  }, [activeInvitation?.id, pinStatusRefresh]);
 
   const handleCopy = async () => {
     if (isCopying || !generatedUrl) return;
@@ -150,7 +138,6 @@ export const GenerateLinkScreen: React.FC<GenerateLinkScreenProps> = ({
         return;
       }
       setSecurityPin(result.plainPin);
-      if (pinStorageKey) window.sessionStorage.setItem(pinStorageKey, result.plainPin);
       setPinStatus('exists');
       setIsPinVisible(false);
       setPinSuccess(
@@ -325,34 +312,26 @@ export const GenerateLinkScreen: React.FC<GenerateLinkScreenProps> = ({
                       {securityPin ? isPinVisible ? securityPin : '••••••' : '••••••'}
                     </code>
                   </div>
-                  {securityPin && (
-                    <button
-                      type="button"
-                      onClick={() => setIsPinVisible((visible) => !visible)}
-                      aria-label={isPinVisible ? 'Hide security PIN' : 'Show security PIN'}
-                      aria-pressed={isPinVisible}
-                      className="btn-ghost h-10 shrink-0 px-3 text-xs cursor-pointer"
-                    >
-                      {isPinVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      <span>{isPinVisible ? 'Hide PIN' : 'Show PIN'}</span>
-                    </button>
-                  )}
-                </div>
-                {securityPin ? (
                   <button
                     type="button"
-                    onClick={() => void handlePinCopy()}
-                    aria-label="Copy security PIN"
-                    className="btn-outline h-10 w-full cursor-pointer"
+                    onClick={() => setIsPinVisible((visible) => !visible)}
+                    aria-label={isPinVisible ? 'Hide security PIN' : 'View security PIN'}
+                    aria-pressed={isPinVisible}
+                    className="btn-ghost h-10 shrink-0 px-3 text-xs cursor-pointer"
                   >
-                    <Copy className="h-4 w-4" />
-                    <span>{pinCopied ? 'PIN Copied!' : 'Copy PIN'}</span>
+                    {isPinVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    <span>{isPinVisible ? 'Hide PIN' : 'View PIN'}</span>
                   </button>
-                ) : (
-                  <p className="text-xs leading-relaxed text-secondary">
-                    A PIN exists, but its plaintext is not stored. Regenerate it if the saved PIN has been lost.
-                  </p>
-                )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void handlePinCopy()}
+                  aria-label="Copy security PIN"
+                  className="btn-outline h-10 w-full cursor-pointer"
+                >
+                  <Copy className="h-4 w-4" />
+                  <span>{pinCopied ? 'PIN Copied!' : 'Copy PIN'}</span>
+                </button>
               </div>
 
               <button

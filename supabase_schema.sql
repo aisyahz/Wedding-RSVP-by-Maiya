@@ -132,11 +132,11 @@ CREATE POLICY "Admins have full access to invitations"
 
 
 -- --------------------------------------------------------------------
--- 3. INVITATION_SECRETS TABLE (Strictly private PIN hashes)
+-- 3. INVITATION_SECRETS TABLE (Administrative access PINs)
 -- --------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.invitation_secrets (
     invitation_id UUID PRIMARY KEY REFERENCES public.invitations(id) ON DELETE CASCADE,
-    private_pin_hash TEXT NOT NULL,
+    private_pin TEXT NOT NULL CHECK (private_pin ~ '^[0-9]{6}$'),
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -203,18 +203,6 @@ CREATE POLICY "Admins have full access to RSVP entries"
 -- 5. HELPER UTILITY FUNCTIONS
 -- --------------------------------------------------------------------
 
--- Helper Function: Hash PIN using pgcrypto
-CREATE OR REPLACE FUNCTION public.hash_pin(pin_text TEXT)
-RETURNS TEXT
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = ''
-AS $$
-BEGIN
-    RETURN extensions.crypt(pin_text, extensions.gen_salt('bf'));
-END;
-$$;
-
 -- Helper Function: Generate random 6-digit PIN
 CREATE OR REPLACE FUNCTION public.generate_random_pin()
 RETURNS TEXT
@@ -222,8 +210,20 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
 AS $$
+DECLARE
+    random_bytes BYTEA;
+    random_value BIGINT;
 BEGIN
-    RETURN LPAD(FLOOR(RANDOM() * 1000000)::TEXT, 6, '0');
+    LOOP
+        random_bytes := extensions.gen_random_bytes(4);
+        random_value :=
+            pg_catalog.get_byte(random_bytes, 0)::BIGINT * 16777216 +
+            pg_catalog.get_byte(random_bytes, 1)::BIGINT * 65536 +
+            pg_catalog.get_byte(random_bytes, 2)::BIGINT * 256 +
+            pg_catalog.get_byte(random_bytes, 3)::BIGINT;
+        EXIT WHEN random_value < 4294000000;
+    END LOOP;
+    RETURN pg_catalog.lpad((random_value % 1000000)::TEXT, 6, '0');
 END;
 $$;
 
@@ -271,7 +271,6 @@ SET search_path = ''
 AS $$
 DECLARE
     v_pin TEXT;
-    v_pin_hash TEXT;
     v_id UUID;
     v_slug TEXT;
 BEGIN
@@ -287,9 +286,6 @@ BEGIN
         v_pin := public.generate_random_pin();
     END IF;
 
-    -- Hash PIN using pgcrypto
-    v_pin_hash := public.hash_pin(v_pin);
-
     -- Insert invitation record
     INSERT INTO public.invitations (
         slug, bride_name, groom_name, wedding_date, wedding_time,
@@ -304,21 +300,101 @@ BEGIN
     )
     RETURNING id, invitations.slug INTO v_id, v_slug;
 
-    -- Insert secret PIN hash into invitation_secrets
-    INSERT INTO public.invitation_secrets (invitation_id, private_pin_hash)
-    VALUES (v_id, v_pin_hash);
+    -- Store the administrative access code so authenticated admins can retrieve it.
+    INSERT INTO public.invitation_secrets (invitation_id, private_pin)
+    VALUES (v_id, v_pin);
 
-    -- Return invitation ID, slug and plain PIN once to admin
+    -- Return invitation ID, slug and PIN; it remains retrievable by authenticated admins.
     RETURN QUERY
     SELECT v_id, v_slug, v_pin;
+END;
+$$;
+
+-- Authenticated admins can retrieve the current administrative access code.
+CREATE OR REPLACE FUNCTION public.get_invitation_pin(p_invitation_id UUID)
+RETURNS TEXT
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+    current_pin TEXT;
+BEGIN
+    IF auth.uid() IS NULL THEN
+        RAISE EXCEPTION 'Unauthorized. Authenticated access required.'
+            USING ERRCODE = '42501';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM public.invitations i WHERE i.id = p_invitation_id
+    ) THEN
+        RAISE EXCEPTION 'Invitation not found.' USING ERRCODE = 'P0002';
+    END IF;
+
+    SELECT s.private_pin
+    INTO current_pin
+    FROM public.invitation_secrets s
+    WHERE s.invitation_id = p_invitation_id;
+
+    RETURN current_pin;
+END;
+$$;
+
+-- Generate a missing PIN or explicitly replace the existing PIN.
+CREATE OR REPLACE FUNCTION public.generate_invitation_pin(
+    p_invitation_id UUID,
+    p_replace_existing BOOLEAN DEFAULT FALSE
+)
+RETURNS TABLE (plain_pin TEXT, replaced_existing BOOLEAN)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+    existing_pin BOOLEAN;
+    generated_pin TEXT;
+BEGIN
+    IF auth.uid() IS NULL THEN
+        RAISE EXCEPTION 'Unauthorized. Authenticated access required.'
+            USING ERRCODE = '42501';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM public.invitations i WHERE i.id = p_invitation_id
+    ) THEN
+        RAISE EXCEPTION 'Invitation not found.' USING ERRCODE = 'P0002';
+    END IF;
+
+    SELECT EXISTS (
+        SELECT 1
+        FROM public.invitation_secrets s
+        WHERE s.invitation_id = p_invitation_id
+          AND s.private_pin ~ '^[0-9]{6}$'
+    ) INTO existing_pin;
+
+    IF existing_pin AND NOT p_replace_existing THEN
+        RAISE EXCEPTION 'A security PIN already exists for this invitation.'
+            USING ERRCODE = '23505';
+    END IF;
+
+    generated_pin := public.generate_random_pin();
+
+    INSERT INTO public.invitation_secrets AS secret (invitation_id, private_pin)
+    VALUES (p_invitation_id, generated_pin)
+    ON CONFLICT (invitation_id)
+    DO UPDATE SET
+        private_pin = EXCLUDED.private_pin,
+        created_at = pg_catalog.now();
+
+    RETURN QUERY SELECT generated_pin, existing_pin;
 END;
 $$;
 
 
 -- --------------------------------------------------------------------
 -- 7. SECURE PUBLIC/ANON RPC: COUPLE PRIVATE RSVP REPORT
--- Accepts slug and PIN, verifies PIN hash server-side using pgcrypto,
--- and returns only the RSVP report for that invitation without revealing hashes.
+-- Accepts slug and PIN, compares the administrative access code server-side,
+-- and returns only the RSVP report for that invitation.
 -- --------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.get_private_couple_rsvp_report(
     invitation_slug TEXT,
@@ -346,8 +422,8 @@ BEGIN
         RAISE EXCEPTION 'Invalid security PIN format. Must be 6 numeric digits.';
     END IF;
 
-    -- Fetch target invitation and secret PIN hash
-    SELECT i.id, i.bride_name, i.groom_name, s.private_pin_hash
+    -- Fetch target invitation and its administrative access code.
+    SELECT i.id, i.bride_name, i.groom_name, s.private_pin
     INTO target_inv
     FROM public.invitations i
     JOIN public.invitation_secrets s ON s.invitation_id = i.id
@@ -357,8 +433,7 @@ BEGIN
         RAISE EXCEPTION 'Invitation not found.';
     END IF;
 
-    -- Verify PIN hash using pgcrypto
-    IF target_inv.private_pin_hash IS NULL OR target_inv.private_pin_hash != extensions.crypt(input_pin, target_inv.private_pin_hash) THEN
+    IF target_inv.private_pin IS NULL OR target_inv.private_pin <> input_pin THEN
         RAISE EXCEPTION 'Invalid security PIN.';
     END IF;
 
@@ -384,10 +459,13 @@ $$;
 -- 8. FUNCTION PERMISSION REVOCATIONS & GRANTS
 -- --------------------------------------------------------------------
 -- Revoke execution from PUBLIC, anon, authenticated by default for internal functions
-REVOKE EXECUTE ON FUNCTION public.hash_pin(TEXT) FROM PUBLIC, anon, authenticated;
 REVOKE EXECUTE ON FUNCTION public.generate_random_pin() FROM PUBLIC, anon, authenticated;
 REVOKE EXECUTE ON FUNCTION public.set_updated_at() FROM PUBLIC, anon, authenticated;
 REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.get_invitation_pin(UUID) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.get_invitation_pin(UUID) TO authenticated;
+REVOKE ALL ON FUNCTION public.generate_invitation_pin(UUID, BOOLEAN) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.generate_invitation_pin(UUID, BOOLEAN) TO authenticated;
 
 -- Revoke create_invitation_with_pin from PUBLIC and anon, grant only to authenticated
 REVOKE EXECUTE ON FUNCTION public.create_invitation_with_pin(

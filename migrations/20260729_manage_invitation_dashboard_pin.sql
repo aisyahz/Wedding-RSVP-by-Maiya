@@ -3,6 +3,52 @@ BEGIN;
 CREATE SCHEMA IF NOT EXISTS extensions;
 CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
 
+DO $block$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'invitation_secrets'
+          AND column_name = 'private_pin_hash'
+    ) AND NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'invitation_secrets'
+          AND column_name = 'legacy_private_pin_hash'
+    ) THEN
+        ALTER TABLE public.invitation_secrets
+            RENAME COLUMN private_pin_hash TO legacy_private_pin_hash;
+    END IF;
+END;
+$block$;
+
+ALTER TABLE public.invitation_secrets
+    ADD COLUMN IF NOT EXISTS private_pin TEXT;
+
+DO $block$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'invitation_secrets'
+          AND column_name = 'legacy_private_pin_hash'
+    ) THEN
+        ALTER TABLE public.invitation_secrets
+            ALTER COLUMN legacy_private_pin_hash DROP NOT NULL;
+    END IF;
+END;
+$block$;
+
+ALTER TABLE public.invitation_secrets
+    DROP CONSTRAINT IF EXISTS invitation_secrets_private_pin_format;
+
+ALTER TABLE public.invitation_secrets
+    ADD CONSTRAINT invitation_secrets_private_pin_format
+    CHECK (private_pin IS NULL OR private_pin ~ '^[0-9]{6}$');
+
 CREATE OR REPLACE FUNCTION public.generate_random_pin()
 RETURNS TEXT
 LANGUAGE plpgsql
@@ -96,11 +142,8 @@ BEGIN
     RETURNING invitation.id, invitation.slug
     INTO new_invitation_id, new_slug;
 
-    INSERT INTO public.invitation_secrets (invitation_id, private_pin_hash)
-    VALUES (
-        new_invitation_id,
-        extensions.crypt(new_pin, extensions.gen_salt('bf'))
-    );
+    INSERT INTO public.invitation_secrets (invitation_id, private_pin)
+    VALUES (new_invitation_id, new_pin);
 
     RETURN QUERY SELECT new_invitation_id, new_slug, new_pin;
 END;
@@ -117,14 +160,18 @@ GRANT EXECUTE ON FUNCTION public.create_invitation_with_pin(
     TEXT, JSONB, INTEGER
 ) TO authenticated;
 
-CREATE OR REPLACE FUNCTION public.get_invitation_pin_status(
+DROP FUNCTION IF EXISTS public.get_invitation_pin_status(UUID);
+
+CREATE OR REPLACE FUNCTION public.get_invitation_pin(
     p_invitation_id UUID
 )
-RETURNS BOOLEAN
+RETURNS TEXT
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
 AS $function$
+DECLARE
+    current_pin TEXT;
 BEGIN
     IF auth.uid() IS NULL THEN
         RAISE EXCEPTION 'Unauthorized. Authenticated access required.'
@@ -137,17 +184,17 @@ BEGIN
         RAISE EXCEPTION 'Invitation not found.' USING ERRCODE = 'P0002';
     END IF;
 
-    RETURN EXISTS (
-        SELECT 1
-        FROM public.invitation_secrets s
-        WHERE s.invitation_id = p_invitation_id
-          AND NULLIF(pg_catalog.btrim(s.private_pin_hash), '') IS NOT NULL
-    );
+    SELECT s.private_pin
+    INTO current_pin
+    FROM public.invitation_secrets s
+    WHERE s.invitation_id = p_invitation_id;
+
+    RETURN current_pin;
 END;
 $function$;
 
-REVOKE ALL ON FUNCTION public.get_invitation_pin_status(UUID) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.get_invitation_pin_status(UUID) TO authenticated;
+REVOKE ALL ON FUNCTION public.get_invitation_pin(UUID) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.get_invitation_pin(UUID) TO authenticated;
 
 CREATE OR REPLACE FUNCTION public.generate_invitation_pin(
     p_invitation_id UUID,
@@ -162,7 +209,7 @@ SECURITY DEFINER
 SET search_path = ''
 AS $function$
 DECLARE
-    existing_secret BOOLEAN;
+    existing_pin BOOLEAN;
     generated_pin TEXT;
 BEGIN
     IF auth.uid() IS NULL THEN
@@ -180,30 +227,38 @@ BEGIN
         SELECT 1
         FROM public.invitation_secrets s
         WHERE s.invitation_id = p_invitation_id
-          AND NULLIF(pg_catalog.btrim(s.private_pin_hash), '') IS NOT NULL
-    ) INTO existing_secret;
+          AND s.private_pin ~ '^[0-9]{6}$'
+    ) INTO existing_pin;
 
-    IF existing_secret AND NOT p_replace_existing THEN
+    IF existing_pin AND NOT p_replace_existing THEN
         RAISE EXCEPTION 'A security PIN already exists for this invitation.'
             USING ERRCODE = '23505';
     END IF;
 
     generated_pin := public.generate_random_pin();
 
-    INSERT INTO public.invitation_secrets AS secret (
-        invitation_id,
-        private_pin_hash
-    )
-    VALUES (
-        p_invitation_id,
-        extensions.crypt(generated_pin, extensions.gen_salt('bf'))
-    )
+    INSERT INTO public.invitation_secrets AS secret (invitation_id, private_pin)
+    VALUES (p_invitation_id, generated_pin)
     ON CONFLICT (invitation_id)
     DO UPDATE SET
-        private_pin_hash = EXCLUDED.private_pin_hash,
+        private_pin = EXCLUDED.private_pin,
         created_at = pg_catalog.now();
 
-    RETURN QUERY SELECT generated_pin, existing_secret;
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'invitation_secrets'
+          AND column_name = 'legacy_private_pin_hash'
+    ) THEN
+        EXECUTE
+            'UPDATE public.invitation_secrets
+             SET legacy_private_pin_hash = NULL
+             WHERE invitation_id = $1'
+        USING p_invitation_id;
+    END IF;
+
+    RETURN QUERY SELECT generated_pin, existing_pin;
 END;
 $function$;
 
@@ -236,7 +291,7 @@ BEGIN
             USING ERRCODE = '22023';
     END IF;
 
-    SELECT i.id, i.bride_name, i.groom_name, s.private_pin_hash
+    SELECT i.id, i.bride_name, i.groom_name, s.private_pin
     INTO target_inv
     FROM public.invitations i
     LEFT JOIN public.invitation_secrets s ON s.invitation_id = i.id
@@ -246,12 +301,12 @@ BEGIN
         RAISE EXCEPTION 'Invitation not found.' USING ERRCODE = 'P0002';
     END IF;
 
-    IF NULLIF(pg_catalog.btrim(target_inv.private_pin_hash), '') IS NULL THEN
+    IF target_inv.private_pin IS NULL THEN
         RAISE EXCEPTION 'A security PIN has not been generated for this invitation.'
             USING ERRCODE = 'P0001';
     END IF;
 
-    IF target_inv.private_pin_hash != extensions.crypt(input_pin, target_inv.private_pin_hash) THEN
+    IF target_inv.private_pin <> input_pin THEN
         RAISE EXCEPTION 'Invalid security PIN.' USING ERRCODE = '28P01';
     END IF;
 

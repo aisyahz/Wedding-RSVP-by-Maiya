@@ -84,7 +84,7 @@ export function mapDbInvitationToApp(dbRow: any): Invitation {
     giftQrKey,
     videoFileName: dbRow.video_file_name || 'Wedding_Video.mp4',
     status: (dbRow.status as InvitationStatus) || 'draft',
-    privatePin: '', // Stored securely as pgcrypto hash in invitation_secrets; not exposed in SELECT queries
+    privatePin: '', // Loaded separately through the authenticated get_invitation_pin RPC.
     createdAt: dbRow.created_at || new Date().toISOString(),
   };
 }
@@ -330,22 +330,27 @@ export async function createInvitationWithPin(
   }
 }
 
-export async function getInvitationPinStatus(
+export async function getInvitationPin(
   invitationId: string,
-): Promise<{ hasPin: boolean; error?: string }> {
+): Promise<{ plainPin?: string; hasPin: boolean; error?: string }> {
   if (!supabase || !isSupabaseConfigured) {
     return { hasPin: false, error: 'Supabase is not configured' };
   }
   if (!invitationId) return { hasPin: false, error: 'Invitation ID is required.' };
 
   try {
-    const { data, error } = await supabase.rpc('get_invitation_pin_status', {
+    const { data, error } = await supabase.rpc('get_invitation_pin', {
       p_invitation_id: invitationId,
     });
     if (error) return { hasPin: false, error: error.message };
-    return { hasPin: data === true };
+    const plainPin = typeof data === 'string' ? data : '';
+    if (!plainPin) return { hasPin: false };
+    if (!/^\d{6}$/.test(plainPin)) {
+      return { hasPin: false, error: 'The stored security PIN is not a valid 6-digit PIN.' };
+    }
+    return { plainPin, hasPin: true };
   } catch (error: any) {
-    return { hasPin: false, error: error.message || 'Unable to check security PIN status.' };
+    return { hasPin: false, error: error.message || 'Unable to load the security PIN.' };
   }
 }
 

@@ -691,7 +691,7 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
               <p className="text-xs text-secondary">
                 {editingInvitation
                   ? 'The couple uses their 6-digit security PIN to view private guest RSVP responses.'
-                  : 'A unique 6-digit PIN will be securely generated upon creation and displayed once for your records.'}
+                  : 'A unique 6-digit PIN will be securely generated upon creation and remain available on the Generate Link page.'}
               </p>
             </div>
           </div>
