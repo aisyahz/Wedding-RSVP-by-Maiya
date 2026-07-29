@@ -13,7 +13,7 @@ export const BottomNav: React.FC = () => {
   ];
 
   return (
-    <nav aria-label="Navigasi pentadbir" className="md:hidden sticky bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-system px-1 min-[360px]:px-3 py-2 flex items-center justify-around shadow-sm pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
+    <nav aria-label="Navigasi pentadbir" className="z-40 flex shrink-0 items-center justify-around border-t border-system bg-white/95 px-1 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] shadow-sm backdrop-blur-md min-[360px]:px-3 md:hidden">
       {items.map((item) => {
         const Icon = item.icon;
         const isActive = location.pathname === item.path || (item.path !== '/dashboard' && location.pathname.startsWith(item.path));

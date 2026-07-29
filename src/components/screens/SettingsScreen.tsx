@@ -1,5 +1,5 @@
 ﻿import React, { useState } from 'react';
-import { Check, ExternalLink, HardDrive, LogOut, Save, Settings, Sheet } from 'lucide-react';
+import { AlertCircle, Check, ExternalLink, HardDrive, Loader2, LogOut, Save, Settings, Sheet } from 'lucide-react';
 import { ScreenId, SystemSettings } from '../../types';
 import { googleSheetsSyncProvider } from '../../lib/rsvpSyncProvider';
 
@@ -7,14 +7,18 @@ interface SettingsScreenProps {
   currentScreen?: ScreenId;
   onNavigate: (screen: ScreenId) => void;
   settings: SystemSettings;
-  onUpdateSettings: (newSettings: SystemSettings) => void;
+  onUpdateSettings: (newSettings: SystemSettings) => Promise<{ success: boolean; error?: string }>;
   onLogout: () => void;
+  isLoading?: boolean;
+  loadError?: string;
 }
 
 export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   settings,
   onUpdateSettings,
   onLogout,
+  isLoading = false,
+  loadError = '',
 }) => {
   const [businessName, setBusinessName] = useState(settings.businessName);
   const [tagline, setTagline] = useState(settings.tagline);
@@ -22,10 +26,25 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const [defaultExpiryDays, setDefaultExpiryDays] = useState(settings.defaultExpiryDays);
   const [googleSheetsSyncEnabled, setGoogleSheetsSyncEnabled] = useState(Boolean(settings.googleSheetsSyncEnabled));
   const [isSaved, setIsSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
-  const handleSave = (event: React.FormEvent) => {
+  React.useEffect(() => {
+    setBusinessName(settings.businessName);
+    setTagline(settings.tagline);
+    setWhatsappNumber(settings.whatsappNumber);
+    setDefaultExpiryDays(settings.defaultExpiryDays);
+    setGoogleSheetsSyncEnabled(Boolean(settings.googleSheetsSyncEnabled));
+  }, [settings]);
+
+  const handleSave = async (event: React.FormEvent) => {
     event.preventDefault();
-    onUpdateSettings({
+    if (isSaving || isLoading) return;
+
+    setIsSaving(true);
+    setIsSaved(false);
+    setSaveError('');
+    const result = await onUpdateSettings({
       ...settings,
       businessName,
       tagline,
@@ -34,8 +53,13 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
       googleSheetsSyncEnabled,
       googleSheetsConnectionStatus: googleSheetsSyncProvider.isConfigured ? 'ready' : 'not_connected',
     });
+    setIsSaving(false);
+    if (!result.success) {
+      setSaveError(result.error || 'Settings could not be saved. Please try again.');
+      return;
+    }
     setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 2500);
+    window.setTimeout(() => setIsSaved(false), 2500);
   };
 
   const storagePercentage = Math.round((settings.storageUsedMb / settings.storageLimitMb) * 100);
@@ -51,6 +75,20 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           Manage your brand and invitation preferences.
         </p>
       </header>
+
+      {isLoading && (
+        <div role="status" className="flex items-center gap-2 rounded-xl border border-system bg-white p-3 text-sm text-secondary">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span>Loading saved settings…</span>
+        </div>
+      )}
+
+      {loadError && (
+        <div role="alert" className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>Supabase settings could not be loaded. Showing cached values. {loadError}</span>
+        </div>
+      )}
 
       <form onSubmit={handleSave} className="overflow-hidden rounded-xl border border-system bg-white">
         <section className="space-y-4 p-4 min-[390px]:p-5" aria-labelledby="brand-configuration-heading">
@@ -147,10 +185,16 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           </div>
         </section>
 
-        <div className="sticky bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-20 border-t border-system bg-white/95 p-3 backdrop-blur-md min-[390px]:p-4 md:static md:bg-white">
-          <button type="submit" className="btn-primary w-full cursor-pointer">
-            <Save className="h-4 w-4" />
-            <span>Save Settings</span>
+        <div className="border-t border-system bg-white p-3 min-[390px]:p-4">
+          {saveError && (
+            <p role="alert" className="mb-3 flex items-start gap-2 text-xs font-semibold text-rose-700">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>{saveError}</span>
+            </p>
+          )}
+          <button type="submit" disabled={isSaving || isLoading} className="btn-primary w-full cursor-pointer">
+            {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            <span>{isSaving ? 'Saving Settings…' : 'Save Settings'}</span>
           </button>
         </div>
       </form>
@@ -183,19 +227,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           <input
             type="checkbox"
             checked={googleSheetsSyncEnabled}
-            onChange={(event) => {
-              const enabled = event.target.checked;
-              setGoogleSheetsSyncEnabled(enabled);
-              onUpdateSettings({
-                ...settings,
-                businessName,
-                tagline,
-                whatsappNumber,
-                defaultExpiryDays: Number(defaultExpiryDays),
-                googleSheetsSyncEnabled: enabled,
-                googleSheetsConnectionStatus: googleSheetsSyncProvider.isConfigured ? 'ready' : 'not_connected',
-              });
-            }}
+            onChange={(event) => setGoogleSheetsSyncEnabled(event.target.checked)}
             className="h-6 w-6 shrink-0 rounded text-accent"
           />
         </label>

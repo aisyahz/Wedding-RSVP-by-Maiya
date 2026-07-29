@@ -1,5 +1,5 @@
 import { createClient, Session } from '@supabase/supabase-js';
-import { Invitation, InvitationContact, RsvpEntry, InvitationStatus } from '../types';
+import { Invitation, InvitationContact, RsvpEntry, InvitationStatus, SystemSettings } from '../types';
 import { MediaProviderService } from './mediaProvider';
 import { buildR2PublicUrl } from './mediaUrl';
 
@@ -135,6 +135,74 @@ export async function getAdminSession() {
   if (!supabase) return null;
   const { data } = await supabase.auth.getSession();
   return data.session;
+}
+
+export async function getAdminSettings(
+  fallback: SystemSettings,
+): Promise<{ data: SystemSettings | null; error?: string }> {
+  if (!supabase || !isSupabaseConfigured) {
+    return { data: null, error: 'Supabase is not configured.' };
+  }
+
+  const { data, error } = await supabase
+    .from('app_settings')
+    .select('business_name, tagline, whatsapp_number, default_expiry_days, google_sheets_sync_enabled')
+    .eq('id', 'default')
+    .single();
+
+  if (error || !data) {
+    return { data: null, error: error?.message || 'Settings could not be loaded.' };
+  }
+
+  return {
+    data: {
+      ...fallback,
+      businessName: data.business_name,
+      tagline: data.tagline,
+      whatsappNumber: data.whatsapp_number,
+      defaultExpiryDays: data.default_expiry_days,
+      googleSheetsSyncEnabled: data.google_sheets_sync_enabled,
+    },
+  };
+}
+
+export async function saveAdminSettings(
+  settings: SystemSettings,
+): Promise<{ data: SystemSettings | null; error?: string }> {
+  if (!supabase || !isSupabaseConfigured) {
+    return { data: null, error: 'Supabase is not configured.' };
+  }
+
+  const { data, error } = await supabase
+    .from('app_settings')
+    .upsert(
+      {
+        id: 'default',
+        business_name: settings.businessName.trim(),
+        tagline: settings.tagline.trim(),
+        whatsapp_number: settings.whatsappNumber.trim(),
+        default_expiry_days: settings.defaultExpiryDays,
+        google_sheets_sync_enabled: Boolean(settings.googleSheetsSyncEnabled),
+      },
+      { onConflict: 'id' },
+    )
+    .select('business_name, tagline, whatsapp_number, default_expiry_days, google_sheets_sync_enabled')
+    .single();
+
+  if (error || !data) {
+    return { data: null, error: error?.message || 'Settings could not be saved.' };
+  }
+
+  return {
+    data: {
+      ...settings,
+      businessName: data.business_name,
+      tagline: data.tagline,
+      whatsappNumber: data.whatsapp_number,
+      defaultExpiryDays: data.default_expiry_days,
+      googleSheetsSyncEnabled: data.google_sheets_sync_enabled,
+    },
+  };
 }
 
 // ====================================================================

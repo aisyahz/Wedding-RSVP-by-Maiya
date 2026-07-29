@@ -13,6 +13,8 @@ import {
   addRsvpToSupabase,
   deleteRsvpFromSupabase,
   getInvitationBySlug,
+  getAdminSettings,
+  saveAdminSettings,
   logoutAdmin,
   isSupabaseConfigured,
   supabase,
@@ -36,6 +38,23 @@ import { ThankYouScreen } from './components/screens/ThankYouScreen';
 import { PrivateRsvpReportScreen } from './components/screens/PrivateRsvpReportScreen';
 import { AdminRsvpScreen } from './components/screens/AdminRsvpScreen';
 import { SettingsScreen } from './components/screens/SettingsScreen';
+
+const SETTINGS_STORAGE_KEY = 'maiya-admin-settings';
+
+function loadStoredSettings(): SystemSettings {
+  if (typeof window === 'undefined') return INITIAL_SETTINGS;
+
+  try {
+    const storedSettings = window.localStorage.getItem(SETTINGS_STORAGE_KEY);
+    if (!storedSettings) return INITIAL_SETTINGS;
+    return {
+      ...INITIAL_SETTINGS,
+      ...JSON.parse(storedSettings),
+    };
+  } catch {
+    return INITIAL_SETTINGS;
+  }
+}
 
 function NavigationAdapter({
   children,
@@ -384,7 +403,9 @@ export default function App() {
   const [rsvps, setRsvps] = useState<RsvpEntry[]>([]);
   const [selectedInvitationId, setSelectedInvitationId] = useState<string>('');
   const [editingInvitation, setEditingInvitation] = useState<Invitation | null>(null);
-  const [settings, setSettings] = useState<SystemSettings>(INITIAL_SETTINGS);
+  const [settings, setSettings] = useState<SystemSettings>(loadStoredSettings);
+  const [isSettingsLoading, setIsSettingsLoading] = useState(false);
+  const [settingsLoadError, setSettingsLoadError] = useState('');
   const [seoInvitation, setSeoInvitation] = useState<Invitation | null>(null);
   const [pendingVideoFile, setPendingVideoFile] = useState<File | null>(null);
   const [pendingUploadInvitation, setPendingUploadInvitation] = useState<Invitation | null>(null);
@@ -397,6 +418,20 @@ export default function App() {
     pin: string;
     slug: string;
   } | null>(null);
+
+  const handleUpdateSettings = async (
+    nextSettings: SystemSettings,
+  ): Promise<{ success: boolean; error?: string }> => {
+    const result = await saveAdminSettings(nextSettings);
+    if (!result.data || result.error) {
+      return { success: false, error: result.error || 'Settings could not be saved.' };
+    }
+
+    setSettings(result.data);
+    window.localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(result.data));
+    setSettingsLoadError('');
+    return { success: true };
+  };
 
   // Restore and continuously track the real Supabase Auth session.
   useEffect(() => {
@@ -456,6 +491,32 @@ export default function App() {
     }
 
     void initData();
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthReady, session?.access_token, session?.user]);
+
+  // Supabase is the source of truth; local storage is only a startup cache/fallback.
+  useEffect(() => {
+    if (!isAuthReady || !session?.access_token || !session.user) return;
+
+    let cancelled = false;
+    async function loadSettings() {
+      setIsSettingsLoading(true);
+      setSettingsLoadError('');
+      const result = await getAdminSettings(INITIAL_SETTINGS);
+      if (cancelled) return;
+
+      if (result.data) {
+        setSettings(result.data);
+        window.localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(result.data));
+      } else {
+        setSettingsLoadError(result.error || 'Settings could not be loaded.');
+      }
+      setIsSettingsLoading(false);
+    }
+
+    void loadSettings();
     return () => {
       cancelled = true;
     };
@@ -813,7 +874,7 @@ export default function App() {
                 <span className="text-sm">Menyemak sesi pentadbir…</span>
               </div>
             ) : session?.access_token && session.user ? (
-              <AdminLayout onLogout={handleLogout} />
+              <AdminLayout onLogout={handleLogout} settings={settings} />
             ) : (
               <DiagnosticRedirect
                 to="/login"
@@ -946,7 +1007,9 @@ export default function App() {
                     currentScreen="settings"
                     onNavigate={onNavigate}
                     settings={settings}
-                    onUpdateSettings={setSettings}
+                    onUpdateSettings={handleUpdateSettings}
+                    isLoading={isSettingsLoading}
+                    loadError={settingsLoadError}
                     onLogout={handleLogout}
                   />
                 )}

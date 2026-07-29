@@ -3,12 +3,14 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Mail, Users, Settings, LogOut, Sparkles } from 'lucide-react';
 import { BottomNav } from '../common/BottomNav';
 import { SiteCredit } from '../common/SiteCredit';
+import { SystemSettings } from '../../types';
 
 interface AdminLayoutProps {
   onLogout: () => void;
+  settings: SystemSettings;
 }
 
-export const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout }) => {
+export const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout, settings }) => {
   const navigate = useNavigate();
 
   const navItems = [
@@ -24,7 +26,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout }) => {
   };
 
   return (
-    <div className="min-h-dvh bg-app text-primary flex flex-col md:flex-row w-full font-sans antialiased">
+    <div className="flex h-dvh w-full flex-col overflow-hidden bg-app font-sans text-primary antialiased md:flex-row">
       {/* Desktop Sidebar (Linear / Apple / Framer inspired dark contrast shell) */}
       <aside className="hidden md:flex md:w-64 bg-[#24211F] text-[#F7F5F2] flex-col justify-between p-6 shrink-0 sticky top-0 h-dvh shadow-xl border-r border-system/10">
         <div className="space-y-8">
@@ -37,7 +39,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout }) => {
             />
             <div>
               <h1 className="text-title leading-tight text-white tracking-tight">
-                Digital Card
+                {settings.businessName}
               </h1>
               <p className="text-caption text-secondary uppercase tracking-widest font-semibold">
                 by Maiya
@@ -92,7 +94,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout }) => {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 min-w-0 flex flex-col min-h-dvh w-full overflow-x-clip">
+      <div className="flex h-full min-w-0 flex-1 flex-col overflow-hidden">
         {/* Desktop Top Header Bar */}
         <header className="hidden md:flex items-center justify-between px-8 py-4 bg-white border-b border-system shadow-2xs">
           <div>
@@ -124,7 +126,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout }) => {
               className="h-8 w-8 rounded-lg border border-white/15 bg-white object-contain"
             />
             <span className="font-title font-bold text-sm tracking-wide text-white">
-              Digital Card <span className="text-caption text-secondary uppercase font-sans font-normal">by Maiya</span>
+              <span className="block max-w-[220px] truncate">{settings.businessName}</span>
             </span>
           </div>
 
@@ -138,7 +140,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout }) => {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 min-w-0 w-full max-w-7xl mx-auto p-3 min-[360px]:p-4 md:p-8 flex flex-col pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-8">
+        <main className="mx-auto flex w-full min-w-0 max-w-7xl flex-1 flex-col overflow-y-auto overscroll-contain p-3 pb-8 min-[360px]:p-4 min-[360px]:pb-8 md:p-8">
           <Outlet />
           <footer className="mt-auto pt-8">
             <SiteCredit />
