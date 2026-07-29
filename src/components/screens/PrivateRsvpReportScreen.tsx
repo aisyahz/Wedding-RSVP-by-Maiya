@@ -39,16 +39,24 @@ export const PrivateRsvpReportScreen: React.FC<PrivateRsvpReportScreenProps> = (
       return;
     }
 
-    const { data, brideName: bName, groomName: gName, error } = await getPrivateCoupleRsvpReport(slug, pinInput);
+    const {
+      data,
+      brideName: bName,
+      groomName: gName,
+      error,
+      errorCode,
+    } = await getPrivateCoupleRsvpReport(slug, pinInput);
 
     setIsVerifying(false);
 
     if (error) {
-      setErrorMessage(
-        /pin|security/i.test(error)
-          ? 'PIN tidak sah. Sila semak semula dan cuba lagi. / Invalid PIN. Please check and try again.'
-          : error,
-      );
+      const friendlyMessages = {
+        no_pin: 'A security PIN has not been generated for this invitation. Please contact the invitation administrator.',
+        invalid_pin: 'PIN tidak sah. Sila semak dan cuba lagi. / Invalid PIN. Please check and try again.',
+        not_found: 'Invitation not found.',
+        system: 'Unable to verify the PIN right now. Please try again.',
+      } as const;
+      setErrorMessage(errorCode ? friendlyMessages[errorCode] : error);
     } else {
       setReportData(data);
       if (bName) setReportBride(bName);

@@ -1,7 +1,19 @@
 ﻿import React, { useEffect, useState } from 'react';
 import { ScreenId, Invitation } from '../../types';
-import { CheckCircle, Copy, Eye, EyeOff, Share2, Lock, ExternalLink } from 'lucide-react';
+import {
+  AlertTriangle,
+  CheckCircle,
+  Copy,
+  Eye,
+  EyeOff,
+  Share2,
+  Lock,
+  ExternalLink,
+  Loader2,
+  RefreshCw,
+} from 'lucide-react';
 import { copyText } from '../../lib/clipboard';
+import { generateInvitationPin, getInvitationPinStatus } from '../../lib/supabase';
 
 
 interface GenerateLinkScreenProps {
@@ -20,6 +32,14 @@ export const GenerateLinkScreen: React.FC<GenerateLinkScreenProps> = ({
   const [isCopyingReport, setIsCopyingReport] = useState(false);
   const [reportCopyError, setReportCopyError] = useState('');
   const [isPinVisible, setIsPinVisible] = useState(false);
+  const [securityPin, setSecurityPin] = useState('');
+  const [pinStatus, setPinStatus] = useState<'loading' | 'missing' | 'exists' | 'error'>('loading');
+  const [pinStatusRefresh, setPinStatusRefresh] = useState(0);
+  const [pinError, setPinError] = useState('');
+  const [pinSuccess, setPinSuccess] = useState('');
+  const [isGeneratingPin, setIsGeneratingPin] = useState(false);
+  const [showRegenerateConfirmation, setShowRegenerateConfirmation] = useState(false);
+  const [pinCopied, setPinCopied] = useState(false);
 
   const slug = activeInvitation?.slug || '';
   const brideName = activeInvitation?.brideName || '';
@@ -27,7 +47,47 @@ export const GenerateLinkScreen: React.FC<GenerateLinkScreenProps> = ({
   const publicOrigin = window.location.origin.replace(/\/+$/, '');
   const generatedUrl = `${publicOrigin}/invite/${encodeURIComponent(slug)}`;
   const reportUrl = `${publicOrigin}/report/${encodeURIComponent(slug)}`;
-  const securityPin = activeInvitation?.privatePin || '';
+  const pinStorageKey = activeInvitation?.id
+    ? `maiya-dashboard-pin:${activeInvitation.id}`
+    : '';
+
+  useEffect(() => {
+    if (!activeInvitation?.id) {
+      setPinStatus('error');
+      setPinError('Invitation information is unavailable.');
+      return;
+    }
+
+    const inMemoryPin = /^\d{6}$/.test(activeInvitation.privatePin || '')
+      ? activeInvitation.privatePin
+      : '';
+    const sessionPin = pinStorageKey
+      ? window.sessionStorage.getItem(pinStorageKey) || ''
+      : '';
+    if (inMemoryPin && pinStorageKey) {
+      window.sessionStorage.setItem(pinStorageKey, inMemoryPin);
+    }
+    setSecurityPin(inMemoryPin || (/^\d{6}$/.test(sessionPin) ? sessionPin : ''));
+    setPinStatus('loading');
+    setPinError('');
+    let cancelled = false;
+
+    async function loadPinStatus() {
+      const result = await getInvitationPinStatus(activeInvitation!.id);
+      if (cancelled) return;
+      if (result.error) {
+        setPinStatus('error');
+        setPinError(result.error);
+        return;
+      }
+      setPinStatus(result.hasPin ? 'exists' : 'missing');
+    }
+
+    void loadPinStatus();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeInvitation?.id, activeInvitation?.privatePin, pinStatusRefresh, pinStorageKey]);
 
   const handleCopy = async () => {
     if (isCopying || !generatedUrl) return;
@@ -68,6 +128,39 @@ export const GenerateLinkScreen: React.FC<GenerateLinkScreenProps> = ({
       window.setTimeout(() => setReportCopied(false), 2500);
     } finally {
       setIsCopyingReport(false);
+    }
+  };
+
+  const handlePinCopy = async () => {
+    if (!securityPin) return;
+    const success = await copyText(securityPin);
+    setPinCopied(success);
+    if (success) window.setTimeout(() => setPinCopied(false), 2500);
+  };
+
+  const handleGeneratePin = async (replaceExisting: boolean) => {
+    if (!activeInvitation?.id || isGeneratingPin) return;
+    setIsGeneratingPin(true);
+    setPinError('');
+    setPinSuccess('');
+    try {
+      const result = await generateInvitationPin(activeInvitation.id, replaceExisting);
+      if (!result.plainPin || result.error) {
+        setPinError(result.error || 'Unable to generate the security PIN.');
+        return;
+      }
+      setSecurityPin(result.plainPin);
+      if (pinStorageKey) window.sessionStorage.setItem(pinStorageKey, result.plainPin);
+      setPinStatus('exists');
+      setIsPinVisible(false);
+      setPinSuccess(
+        replaceExisting
+          ? 'Security PIN regenerated successfully.'
+          : 'Security PIN generated successfully.',
+      );
+      setShowRegenerateConfirmation(false);
+    } finally {
+      setIsGeneratingPin(false);
     }
   };
 
@@ -153,58 +246,166 @@ export const GenerateLinkScreen: React.FC<GenerateLinkScreenProps> = ({
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-xl border border-system bg-app">
-            <div className="select-all break-all px-4 py-3 font-title text-sm font-medium text-primary">
-              {reportUrl}
+          {pinStatus === 'loading' && (
+            <div className="flex items-center justify-center gap-2 rounded-xl border border-system bg-app p-5 text-sm text-secondary">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Checking security PIN…</span>
             </div>
-            <button
-              type="button"
-              onClick={handleReportCopy}
-              disabled={isCopyingReport || !slug}
-              aria-label="Copy private RSVP dashboard link"
-              className="btn-outline w-full rounded-none border-x-0 border-b-0 cursor-pointer"
-            >
-              <Copy className="h-4 w-4" />
-              <span>{isCopyingReport ? 'Copying…' : reportCopied ? 'Copied!' : 'Copy Report Link'}</span>
-            </button>
-          </div>
-          <p aria-live="polite" className={`text-xs ${reportCopyError ? 'text-error' : reportCopied ? 'text-success' : 'sr-only'}`}>
-            {reportCopyError || (reportCopied ? 'Private report link copied.' : '')}
-          </p>
+          )}
 
-          <div className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-system bg-[#EFE7DF]/60 px-4 py-3">
-            <div className="min-w-0">
-              <span className="block text-xs font-semibold uppercase tracking-wide text-secondary">Security PIN</span>
-              <code className="mt-1 block min-h-6 break-all font-title text-lg font-bold tabular-nums tracking-[0.18em] text-primary">
-                {securityPin
-                  ? isPinVisible ? securityPin : '••••••'
-                  : 'Not available'}
-              </code>
-            </div>
-            {securityPin && (
+          {pinStatus === 'error' && (
+            <div role="alert" className="space-y-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                <span className="break-words">{pinError}</span>
+              </div>
               <button
                 type="button"
-                onClick={() => setIsPinVisible((visible) => !visible)}
-                aria-label={isPinVisible ? 'Hide security PIN' : 'Show security PIN'}
-                aria-pressed={isPinVisible}
-                className="btn-ghost h-10 shrink-0 px-3 text-xs cursor-pointer"
+                onClick={() => setPinStatusRefresh((value) => value + 1)}
+                className="btn-outline h-10 w-full cursor-pointer"
               >
-                {isPinVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                <span>{isPinVisible ? 'Hide PIN' : 'Show PIN'}</span>
+                <RefreshCw className="h-4 w-4" />
+                Retry
               </button>
-            )}
-          </div>
+            </div>
+          )}
 
-          <button
-            type="button"
-            onClick={() => onNavigate('private_rsvp_report')}
-            className="btn-primary w-full cursor-pointer"
-          >
-            <ExternalLink className="h-4 w-4" />
-            <span>Open RSVP Dashboard</span>
-          </button>
+          {pinStatus === 'missing' && (
+            <div className="space-y-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
+              <div className="flex items-start gap-2 text-sm text-amber-900">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                <p>No security PIN has been generated for this invitation yet.</p>
+              </div>
+              {pinError && <p role="alert" className="text-xs text-rose-700">{pinError}</p>}
+              <button
+                type="button"
+                onClick={() => void handleGeneratePin(false)}
+                disabled={isGeneratingPin}
+                className="btn-primary w-full cursor-pointer"
+              >
+                {isGeneratingPin ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
+                <span>{isGeneratingPin ? 'Generating PIN…' : 'Generate 6-Digit PIN'}</span>
+              </button>
+            </div>
+          )}
+
+          {pinStatus === 'exists' && (
+            <>
+              {pinSuccess && (
+                <p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">
+                  {pinSuccess}
+                </p>
+              )}
+              {pinError && <p role="alert" className="text-sm text-rose-700">{pinError}</p>}
+
+              <div className="overflow-hidden rounded-xl border border-system bg-app">
+                <div className="select-all break-all px-4 py-3 font-title text-sm font-medium text-primary">
+                  {reportUrl}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleReportCopy}
+                  disabled={isCopyingReport || !slug}
+                  aria-label="Copy private RSVP dashboard link"
+                  className="btn-outline w-full rounded-none border-x-0 border-b-0 cursor-pointer"
+                >
+                  <Copy className="h-4 w-4" />
+                  <span>{isCopyingReport ? 'Copying…' : reportCopied ? 'Copied!' : 'Copy Dashboard Link'}</span>
+                </button>
+              </div>
+              <p aria-live="polite" className={`text-xs ${reportCopyError ? 'text-error' : reportCopied ? 'text-success' : 'sr-only'}`}>
+                {reportCopyError || (reportCopied ? 'Private dashboard link copied.' : '')}
+              </p>
+
+              <div className="space-y-3 rounded-xl border border-system bg-[#EFE7DF]/60 p-4">
+                <div className="flex min-w-0 items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <span className="block text-xs font-semibold uppercase tracking-wide text-secondary">Security PIN</span>
+                    <code className="mt-1 block min-h-6 break-all font-title text-lg font-bold tabular-nums tracking-[0.18em] text-primary">
+                      {securityPin ? isPinVisible ? securityPin : '••••••' : '••••••'}
+                    </code>
+                  </div>
+                  {securityPin && (
+                    <button
+                      type="button"
+                      onClick={() => setIsPinVisible((visible) => !visible)}
+                      aria-label={isPinVisible ? 'Hide security PIN' : 'Show security PIN'}
+                      aria-pressed={isPinVisible}
+                      className="btn-ghost h-10 shrink-0 px-3 text-xs cursor-pointer"
+                    >
+                      {isPinVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      <span>{isPinVisible ? 'Hide PIN' : 'Show PIN'}</span>
+                    </button>
+                  )}
+                </div>
+                {securityPin ? (
+                  <button
+                    type="button"
+                    onClick={() => void handlePinCopy()}
+                    aria-label="Copy security PIN"
+                    className="btn-outline h-10 w-full cursor-pointer"
+                  >
+                    <Copy className="h-4 w-4" />
+                    <span>{pinCopied ? 'PIN Copied!' : 'Copy PIN'}</span>
+                  </button>
+                ) : (
+                  <p className="text-xs leading-relaxed text-secondary">
+                    A PIN exists, but its plaintext is not stored. Regenerate it if the saved PIN has been lost.
+                  </p>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => onNavigate('private_rsvp_report')}
+                className="btn-primary w-full cursor-pointer"
+              >
+                <ExternalLink className="h-4 w-4" />
+                <span>Open RSVP Dashboard</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowRegenerateConfirmation(true)}
+                className="btn-ghost w-full cursor-pointer text-xs"
+              >
+                <RefreshCw className="h-4 w-4" />
+                <span>Regenerate PIN</span>
+              </button>
+            </>
+          )}
         </section>
       </div>
+
+      {showRegenerateConfirmation && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm">
+          <div role="dialog" aria-modal="true" aria-labelledby="regenerate-pin-title" className="w-full max-w-sm rounded-2xl border border-system bg-white p-5 shadow-2xl">
+            <h2 id="regenerate-pin-title" className="text-heading-3 text-primary">Regenerate Security PIN?</h2>
+            <p className="mt-2 text-sm leading-relaxed text-secondary">
+              The current PIN will stop working immediately. The couple will need to use the newly generated PIN.
+            </p>
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setShowRegenerateConfirmation(false)}
+                disabled={isGeneratingPin}
+                className="btn-outline cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleGeneratePin(true)}
+                disabled={isGeneratingPin}
+                className="btn-primary cursor-pointer"
+              >
+                {isGeneratingPin && <Loader2 className="h-4 w-4 animate-spin" />}
+                Regenerate PIN
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="text-center pt-2">
         <button

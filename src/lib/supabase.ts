@@ -330,6 +330,59 @@ export async function createInvitationWithPin(
   }
 }
 
+export async function getInvitationPinStatus(
+  invitationId: string,
+): Promise<{ hasPin: boolean; error?: string }> {
+  if (!supabase || !isSupabaseConfigured) {
+    return { hasPin: false, error: 'Supabase is not configured' };
+  }
+  if (!invitationId) return { hasPin: false, error: 'Invitation ID is required.' };
+
+  try {
+    const { data, error } = await supabase.rpc('get_invitation_pin_status', {
+      p_invitation_id: invitationId,
+    });
+    if (error) return { hasPin: false, error: error.message };
+    return { hasPin: data === true };
+  } catch (error: any) {
+    return { hasPin: false, error: error.message || 'Unable to check security PIN status.' };
+  }
+}
+
+export async function generateInvitationPin(
+  invitationId: string,
+  replaceExisting = false,
+): Promise<{ plainPin?: string; replacedExisting?: boolean; error?: string }> {
+  if (!supabase || !isSupabaseConfigured) {
+    return { error: 'Supabase is not configured' };
+  }
+  if (!invitationId) return { error: 'Invitation ID is required.' };
+
+  try {
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !sessionData.session?.user) {
+      return { error: sessionError?.message || 'Authentication required. Please sign in again.' };
+    }
+
+    const { data, error } = await supabase.rpc('generate_invitation_pin', {
+      p_invitation_id: invitationId,
+      p_replace_existing: replaceExisting,
+    });
+    if (error) return { error: error.message };
+    const row = Array.isArray(data) ? data[0] : data;
+    const plainPin = String(row?.plain_pin || '');
+    if (!/^\d{6}$/.test(plainPin)) {
+      return { error: 'The server did not return a valid 6-digit PIN.' };
+    }
+    return {
+      plainPin,
+      replacedExisting: Boolean(row?.replaced_existing),
+    };
+  } catch (error: any) {
+    return { error: error.message || 'Unable to generate security PIN.' };
+  }
+}
+
 // 4. Update Existing Invitation Details
 export async function updateInvitationInSupabase(
   id: string,
@@ -545,13 +598,23 @@ export async function deleteRsvpFromSupabase(id: string): Promise<{ success: boo
 export async function getPrivateCoupleRsvpReport(
   slug: string,
   inputPin: string
-): Promise<{ data: RsvpEntry[]; brideName?: string; groomName?: string; error?: string }> {
+): Promise<{
+  data: RsvpEntry[];
+  brideName?: string;
+  groomName?: string;
+  error?: string;
+  errorCode?: 'no_pin' | 'invalid_pin' | 'not_found' | 'system';
+}> {
   if (!supabase || !isSupabaseConfigured) {
-    return { data: [], error: 'Supabase is not configured' };
+    return { data: [], error: 'Supabase is not configured', errorCode: 'system' };
   }
 
   if (!inputPin || inputPin.length !== 6 || !/^\d{6}$/.test(inputPin)) {
-    return { data: [], error: 'Sila masukkan 6-digit PIN keselamatan dalam bentuk nombor.' };
+    return {
+      data: [],
+      error: 'Sila masukkan 6-digit PIN keselamatan dalam bentuk nombor.',
+      errorCode: 'invalid_pin',
+    };
   }
 
   try {
@@ -562,7 +625,17 @@ export async function getPrivateCoupleRsvpReport(
 
     if (error) {
       console.warn('RPC get_private_couple_rsvp_report notice:', error.message);
-      return { data: [], error: error.message || 'Security PIN tidak tepat.' };
+      const message = error.message || '';
+      if (/has not been generated|no.*pin/i.test(message)) {
+        return { data: [], error: message, errorCode: 'no_pin' };
+      }
+      if (/invitation not found/i.test(message)) {
+        return { data: [], error: message, errorCode: 'not_found' };
+      }
+      if (/invalid.*pin|pin.*format/i.test(message)) {
+        return { data: [], error: message, errorCode: 'invalid_pin' };
+      }
+      return { data: [], error: message || 'Unable to verify the PIN.', errorCode: 'system' };
     }
 
     if (!data || data.length === 0) {
@@ -587,7 +660,11 @@ export async function getPrivateCoupleRsvpReport(
       groomName: data[0].groom_name,
     };
   } catch (err: any) {
-    return { data: [], error: err.message || 'PIN keselamatan tidak sah.' };
+    return {
+      data: [],
+      error: err.message || 'Unable to verify the PIN.',
+      errorCode: 'system',
+    };
   }
 }
 
