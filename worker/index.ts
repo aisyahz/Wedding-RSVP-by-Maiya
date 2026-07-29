@@ -16,6 +16,7 @@ interface Env {
   SUPABASE_ANON_KEY?: string;
   VITE_SUPABASE_URL?: string;
   VITE_SUPABASE_ANON_KEY?: string;
+  DEFAULT_SOCIAL_PREVIEW_IMAGE_URL?: string;
   CLOUDFLARE_R2_ACCOUNT_ID: string;
   CLOUDFLARE_R2_ACCESS_KEY_ID: string;
   CLOUDFLARE_R2_SECRET_ACCESS_KEY: string;
@@ -37,6 +38,125 @@ const JSON_HEADERS = {
   'content-type': 'application/json; charset=utf-8',
   'cache-control': 'no-store',
 };
+
+const INVITATION_DESCRIPTION = 'You are warmly invited to celebrate our special day.';
+
+interface SocialInvitation {
+  bride_name?: string;
+  groom_name?: string;
+  poster_url?: string | null;
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function publicImageUrl(value?: string | null): string {
+  const candidate = value?.trim() || '';
+  try {
+    const url = new URL(candidate);
+    return url.protocol === 'https:' || url.protocol === 'http:' ? url.toString() : '';
+  } catch {
+    return '';
+  }
+}
+
+function socialHead(
+  title: string,
+  description: string,
+  canonicalUrl: string,
+  imageUrl: string,
+): string {
+  const titleHtml = escapeHtml(title);
+  const descriptionHtml = escapeHtml(description);
+  const canonicalHtml = escapeHtml(canonicalUrl);
+  const imageHtml = escapeHtml(imageUrl);
+  return `<!-- SEO_DYNAMIC_START -->
+    <title>${titleHtml}</title>
+    <meta name="description" content="${descriptionHtml}" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <link rel="canonical" href="${canonicalHtml}" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="${titleHtml}" />
+    <meta property="og:description" content="${descriptionHtml}" />
+    <meta property="og:image" content="${imageHtml}" />
+    <meta property="og:url" content="${canonicalHtml}" />
+    <meta property="og:site_name" content="Digital Card by Maiya" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="${titleHtml}" />
+    <meta name="twitter:description" content="${descriptionHtml}" />
+    <meta name="twitter:image" content="${imageHtml}" />
+    <!-- SEO_DYNAMIC_END -->`;
+}
+
+async function invitationMetadataResponse(
+  request: Request,
+  env: Env,
+  slug: string,
+): Promise<Response> {
+  const assetResponse = await env.ASSETS.fetch(request);
+  if (!assetResponse.ok || !assetResponse.headers.get('content-type')?.includes('text/html')) {
+    return assetResponse;
+  }
+
+  const requestUrl = new URL(request.url);
+  const canonicalUrl = `${requestUrl.origin}/invite/${encodeURIComponent(slug)}`;
+  const configuredDefault = publicImageUrl(env.DEFAULT_SOCIAL_PREVIEW_IMAGE_URL);
+  const defaultImage = configuredDefault || `${requestUrl.origin}/maiya-social-preview.png`;
+  const supabaseUrl = env.SUPABASE_URL?.trim() || env.VITE_SUPABASE_URL?.trim();
+  const supabaseAnonKey = env.SUPABASE_ANON_KEY?.trim() || env.VITE_SUPABASE_ANON_KEY?.trim();
+  let invitation: SocialInvitation | null = null;
+
+  if (supabaseUrl && supabaseAnonKey) {
+    try {
+      const endpoint = new URL(`${supabaseUrl.replace(/\/+$/, '')}/rest/v1/invitations`);
+      endpoint.searchParams.set('select', 'bride_name,groom_name,poster_url');
+      endpoint.searchParams.set('slug', `eq.${slug}`);
+      endpoint.searchParams.set('status', 'eq.active');
+      endpoint.searchParams.set('limit', '1');
+      const invitationResponse = await fetch(endpoint, {
+        headers: {
+          apikey: supabaseAnonKey,
+          authorization: `Bearer ${supabaseAnonKey}`,
+          accept: 'application/json',
+        },
+      });
+      if (invitationResponse.ok) {
+        const rows = await invitationResponse.json() as SocialInvitation[];
+        invitation = rows[0] || null;
+      }
+    } catch {
+      // Keep serving the React app with brand metadata if metadata lookup is unavailable.
+    }
+  }
+
+  const brideName = invitation?.bride_name?.trim() || '';
+  const groomName = invitation?.groom_name?.trim() || '';
+  const title = brideName && groomName
+    ? `${brideName} & ${groomName} | Digital Wedding Invitation`
+    : 'Digital Card by Maiya | Digital Wedding Invitation';
+  const image = publicImageUrl(invitation?.poster_url) || defaultImage;
+  const html = (await assetResponse.text()).replace(
+    /<!-- SEO_DYNAMIC_START -->[\s\S]*?<!-- SEO_DYNAMIC_END -->/,
+    socialHead(title, INVITATION_DESCRIPTION, canonicalUrl, image),
+  );
+  const headers = new Headers(assetResponse.headers);
+  headers.set('content-type', 'text/html; charset=UTF-8');
+  headers.set('cache-control', 'public, max-age=60');
+  headers.delete('content-length');
+  headers.delete('content-encoding');
+  headers.delete('etag');
+  return new Response(request.method === 'HEAD' ? null : html, {
+    status: assetResponse.status,
+    statusText: assetResponse.statusText,
+    headers,
+  });
+}
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: JSON_HEADERS });
@@ -269,6 +389,12 @@ export default {
     const pathname = new URL(request.url).pathname;
     if (pathname === '/api' || pathname.startsWith('/api/')) {
       return handleApi(request, env, pathname);
+    }
+    const invitationMatch = request.method === 'GET' || request.method === 'HEAD'
+      ? pathname.match(/^\/invite\/([^/]+)\/?$/)
+      : null;
+    if (invitationMatch) {
+      return invitationMetadataResponse(request, env, decodeURIComponent(invitationMatch[1]));
     }
     return env.ASSETS.fetch(request);
   },

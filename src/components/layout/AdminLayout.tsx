@@ -29,9 +29,11 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout }) => {
         <div className="space-y-8">
           {/* Brand Logo */}
           <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 rounded-xl bg-[#9B7B63] text-white font-title font-bold flex items-center justify-center text-lg shadow-sm">
-              M
-            </div>
+            <img
+              src="/logo-rsvp.png"
+              alt="Digital Card by Maiya"
+              className="h-10 w-10 rounded-xl border border-white/15 bg-white object-contain shadow-sm"
+            />
             <div>
               <h1 className="text-title leading-tight text-white tracking-tight">
                 Digital Card
@@ -115,9 +117,11 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout }) => {
         {/* Mobile Header Bar */}
         <header className="md:hidden flex items-center justify-between px-5 py-3.5 bg-[#24211F] text-white sticky top-0 z-30 shadow-sm border-b border-system/10">
           <div className="flex items-center space-x-2.5">
-            <div className="w-7 h-7 rounded-lg bg-[#9B7B63] text-white font-title font-bold flex items-center justify-center text-xs">
-              M
-            </div>
+            <img
+              src="/logo-rsvp.png"
+              alt="Digital Card by Maiya"
+              className="h-8 w-8 rounded-lg border border-white/15 bg-white object-contain"
+            />
             <span className="font-title font-bold text-sm tracking-wide text-white">
               Digital Card <span className="text-caption text-secondary uppercase font-sans font-normal">by Maiya</span>
             </span>

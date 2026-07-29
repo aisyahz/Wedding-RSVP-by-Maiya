@@ -472,7 +472,7 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
             <div className="flex min-w-0 items-center gap-2">
               <ImageIcon className="w-4 h-4 text-accent" />
               <span className="text-xs font-bold text-primary">
-                WebP Poster Image (Sebelum Video Dimainkan)
+                Invitation Cover Image
               </span>
             </div>
             {currentPosterUrl && (
@@ -482,7 +482,7 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
             )}
           </div>
           <p className="text-xs text-secondary">
-            Paparkan poster imej pantas sebelum video penuh dimuatkan oleh tetamu.
+            Used before the video loads and as the preview image when the invitation link is shared.
           </p>
 
           <div className="relative border border-dashed border-system rounded-xl p-3 text-center bg-app hover:bg-[#EFE7DF]/50 transition-all cursor-pointer">

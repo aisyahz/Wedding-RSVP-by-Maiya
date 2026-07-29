@@ -71,10 +71,10 @@ export function SeoMetadata({ invitation }: { invitation?: Invitation | null }) 
       pattern.test(location.pathname)
     )?.[1];
     const title = activeInvitation
-      ? `${activeInvitation.brideName} & ${activeInvitation.groomName} Wedding Invitation | Maiya`
+      ? `${activeInvitation.brideName} & ${activeInvitation.groomName} | Digital Wedding Invitation`
       : privateTitle || DEFAULT_TITLE;
     const description = activeInvitation
-      ? `You are invited to celebrate the wedding of ${activeInvitation.brideName} and ${activeInvitation.groomName}. View event details and RSVP online.`
+      ? 'You are warmly invited to celebrate our special day.'
       : DEFAULT_DESCRIPTION;
     const image =
       stablePublicImage(activeInvitation) || `${siteUrl}${DEFAULT_IMAGE_PATH}`;

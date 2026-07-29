@@ -44,9 +44,11 @@ export const AdminLoginScreen: React.FC<AdminLoginScreenProps> = ({
     <div className="flex min-h-dvh items-center justify-center bg-app p-3 antialiased min-[360px]:p-6">
       <div className="w-full max-w-md space-y-5">
         <header className="space-y-2 text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#1E1E1C] text-white shadow-sm">
-            <span className="text-heading-1">M</span>
-          </div>
+          <img
+            src="/logo-rsvp.png"
+            alt="Digital Card by Maiya"
+            className="mx-auto h-24 w-24 rounded-2xl border border-system bg-white object-contain shadow-sm"
+          />
           <h1 className="text-heading-1 tracking-tight text-primary">
             Digital Card by Maiya
           </h1>
