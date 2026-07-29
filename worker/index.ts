@@ -16,7 +16,6 @@ interface Env {
   SUPABASE_ANON_KEY?: string;
   VITE_SUPABASE_URL?: string;
   VITE_SUPABASE_ANON_KEY?: string;
-  DEFAULT_SOCIAL_PREVIEW_IMAGE_URL?: string;
   CLOUDFLARE_R2_ACCOUNT_ID: string;
   CLOUDFLARE_R2_ACCESS_KEY_ID: string;
   CLOUDFLARE_R2_SECRET_ACCESS_KEY: string;
@@ -72,6 +71,7 @@ function socialHead(
   canonicalUrl: string,
   imageUrl: string,
   isDefaultImage: boolean,
+  robots = 'index, follow, max-image-preview:large',
 ): string {
   const titleHtml = escapeHtml(title);
   const descriptionHtml = escapeHtml(description);
@@ -80,7 +80,7 @@ function socialHead(
   return `<!-- SEO_DYNAMIC_START -->
     <title>${titleHtml}</title>
     <meta name="description" content="${descriptionHtml}" />
-    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="robots" content="${escapeHtml(robots)}" />
     <link rel="canonical" href="${canonicalHtml}" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="${titleHtml}" />
@@ -96,6 +96,7 @@ function socialHead(
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="${titleHtml}" />
     <meta name="twitter:description" content="${descriptionHtml}" />
+    <meta name="twitter:url" content="${canonicalHtml}" />
     <meta name="twitter:image" content="${imageHtml}" />
     <!-- SEO_DYNAMIC_END -->`;
 }
@@ -112,8 +113,7 @@ async function invitationMetadataResponse(
 
   const requestUrl = new URL(request.url);
   const canonicalUrl = `${requestUrl.origin}/invite/${encodeURIComponent(slug)}`;
-  const configuredDefault = publicImageUrl(env.DEFAULT_SOCIAL_PREVIEW_IMAGE_URL);
-  const defaultImage = configuredDefault || `${requestUrl.origin}/maiya-social-preview.png`;
+  const defaultImage = `${requestUrl.origin}/maiya-social-preview.png`;
   const supabaseUrl = env.SUPABASE_URL?.trim() || env.VITE_SUPABASE_URL?.trim();
   const supabaseAnonKey = env.SUPABASE_ANON_KEY?.trim() || env.VITE_SUPABASE_ANON_KEY?.trim();
   let invitation: SocialInvitation | null = null;
@@ -160,6 +160,38 @@ async function invitationMetadataResponse(
   const headers = new Headers(assetResponse.headers);
   headers.set('content-type', 'text/html; charset=UTF-8');
   headers.set('cache-control', 'public, max-age=60');
+  headers.delete('content-length');
+  headers.delete('content-encoding');
+  headers.delete('etag');
+  return new Response(request.method === 'HEAD' ? null : html, {
+    status: assetResponse.status,
+    statusText: assetResponse.statusText,
+    headers,
+  });
+}
+
+async function siteMetadataResponse(request: Request, env: Env): Promise<Response> {
+  const assetResponse = await env.ASSETS.fetch(request);
+  if (!assetResponse.ok || !assetResponse.headers.get('content-type')?.includes('text/html')) {
+    return assetResponse;
+  }
+
+  const requestUrl = new URL(request.url);
+  const canonicalUrl = `${requestUrl.origin}${requestUrl.pathname}`;
+  const image = `${requestUrl.origin}/maiya-social-preview.png`;
+  const html = (await assetResponse.text()).replace(
+    /<!-- SEO_DYNAMIC_START -->[\s\S]*?<!-- SEO_DYNAMIC_END -->/,
+    socialHead(
+      'Maiya Digital Invitation | Elegant Wedding RSVP',
+      'Create and share elegant digital wedding invitations with RSVP, guest messages, event details, maps, photos, and video invitations.',
+      canonicalUrl,
+      image,
+      true,
+      'noindex, nofollow',
+    ),
+  );
+  const headers = new Headers(assetResponse.headers);
+  headers.set('content-type', 'text/html; charset=UTF-8');
   headers.delete('content-length');
   headers.delete('content-encoding');
   headers.delete('etag');
@@ -407,6 +439,9 @@ export default {
       : null;
     if (invitationMatch) {
       return invitationMetadataResponse(request, env, decodeURIComponent(invitationMatch[1]));
+    }
+    if (request.method === 'GET' || request.method === 'HEAD') {
+      return siteMetadataResponse(request, env);
     }
     return env.ASSETS.fetch(request);
   },

@@ -24,10 +24,7 @@ export const GenerateLinkScreen: React.FC<GenerateLinkScreenProps> = ({
   const slug = activeInvitation?.slug || '';
   const brideName = activeInvitation?.brideName || '';
   const groomName = activeInvitation?.groomName || '';
-  const configuredPublicUrl = String((import.meta as any).env?.VITE_PUBLIC_SITE_URL || '').trim();
-  const publicOrigin = configuredPublicUrl.startsWith('http')
-    ? configuredPublicUrl.replace(/\/+$/, '')
-    : window.location.origin.replace(/\/+$/, '');
+  const publicOrigin = window.location.origin.replace(/\/+$/, '');
   const generatedUrl = `${publicOrigin}/invite/${encodeURIComponent(slug)}`;
   const reportUrl = `${publicOrigin}/report/${encodeURIComponent(slug)}`;
   const securityPin = activeInvitation?.privatePin || '';

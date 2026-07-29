@@ -9,6 +9,7 @@ import { readFile } from 'node:fs/promises';
 const app = express();
 const PORT = 3000;
 
+app.set('trust proxy', true);
 app.use(express.json());
 
 // Initialize Supabase admin validator
@@ -20,9 +21,10 @@ const DEFAULT_TITLE = 'Maiya Digital Invitation | Elegant Wedding RSVP';
 const DEFAULT_DESCRIPTION = 'Create and share elegant digital wedding invitations with RSVP, guest messages, event details, maps, photos, and video invitations.';
 
 function publicSiteUrl(req?: Request): string {
+  if (req) return `${req.protocol}://${req.get('host')}`;
   const configured = process.env.VITE_PUBLIC_SITE_URL || process.env.APP_URL || '';
   if (configured) return configured.replace(/\/+$/, '');
-  return req ? `${req.protocol}://${req.get('host')}` : '';
+  return '';
 }
 
 function escapeHtml(value: unknown): string {

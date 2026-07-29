@@ -16,11 +16,8 @@ const PRIVATE_ROUTE_TITLES: Array<[RegExp, string]> = [
   [/^\/report\//, 'Private RSVP Report | Maiya'],
 ];
 
-const env = (import.meta as any).env || {};
-
 function normalizedSiteUrl(): string {
-  const configured = String(env.VITE_PUBLIC_SITE_URL || '').trim().replace(/\/+$/, '');
-  return configured || window.location.origin;
+  return window.location.origin.replace(/\/+$/, '');
 }
 
 function stablePublicImage(invitation?: Invitation | null): string {
@@ -101,6 +98,7 @@ export function SeoMetadata({ invitation }: { invitation?: Invitation | null }) 
     upsertMeta('meta[property="og:image:alt"]', { property: 'og:image:alt', content: imageAlt });
     upsertMeta('meta[name="twitter:title"]', { name: 'twitter:title', content: title });
     upsertMeta('meta[name="twitter:description"]', { name: 'twitter:description', content: description });
+    upsertMeta('meta[name="twitter:url"]', { name: 'twitter:url', content: canonicalUrl });
     upsertMeta('meta[name="twitter:image"]', { name: 'twitter:image', content: image });
     upsertMeta('meta[name="twitter:image:alt"]', { name: 'twitter:image:alt', content: imageAlt });
     upsertCanonical(canonicalUrl);
