@@ -97,6 +97,7 @@ export function SeoMetadata({ invitation }: { invitation?: Invitation | null }) 
     upsertMeta('meta[property="og:description"]', { property: 'og:description', content: description });
     upsertMeta('meta[property="og:url"]', { property: 'og:url', content: canonicalUrl });
     upsertMeta('meta[property="og:image"]', { property: 'og:image', content: image });
+    upsertMeta('meta[property="og:image:secure_url"]', { property: 'og:image:secure_url', content: image });
     upsertMeta('meta[property="og:image:alt"]', { property: 'og:image:alt', content: imageAlt });
     upsertMeta('meta[name="twitter:title"]', { name: 'twitter:title', content: title });
     upsertMeta('meta[name="twitter:description"]', { name: 'twitter:description', content: description });

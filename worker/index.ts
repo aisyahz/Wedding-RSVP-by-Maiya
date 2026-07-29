@@ -60,7 +60,7 @@ function publicImageUrl(value?: string | null): string {
   const candidate = value?.trim() || '';
   try {
     const url = new URL(candidate);
-    return url.protocol === 'https:' || url.protocol === 'http:' ? url.toString() : '';
+    return url.protocol === 'https:' ? url.toString() : '';
   } catch {
     return '';
   }
@@ -71,6 +71,7 @@ function socialHead(
   description: string,
   canonicalUrl: string,
   imageUrl: string,
+  isDefaultImage: boolean,
 ): string {
   const titleHtml = escapeHtml(title);
   const descriptionHtml = escapeHtml(description);
@@ -85,6 +86,11 @@ function socialHead(
     <meta property="og:title" content="${titleHtml}" />
     <meta property="og:description" content="${descriptionHtml}" />
     <meta property="og:image" content="${imageHtml}" />
+    <meta property="og:image:secure_url" content="${imageHtml}" />
+    <meta property="og:image:alt" content="Digital Card by Maiya wedding invitation preview" />
+    ${isDefaultImage ? '<meta property="og:image:type" content="image/png" />' : ''}
+    ${isDefaultImage ? '<meta property="og:image:width" content="1366" />' : ''}
+    ${isDefaultImage ? '<meta property="og:image:height" content="1361" />' : ''}
     <meta property="og:url" content="${canonicalHtml}" />
     <meta property="og:site_name" content="Digital Card by Maiya" />
     <meta name="twitter:card" content="summary_large_image" />
@@ -143,7 +149,13 @@ async function invitationMetadataResponse(
   const image = publicImageUrl(invitation?.poster_url) || defaultImage;
   const html = (await assetResponse.text()).replace(
     /<!-- SEO_DYNAMIC_START -->[\s\S]*?<!-- SEO_DYNAMIC_END -->/,
-    socialHead(title, INVITATION_DESCRIPTION, canonicalUrl, image),
+    socialHead(
+      title,
+      INVITATION_DESCRIPTION,
+      canonicalUrl,
+      image,
+      image === defaultImage,
+    ),
   );
   const headers = new Headers(assetResponse.headers);
   headers.set('content-type', 'text/html; charset=UTF-8');
