@@ -86,44 +86,42 @@ export const PrivateRsvpReportScreen: React.FC<PrivateRsvpReportScreenProps> = (
   // State 1: Locked PIN Verification Screen
   if (!isUnlocked) {
     return (
-    <div className="max-w-md min-w-0 w-full mx-auto space-y-4 min-[360px]:space-y-6">
+      <div className="mx-auto w-full min-w-0 max-w-md space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between bg-white p-5 rounded-2xl border border-system shadow-2xs">
+        <div className="relative rounded-2xl border border-system bg-white px-4 py-5 text-center shadow-2xs sm:p-5">
           <button
             type="button"
             onClick={() => onNavigate('guest_invitation')}
             aria-label="Kembali ke kad jemputan"
-            className="w-10 h-10 rounded-xl bg-app hover:bg-[#EFE7DF] text-primary flex items-center justify-center cursor-pointer transition-all border border-system"
+            className="absolute left-3 top-3 flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-system bg-app text-primary transition-all hover:bg-[#EFE7DF] sm:left-5 sm:top-5 sm:h-10 sm:w-10"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
 
-          <div className="text-center">
+          <div className="px-9">
             <span className="text-caption uppercase font-semibold text-accent tracking-wider block">
               Akses Pengantin
             </span>
-            <h1 className="text-title text-primary">
+            <h1 className="mt-1 text-title leading-tight text-primary">
               Laporan RSVP Sulit
             </h1>
           </div>
-
-          <div className="w-10" />
         </div>
 
         {/* PIN Form Card */}
-        <form onSubmit={handleUnlockPin} className="card-maiya card-form space-y-5 text-center">
-          <div className="w-12 h-12 rounded-2xl bg-[#EFE7DF] text-accent flex items-center justify-center mx-auto border border-system">
+        <form onSubmit={handleUnlockPin} className="card-maiya space-y-5 px-4 py-6 text-center sm:p-7">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-system bg-[#EFE7DF] text-accent">
             <KeyRound className="w-6 h-6" />
           </div>
 
-          <div>
-            <h2 className="text-heading-3 text-primary">
+          <div className="space-y-1.5">
+            <h2 className="text-heading-3 leading-tight text-primary">
               Akses Laporan RSVP
             </h2>
-            <p className="text-xs text-secondary mt-1">
+            <p className="mx-auto max-w-xs text-xs leading-relaxed text-secondary">
               Masukkan PIN keselamatan untuk melihat laporan RSVP tetamu.
             </p>
-            <p className="mt-2 break-words font-title text-sm font-bold text-primary">
+            <p className="pt-1 break-words font-title text-sm font-bold leading-snug text-primary">
               {brideName} & {groomName}
             </p>
           </div>
@@ -135,7 +133,7 @@ export const PrivateRsvpReportScreen: React.FC<PrivateRsvpReportScreenProps> = (
             </div>
           )}
 
-          <div>
+          <div className="mx-auto w-full max-w-xs">
             <label htmlFor="private-rsvp-pin" className="form-label block">
               6-Digit Security PIN
             </label>
@@ -151,14 +149,14 @@ export const PrivateRsvpReportScreen: React.FC<PrivateRsvpReportScreenProps> = (
               value={pinInput}
               onChange={(e) => setPinInput(e.target.value.replace(/\D/g, '').slice(0, 6))}
               placeholder="••••••"
-              className="w-full text-center tracking-[0.5em] font-title tabular-nums text-xl input-maiya"
+              className="input-maiya w-full px-3 text-center font-title text-xl tabular-nums tracking-[0.35em] sm:tracking-[0.5em]"
             />
           </div>
 
           <button
             type="submit"
             disabled={isVerifying}
-            className="w-full btn-primary cursor-pointer flex items-center justify-center gap-2"
+            className="btn-primary mx-auto flex w-full max-w-xs cursor-pointer items-center justify-center gap-2"
           >
             {isVerifying ? (
               <>
@@ -176,61 +174,64 @@ export const PrivateRsvpReportScreen: React.FC<PrivateRsvpReportScreenProps> = (
 
   // State 2: Unlocked Read-Only Dashboard
   return (
-    <div className="max-w-xl mx-auto space-y-6">
+    <div className="mx-auto w-full min-w-0 max-w-xl space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between bg-white p-5 rounded-2xl border border-system shadow-2xs">
+      <div className="rounded-2xl border border-system bg-white p-4 shadow-2xs sm:p-5">
+        <div className="flex items-center justify-between gap-3">
           <button
             type="button"
             onClick={() => setIsUnlocked(false)}
             aria-label="Kunci semula laporan RSVP"
-          className="w-10 h-10 rounded-xl bg-app hover:bg-[#EFE7DF] text-primary flex items-center justify-center cursor-pointer transition-all border border-system"
-          title="Kunci Semula"
-        >
-          <Lock className="w-4 h-4" />
-        </button>
+            className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-system bg-app text-primary transition-all hover:bg-[#EFE7DF] sm:h-10 sm:w-10"
+            title="Kunci Semula"
+          >
+            <Lock className="w-4 h-4" />
+          </button>
 
-        <div className="text-center">
           <span className="text-caption uppercase font-semibold text-accent tracking-wider block">
             Akses Pengantin • Sulit
           </span>
-          <h1 className="text-title text-primary">
-            Laporan RSVP ({brideName} & {groomName})
-          </h1>
+          <button
+            type="button"
+            onClick={handleDownloadCsv}
+            aria-label="Muat turun laporan CSV"
+            className="btn-accent h-9 shrink-0 cursor-pointer gap-1 px-3 text-xs"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>CSV</span>
+          </button>
         </div>
-
-        <button
-          type="button"
-          onClick={handleDownloadCsv}
-          className="btn-accent h-9 px-3 text-xs gap-1 cursor-pointer"
-        >
-          <Download className="w-3.5 h-3.5" />
-          <span>CSV</span>
-        </button>
+        <div className="mt-4 border-t border-system/60 pt-4 text-center">
+          <h1 className="text-title leading-tight text-primary">Laporan RSVP</h1>
+          <p className="mt-1 break-words font-title text-sm font-semibold leading-snug text-secondary">
+            {brideName} & {groomName}
+          </p>
+        </div>
       </div>
 
       {/* KPI Stats Grid */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="card-maiya p-5 text-center">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+        <div className="card-maiya px-3 py-4 text-center sm:p-5">
           <span className="text-caption uppercase font-semibold text-secondary tracking-wider block">
             Respon Hadir
           </span>
-          <span className="text-heading-1 text-primary mt-1 block">
+          <span className="mt-1 block text-2xl font-bold text-primary sm:text-heading-1">
             {attendingRsvps.length}
           </span>
         </div>
 
-        <div className="card-maiya p-5 text-center">
+        <div className="card-maiya px-3 py-4 text-center sm:p-5">
           <span className="text-caption uppercase font-semibold text-secondary tracking-wider block">
             Jumlah Pax Hadir
           </span>
-          <span className="text-heading-1 text-accent mt-1 block">
+          <span className="mt-1 block text-2xl font-bold text-accent sm:text-heading-1">
             {totalPax} Pax
           </span>
         </div>
       </div>
 
       {/* Guest Responses List */}
-      <div className="card-maiya p-5 space-y-3">
+      <div className="card-maiya space-y-3 p-4 sm:p-5">
         <h2 className="text-title text-primary border-b border-system/40 pb-2">
           Senarai Tetamu ({reportData.length})
         </h2>
@@ -244,12 +245,12 @@ export const PrivateRsvpReportScreen: React.FC<PrivateRsvpReportScreenProps> = (
             reportData.map((rsvp) => (
               <div
                 key={rsvp.id}
-                className="flex min-w-0 flex-col min-[360px]:flex-row min-[360px]:items-start justify-between gap-2 bg-app p-3.5 rounded-xl border border-system text-sm"
+                className="flex min-w-0 flex-col gap-3 rounded-xl border border-system bg-app p-3.5 text-sm min-[390px]:flex-row min-[390px]:items-start min-[390px]:justify-between"
               >
                 <div className="min-w-0 space-y-0.5">
                   <div className="flex min-w-0 items-start gap-2">
                     <span
-                      className={`w-2 h-2 rounded-full ${
+                      className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
                         rsvp.attendance === 'attending' ? 'bg-emerald-600' : 'bg-rose-600'
                       }`}
                     />
