@@ -1,12 +1,16 @@
 ﻿import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { GuestLanguageProvider } from '../../i18n/GuestLanguageProvider';
+import { SiteCredit } from '../common/SiteCredit';
 
 export const GuestLayout: React.FC = () => {
   return (
     <div className="min-h-dvh bg-[#1E1E1C] flex items-center justify-center p-0 md:py-8 font-sans antialiased">
       <div className="relative flex min-h-dvh w-full max-w-md min-w-0 flex-col overflow-hidden bg-app text-primary shadow-2xl md:h-[calc(100dvh-4rem)] md:max-h-[900px] md:min-h-[680px] md:rounded-3xl md:border md:border-system">
         <GuestLanguageProvider><Outlet /></GuestLanguageProvider>
+        <footer className="pointer-events-auto absolute bottom-[3px] left-0 right-0 z-[60] px-16">
+          <SiteCredit guest />
+        </footer>
       </div>
     </div>
   );

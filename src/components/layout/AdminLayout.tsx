@@ -2,6 +2,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Mail, Users, Settings, LogOut, Sparkles } from 'lucide-react';
 import { BottomNav } from '../common/BottomNav';
+import { SiteCredit } from '../common/SiteCredit';
 
 interface AdminLayoutProps {
   onLogout: () => void;
@@ -139,6 +140,9 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout }) => {
         {/* Page Content */}
         <main className="flex-1 min-w-0 w-full max-w-7xl mx-auto p-3 min-[360px]:p-4 md:p-8 flex flex-col pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-8">
           <Outlet />
+          <footer className="mt-auto pt-8">
+            <SiteCredit />
+          </footer>
         </main>
 
         {/* Mobile Bottom Nav */}
