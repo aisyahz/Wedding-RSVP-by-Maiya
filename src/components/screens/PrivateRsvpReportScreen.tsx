@@ -44,7 +44,11 @@ export const PrivateRsvpReportScreen: React.FC<PrivateRsvpReportScreenProps> = (
     setIsVerifying(false);
 
     if (error) {
-      setErrorMessage(error);
+      setErrorMessage(
+        /pin|security/i.test(error)
+          ? 'PIN tidak sah. Sila semak semula dan cuba lagi. / Invalid PIN. Please check and try again.'
+          : error,
+      );
     } else {
       setReportData(data);
       if (bName) setReportBride(bName);
@@ -78,7 +82,9 @@ export const PrivateRsvpReportScreen: React.FC<PrivateRsvpReportScreenProps> = (
         {/* Header */}
         <div className="flex items-center justify-between bg-white p-5 rounded-2xl border border-system shadow-2xs">
           <button
+            type="button"
             onClick={() => onNavigate('guest_invitation')}
+            aria-label="Kembali ke kad jemputan"
             className="w-10 h-10 rounded-xl bg-app hover:bg-[#EFE7DF] text-primary flex items-center justify-center cursor-pointer transition-all border border-system"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -104,30 +110,38 @@ export const PrivateRsvpReportScreen: React.FC<PrivateRsvpReportScreenProps> = (
 
           <div>
             <h2 className="text-heading-3 text-primary">
-              Pengesahan PIN Pengantin
+              Akses Laporan RSVP
             </h2>
             <p className="text-xs text-secondary mt-1">
-              Masukkan 6-digit PIN keselamatan untuk melihat laporan RSVP <strong className="text-primary">{brideName} & {groomName}</strong>
+              Masukkan PIN keselamatan untuk melihat laporan RSVP tetamu.
+            </p>
+            <p className="mt-2 break-words font-title text-sm font-bold text-primary">
+              {brideName} & {groomName}
             </p>
           </div>
 
           {errorMessage && (
-            <div className="p-3 rounded-xl bg-rose-50 text-rose-800 border border-rose-200 text-xs font-semibold flex items-center justify-center gap-1.5">
+            <div role="alert" aria-live="assertive" className="p-3 rounded-xl bg-rose-50 text-rose-800 border border-rose-200 text-xs font-semibold flex items-start justify-center gap-2 text-left">
               <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0" />
               <span>{errorMessage}</span>
             </div>
           )}
 
           <div>
-            <label className="form-label block">
+            <label htmlFor="private-rsvp-pin" className="form-label block">
               6-Digit Security PIN
             </label>
             <input
+              id="private-rsvp-pin"
+              name="security-pin"
               type="password"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              pattern="[0-9]{6}"
               maxLength={6}
               required
               value={pinInput}
-              onChange={(e) => setPinInput(e.target.value)}
+              onChange={(e) => setPinInput(e.target.value.replace(/\D/g, '').slice(0, 6))}
               placeholder="••••••"
               className="w-full text-center tracking-[0.5em] font-title tabular-nums text-xl input-maiya"
             />
@@ -157,8 +171,10 @@ export const PrivateRsvpReportScreen: React.FC<PrivateRsvpReportScreenProps> = (
     <div className="max-w-xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between bg-white p-5 rounded-2xl border border-system shadow-2xs">
-        <button
-          onClick={() => setIsUnlocked(false)}
+          <button
+            type="button"
+            onClick={() => setIsUnlocked(false)}
+            aria-label="Kunci semula laporan RSVP"
           className="w-10 h-10 rounded-xl bg-app hover:bg-[#EFE7DF] text-primary flex items-center justify-center cursor-pointer transition-all border border-system"
           title="Kunci Semula"
         >
@@ -175,6 +191,7 @@ export const PrivateRsvpReportScreen: React.FC<PrivateRsvpReportScreenProps> = (
         </div>
 
         <button
+          type="button"
           onClick={handleDownloadCsv}
           className="btn-accent h-9 px-3 text-xs gap-1 cursor-pointer"
         >
@@ -255,6 +272,7 @@ export const PrivateRsvpReportScreen: React.FC<PrivateRsvpReportScreenProps> = (
       {/* Actions */}
       <div className="space-y-3 pt-1">
         <button
+          type="button"
           onClick={handleDownloadCsv}
           className="btn-outline w-full cursor-pointer"
         >
@@ -264,6 +282,7 @@ export const PrivateRsvpReportScreen: React.FC<PrivateRsvpReportScreenProps> = (
 
         <div className="text-center">
           <button
+            type="button"
             onClick={() => onNavigate('guest_invitation')}
             className="text-xs font-semibold text-accent hover:underline cursor-pointer"
           >

@@ -58,7 +58,7 @@ export interface Invitation {
   giftQrKey?: string;
   videoFileName: string;
   status: InvitationStatus;
-  privatePin: string; // e.g. "1234"
+  privatePin: string; // six numeric digits when available in the current admin session
   createdAt: string;
 }
 

@@ -36,7 +36,7 @@ export const INITIAL_INVITATIONS: Invitation[] = [
     rsvpClosingDate: '2026-10-10',
     videoFileName: 'Adam_Sofea_Wedding_Card.mp4',
     status: 'active',
-    privatePin: '1234',
+    privatePin: '123456',
     createdAt: '2026-07-01',
   },
   {
@@ -62,7 +62,7 @@ export const INITIAL_INVITATIONS: Invitation[] = [
     rsvpClosingDate: '2026-11-01',
     videoFileName: 'Farah_Imran_Luxury_Video.mp4',
     status: 'active',
-    privatePin: '2026',
+    privatePin: '202626',
     createdAt: '2026-07-10',
   },
   {
@@ -87,7 +87,7 @@ export const INITIAL_INVITATIONS: Invitation[] = [
     rsvpClosingDate: '2026-06-01',
     videoFileName: 'Aina_Danial_Invitation.mp4',
     status: 'expired',
-    privatePin: '8888',
+    privatePin: '888888',
     createdAt: '2026-05-01',
   },
 ];

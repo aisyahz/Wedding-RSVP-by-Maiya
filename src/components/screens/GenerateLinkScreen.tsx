@@ -1,6 +1,6 @@
 ﻿import React, { useEffect, useState } from 'react';
 import { ScreenId, Invitation } from '../../types';
-import { CheckCircle, Copy, Eye, Share2, Lock, ExternalLink } from 'lucide-react';
+import { CheckCircle, Copy, Eye, EyeOff, Share2, Lock, ExternalLink } from 'lucide-react';
 import { copyText } from '../../lib/clipboard';
 
 
@@ -19,6 +19,7 @@ export const GenerateLinkScreen: React.FC<GenerateLinkScreenProps> = ({
   const [reportCopied, setReportCopied] = useState(false);
   const [isCopyingReport, setIsCopyingReport] = useState(false);
   const [reportCopyError, setReportCopyError] = useState('');
+  const [isPinVisible, setIsPinVisible] = useState(false);
 
   const slug = activeInvitation?.slug || '';
   const brideName = activeInvitation?.brideName || '';
@@ -29,6 +30,7 @@ export const GenerateLinkScreen: React.FC<GenerateLinkScreenProps> = ({
     : window.location.origin.replace(/\/+$/, '');
   const generatedUrl = `${publicOrigin}/invite/${encodeURIComponent(slug)}`;
   const reportUrl = `${publicOrigin}/report/${encodeURIComponent(slug)}`;
+  const securityPin = activeInvitation?.privatePin || '';
 
   const handleCopy = async () => {
     if (isCopying || !generatedUrl) return;
@@ -146,10 +148,10 @@ export const GenerateLinkScreen: React.FC<GenerateLinkScreenProps> = ({
             </span>
             <div>
               <h2 id="private-report-heading" className="text-heading-3 text-primary">
-                Private RSVP Report
+                Couple RSVP Dashboard
               </h2>
               <p className="mt-1 text-xs text-secondary">
-                Keep this report link and PIN private.
+                Only the bride and groom should have access to this dashboard.
               </p>
             </div>
           </div>
@@ -162,6 +164,7 @@ export const GenerateLinkScreen: React.FC<GenerateLinkScreenProps> = ({
               type="button"
               onClick={handleReportCopy}
               disabled={isCopyingReport || !slug}
+              aria-label="Copy private RSVP dashboard link"
               className="btn-outline w-full rounded-none border-x-0 border-b-0 cursor-pointer"
             >
               <Copy className="h-4 w-4" />
@@ -172,11 +175,27 @@ export const GenerateLinkScreen: React.FC<GenerateLinkScreenProps> = ({
             {reportCopyError || (reportCopied ? 'Private report link copied.' : '')}
           </p>
 
-          <div className="flex items-center justify-between rounded-xl border border-system bg-[#EFE7DF]/60 px-4 py-3">
-            <span className="text-xs font-semibold uppercase tracking-wide text-secondary">PIN</span>
-            <code className="font-title text-lg font-bold tabular-nums tracking-[0.18em] text-primary">
-              {activeInvitation?.privatePin || '1234'}
-            </code>
+          <div className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-system bg-[#EFE7DF]/60 px-4 py-3">
+            <div className="min-w-0">
+              <span className="block text-xs font-semibold uppercase tracking-wide text-secondary">Security PIN</span>
+              <code className="mt-1 block min-h-6 break-all font-title text-lg font-bold tabular-nums tracking-[0.18em] text-primary">
+                {securityPin
+                  ? isPinVisible ? securityPin : '••••••'
+                  : 'Not available'}
+              </code>
+            </div>
+            {securityPin && (
+              <button
+                type="button"
+                onClick={() => setIsPinVisible((visible) => !visible)}
+                aria-label={isPinVisible ? 'Hide security PIN' : 'Show security PIN'}
+                aria-pressed={isPinVisible}
+                className="btn-ghost h-10 shrink-0 px-3 text-xs cursor-pointer"
+              >
+                {isPinVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                <span>{isPinVisible ? 'Hide PIN' : 'Show PIN'}</span>
+              </button>
+            )}
           </div>
 
           <button
@@ -185,7 +204,7 @@ export const GenerateLinkScreen: React.FC<GenerateLinkScreenProps> = ({
             className="btn-primary w-full cursor-pointer"
           >
             <ExternalLink className="h-4 w-4" />
-            <span>Open RSVP Report</span>
+            <span>Open RSVP Dashboard</span>
           </button>
         </section>
       </div>
