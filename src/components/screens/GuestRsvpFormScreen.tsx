@@ -1,6 +1,6 @@
 ﻿import React, { useState } from 'react';
 import { ScreenId, Invitation, RsvpEntry } from '../../types';
-import { ArrowLeft, Check, CheckCircle2, X, Send, Loader2 } from 'lucide-react';
+import { ArrowLeft, Check, CheckCircle2, X, Send, Loader2, Minus, Plus, Users } from 'lucide-react';
 
 interface GuestRsvpFormScreenProps {
   onNavigate: (screen: ScreenId) => void;
@@ -25,6 +25,11 @@ export const GuestRsvpFormScreen: React.FC<GuestRsvpFormScreenProps> = ({
 
   const brideName = activeInvitation?.brideName || '';
   const groomName = activeInvitation?.groomName || '';
+  const maxPax = Math.max(1, activeInvitation?.maxPax || 6);
+
+  React.useEffect(() => {
+    setPax((value) => Math.min(maxPax, Math.max(1, value)));
+  }, [maxPax]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -155,28 +160,17 @@ export const GuestRsvpFormScreen: React.FC<GuestRsvpFormScreenProps> = ({
 
         {/* Pax Selector */}
         {attendance === 'attending' && (
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-semibold text-primary">
-                Jumlah Tetamu (Pax)
-              </label>
-              <span className="text-xs font-bold text-accent">{pax} Pax</span>
-            </div>
-            <div className="grid grid-cols-3 min-[360px]:grid-cols-6 gap-2">
-              {[1, 2, 3, 4, 5, 6].map((num) => (
-                <button
-                  key={num}
-                  type="button"
-                  onClick={() => setPax(num)}
-                  className={`min-h-11 rounded-xl text-sm font-bold border transition-all cursor-pointer ${
-                    pax === num
-                      ? 'bg-[#9B7B63] text-white border-[#9B7B63]'
-                      : 'bg-white text-primary border-system hover:bg-app'
-                  }`}
-                >
-                  {num}
-                </button>
-              ))}
+          <div className="rounded-xl border border-system bg-app p-3 min-[360px]:p-4">
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <span className="flex items-center gap-2 text-xs font-semibold text-primary"><Users className="h-4 w-4 text-accent" /> Jumlah Tetamu</span>
+                <span className="mt-1 block text-caption text-secondary">Maksimum {maxPax} pax</span>
+              </div>
+              <div className="flex shrink-0 items-center gap-2" aria-label="Pilih jumlah tetamu">
+                <button type="button" aria-label="Kurangkan tetamu" disabled={pax <= 1} onClick={() => setPax((value) => Math.max(1, value - 1))} className="flex h-11 w-11 items-center justify-center rounded-xl border border-system bg-white text-primary transition-colors hover:bg-[#EFE7DF] disabled:cursor-not-allowed disabled:opacity-40"><Minus className="h-4 w-4" /></button>
+                <output className="min-w-12 text-center text-lg font-bold tabular-nums text-primary" aria-live="polite">{pax}</output>
+                <button type="button" aria-label="Tambah tetamu" disabled={pax >= maxPax} onClick={() => setPax((value) => Math.min(maxPax, value + 1))} className="flex h-11 w-11 items-center justify-center rounded-xl border border-system bg-white text-primary transition-colors hover:bg-[#EFE7DF] disabled:cursor-not-allowed disabled:opacity-40"><Plus className="h-4 w-4" /></button>
+              </div>
             </div>
           </div>
         )}

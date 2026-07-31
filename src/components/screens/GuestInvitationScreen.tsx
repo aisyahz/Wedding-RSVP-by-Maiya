@@ -1,6 +1,6 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
 import { ScreenId, Invitation, RsvpEntry } from '../../types';
-import { Clock, MapPin, Navigation, Phone, Gift, Copy, Lock, Volume2, VolumeX, HeartHandshake, CheckCircle2 } from 'lucide-react';
+import { CalendarDays, Clock, MapPin, Navigation, Phone, Gift, Copy, Lock, Volume2, VolumeX, HeartHandshake, CheckCircle2, Shirt } from 'lucide-react';
 import { BottomGuestNav } from '../common/BottomGuestNav';
 
 interface GuestInvitationScreenProps {
@@ -73,6 +73,19 @@ export const GuestInvitationScreen: React.FC<GuestInvitationScreenProps> = ({
   const videoUrl = activeInvitation?.videoUrl || '';
   const posterUrl = activeInvitation?.posterUrl || '';
   const bank = activeInvitation?.bankGift;
+  const dressCodeText = activeInvitation?.dressCodeText?.trim() || '';
+  const dressCodeColors = (activeInvitation?.dressCodeColors || []).slice(0, 5);
+  const showDressCode = Boolean(dressCodeText || dressCodeColors.length);
+  const parsedWeddingDate = /^\d{4}-\d{2}-\d{2}$/.test(weddingDate)
+    ? new Date(`${weddingDate}T12:00:00`)
+    : new Date(weddingDate);
+  const hasValidWeddingDate = !Number.isNaN(parsedWeddingDate.getTime());
+  const formattedWeddingDate = hasValidWeddingDate
+    ? new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(parsedWeddingDate)
+    : weddingDate;
+  const weddingDay = hasValidWeddingDate
+    ? new Intl.DateTimeFormat('en-GB', { weekday: 'long' }).format(parsedWeddingDate)
+    : '';
 
   const cardRsvps = rsvps.filter((r) => r.invitationId === activeInvitation?.id);
 
@@ -249,9 +262,11 @@ export const GuestInvitationScreen: React.FC<GuestInvitationScreenProps> = ({
             <span className="text-caption font-semibold uppercase tracking-widest text-accent">
               Tarikh & Masa Majlis
             </span>
-            <h2 className="font-serif text-heading-1 text-primary break-words [overflow-wrap:anywhere]">
-              {weddingDate}
-            </h2>
+            <div className="flex items-center justify-center gap-2 text-accent">
+              <CalendarDays className="h-4 w-4 shrink-0" />
+              <span className="text-xs font-semibold tracking-wide">{weddingDay}</span>
+            </div>
+            <h2 className="guest-event-date text-heading-1 text-primary break-words [overflow-wrap:anywhere]">{formattedWeddingDate}</h2>
             <p className="text-xs text-secondary flex items-center justify-center gap-1 font-medium">
               <Clock className="w-3.5 h-3.5 text-accent" />
               <span>{weddingTime}</span>
@@ -300,6 +315,26 @@ export const GuestInvitationScreen: React.FC<GuestInvitationScreenProps> = ({
             </a>
           </div>
         </div>
+
+        {showDressCode && (
+          <section className="card-maiya p-4 min-[360px]:p-6 space-y-3 text-center" aria-labelledby="dress-code-title">
+            <div className="flex items-center justify-center gap-2 text-accent">
+              <Shirt className="h-4 w-4" />
+              <h3 id="dress-code-title" className="text-caption font-semibold uppercase tracking-widest">Dress Code</h3>
+            </div>
+            {dressCodeText && <p className="font-serif text-heading-3 text-primary break-words">{dressCodeText}</p>}
+            {dressCodeColors.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center justify-center gap-2.5" aria-hidden="true">
+                  {dressCodeColors.map((color, index) => (
+                    <span key={`${color.name}-${index}`} className="h-8 w-8 rounded-full border-2 border-white shadow-sm ring-1 ring-black/10" style={{ backgroundColor: /^#[0-9a-f]{6}$/i.test(color.hex) ? color.hex : '#9B7B63' }} />
+                  ))}
+                </div>
+                <p className="text-sm text-secondary">{dressCodeColors.map((color) => color.name).filter(Boolean).join(' • ')}</p>
+              </div>
+            )}
+          </section>
+        )}
 
         {/* Contact & Wishlist */}
         <div ref={contactRef} id="contact-section" className="card-maiya card-comfortable space-y-3 scroll-mt-24">

@@ -9,9 +9,13 @@ import {
   Gift,
   Loader2,
   MapPin,
+  Minus,
   Navigation,
   PhoneCall,
+  Plus,
   Send,
+  Shirt,
+  Users,
   Volume2,
   VolumeX,
   X,
@@ -113,7 +117,9 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
     : invitation?.whatsappContact
       ? [{ id: 'legacy-contact', name: t('weddingFamily'), relationship: '', phoneNumber: invitation.whatsappContact, whatsappNumber: invitation.whatsappContact, enabled: true }]
       : [];
-  const maxPax = Math.min(20, Math.max(1, Number(invitation?.maxPax) || 6));
+  const maxPax = Math.min(999, Math.max(1, Number(invitation?.maxPax) || 6));
+  const dressCodeText = invitation?.dressCodeText?.trim() || '';
+  const dressCodeColors = (invitation?.dressCodeColors || []).slice(0, 5);
   const showGift = invitation?.enableGiftSection !== false &&
     Boolean(bank?.accountNumber || bank?.qrCodeUrl || wishlistUrl);
   const invitationRsvps = rsvps.filter((entry) => entry.invitationId === invitation?.id);
@@ -331,6 +337,11 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
       >
         {activeFeature === 'calendar' && (
           <div className="space-y-5">
+            <div className="guest-glass-control rounded-[24px] p-5 text-center">
+              <CalendarDays className="mx-auto mb-2 h-5 w-5 text-black/65" />
+              <p className="guest-event-date text-lg font-semibold text-black">{formatInvitationDate(invitation?.weddingDate, language === 'bm' ? 'ms-MY' : 'en-MY')}</p>
+              {invitation?.weddingTime && <p className="mt-1 text-xs font-semibold uppercase tracking-[0.08em] text-black/55">{invitation.weddingTime}</p>}
+            </div>
             <div className="grid grid-cols-2 min-[360px]:grid-cols-4 gap-2">
               {[
                 [t('days'), timeLeft.days],
@@ -344,6 +355,13 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
                 </div>
               ))}
             </div>
+            {(dressCodeText || dressCodeColors.length > 0) && (
+              <div className="guest-glass-control rounded-[24px] p-5 text-center">
+                <div className="mb-2 flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-[0.1em] text-black/65"><Shirt className="h-4 w-4" />Dress Code</div>
+                {dressCodeText && <p className="guest-location-title text-lg font-semibold text-black">{dressCodeText}</p>}
+                {dressCodeColors.length > 0 && <div className="mt-3 space-y-2"><div className="flex flex-wrap justify-center gap-2.5" aria-hidden="true">{dressCodeColors.map((color, index) => <span key={`${color.name}-${index}`} className="h-8 w-8 rounded-full border-2 border-white shadow-sm ring-1 ring-black/10" style={{ backgroundColor: /^#[0-9a-f]{6}$/i.test(color.hex) ? color.hex : '#9B7B63' }} />)}</div><p className="text-xs font-semibold text-black/60">{dressCodeColors.map((color) => color.name).filter(Boolean).join(' • ')}</p></div>}
+              </div>
+            )}
             <div className="grid grid-cols-1 min-[360px]:grid-cols-2 gap-3">
               <a href={googleCalendarUrl} target="_blank" rel="noopener noreferrer" className="btn-primary w-full">
                 <CalendarDays className="h-5 w-5 shrink-0" />
@@ -389,12 +407,14 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
                   </div>
                 </div>
                 {attendance === 'attending' && (
-                  <div>
-                    <label className="mb-1.5 block text-sm font-semibold">{t('guestCount')}</label>
-                    <div className="grid grid-cols-3 min-[360px]:grid-cols-4 gap-2">
-                      {Array.from({ length: maxPax }, (_, index) => index + 1).map((value) => (
-                        <button type="button" key={value} onClick={() => setPax(value)} className={`min-h-11 rounded-xl border text-sm font-bold ${pax === value ? 'border-[#9B7B63] bg-[#9B7B63] text-white' : 'border-system bg-white'}`}>{value}</button>
-                      ))}
+                  <div className="rounded-xl border border-system bg-white/70 p-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div><span className="flex items-center gap-2 text-sm font-semibold"><Users className="h-4 w-4 text-accent" />{t('guestCount')}</span><span className="mt-1 block text-[11px] text-black/50">Maksimum {maxPax} pax</span></div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <button type="button" aria-label="Kurangkan tetamu" disabled={pax <= 1} onClick={() => setPax((value) => Math.max(1, value - 1))} className="flex h-11 w-11 items-center justify-center rounded-xl border border-system bg-white disabled:opacity-40"><Minus className="h-4 w-4" /></button>
+                        <output className="min-w-10 text-center text-lg font-bold tabular-nums" aria-live="polite">{pax}</output>
+                        <button type="button" aria-label="Tambah tetamu" disabled={pax >= maxPax} onClick={() => setPax((value) => Math.min(maxPax, value + 1))} className="flex h-11 w-11 items-center justify-center rounded-xl border border-system bg-white disabled:opacity-40"><Plus className="h-4 w-4" /></button>
+                      </div>
                     </div>
                   </div>
                 )}

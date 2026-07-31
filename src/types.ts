@@ -33,6 +33,11 @@ export interface InvitationContact {
   enabled: boolean;
 }
 
+export interface DressCodeColor {
+  name: string;
+  hex: string;
+}
+
 export interface Invitation {
   id: string;
   slug: string;
@@ -47,6 +52,8 @@ export interface Invitation {
   whatsappContact: string; // e.g. +60123456789
   contacts?: InvitationContact[];
   maxPax?: number;
+  dressCodeText?: string;
+  dressCodeColors?: DressCodeColor[];
   wishlistUrl?: string;
   enableGiftSection?: boolean;
   bankGift?: BankGiftInfo;

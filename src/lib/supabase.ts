@@ -24,6 +24,10 @@ export function mapDbInvitationToApp(dbRow: any): Invitation {
   const posterKey = dbRow.poster_key || '';
   const giftQrKey = dbRow.gift_qr_key || '';
   const storedContacts = Array.isArray(dbRow.contacts) ? dbRow.contacts : [];
+  const dressCodeColors = (Array.isArray(dbRow.dress_code_colors) ? dbRow.dress_code_colors : [])
+    .slice(0, 5)
+    .map((color: any) => ({ name: String(color?.name || '').trim(), hex: String(color?.hex || '').trim() }))
+    .filter((color: { name: string; hex: string }) => color.name || /^#[0-9a-f]{6}$/i.test(color.hex));
   const contacts: InvitationContact[] = storedContacts
     .slice(0, 3)
     .map((contact: any, index: number) => ({
@@ -57,7 +61,9 @@ export function mapDbInvitationToApp(dbRow: any): Invitation {
     wazeUrl: dbRow.waze_url || '',
     whatsappContact: dbRow.whatsapp_contact || '',
     contacts,
-    maxPax: Math.min(20, Math.max(1, Number(dbRow.max_pax) || 6)),
+    maxPax: Math.min(999, Math.max(1, Number(dbRow.max_pax) || 6)),
+    dressCodeText: dbRow.dress_code_text || '',
+    dressCodeColors,
     wishlistUrl: dbRow.wishlist_url || '',
     enableGiftSection: Boolean(
       dbRow.bank_name ||
@@ -361,7 +367,9 @@ export async function createInvitationWithPin(
       p_status: invData.status || 'draft',
       p_custom_pin: customPin || null,
       p_contacts: invData.contacts || [],
-      p_max_pax: Math.min(20, Math.max(1, Number(invData.maxPax) || 6)),
+      p_max_pax: Math.min(999, Math.max(1, Number(invData.maxPax) || 6)),
+      p_dress_code_text: invData.dressCodeText?.trim() || null,
+      p_dress_code_colors: invData.dressCodeColors || [],
     };
 
     const { data, error } = await supabase.rpc('create_invitation_with_pin', payload);
@@ -489,7 +497,9 @@ export async function updateInvitationInSupabase(
       ...(has('wazeUrl') ? { waze_url: invData.wazeUrl || null } : {}),
       ...(has('whatsappContact') ? { whatsapp_contact: invData.whatsappContact || '' } : {}),
       ...(has('contacts') ? { contacts: invData.contacts || [] } : {}),
-      ...(has('maxPax') ? { max_pax: Math.min(20, Math.max(1, Number(invData.maxPax) || 6)) } : {}),
+      ...(has('maxPax') ? { max_pax: Math.min(999, Math.max(1, Number(invData.maxPax) || 6)) } : {}),
+      ...(has('dressCodeText') ? { dress_code_text: invData.dressCodeText?.trim() || null } : {}),
+      ...(has('dressCodeColors') ? { dress_code_colors: invData.dressCodeColors || [] } : {}),
       ...(has('wishlistUrl') ? { wishlist_url: invData.wishlistUrl || null } : {}),
       ...(has('bankGift') ? {
         bank_name: invData.bankGift?.bankName || null,

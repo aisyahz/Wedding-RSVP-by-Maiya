@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useRef, useState } from 'react';
-import { ScreenId, Invitation, InvitationContact } from '../../types';
+import { ScreenId, Invitation, InvitationContact, DressCodeColor } from '../../types';
 import { VIDEO_ACCEPT } from '../../lib/videoValidation';
 import { ArrowLeft, ArrowRight, Upload, CheckCircle, Loader2, AlertCircle, RotateCcw, Plus, Trash2 } from 'lucide-react';
 import { MediaProviderService } from '../../lib/mediaProvider';
@@ -33,6 +33,8 @@ const normalizeDateForInput = (value?: string | null): string => {
   return Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString().slice(0, 10);
 };
 
+const createDressCodeColor = (): DressCodeColor => ({ name: '', hex: '#9B7B63' });
+
 export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
   onNavigate,
   editingInvitation,
@@ -62,6 +64,8 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
 
   const [contacts, setContacts] = useState<InvitationContact[]>(() => initialContacts(editingInvitation));
   const [maxPax, setMaxPax] = useState(editingInvitation?.maxPax || 6);
+  const [dressCodeText, setDressCodeText] = useState(editingInvitation?.dressCodeText || '');
+  const [dressCodeColors, setDressCodeColors] = useState<DressCodeColor[]>(editingInvitation?.dressCodeColors || []);
   const [rsvpClosingDate, setRsvpClosingDate] = useState(editingInvitation?.rsvpClosingDate || '');
   const [wishlistUrl, setWishlistUrl] = useState(editingInvitation?.wishlistUrl || '');
   const [enableGiftSection, setEnableGiftSection] = useState<boolean>(
@@ -88,6 +92,8 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
       setWazeUrl(editingInvitation.wazeUrl || '');
       setContacts(initialContacts(editingInvitation));
       setMaxPax(editingInvitation.maxPax || 6);
+      setDressCodeText(editingInvitation.dressCodeText || '');
+      setDressCodeColors(editingInvitation.dressCodeColors || []);
       setRsvpClosingDate(editingInvitation.rsvpClosingDate || '');
       setWishlistUrl(editingInvitation.wishlistUrl || '');
       setEnableGiftSection(editingInvitation.enableGiftSection !== undefined ? editingInvitation.enableGiftSection : true);
@@ -165,6 +171,8 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
       whatsappContact: primaryContact?.whatsappNumber || primaryContact?.phoneNumber || '',
       contacts,
       maxPax,
+      dressCodeText,
+      dressCodeColors: dressCodeColors.filter((color) => color.name.trim()),
       wishlistUrl,
       enableGiftSection,
       bankGift: {
@@ -474,13 +482,33 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
                 <input
                   type="number"
                   min={1}
-                  max={20}
+                  max={999}
                   required
                   value={maxPax}
-                  onChange={(event) => setMaxPax(Math.min(20, Math.max(1, Number(event.target.value) || 1)))}
+                  onChange={(event) => setMaxPax(Math.min(999, Math.max(1, Number(event.target.value) || 1)))}
                   className="w-full input-maiya"
                 />
               </div>
+            </div>
+
+            <div className="space-y-3 rounded-xl border border-system bg-white p-3 min-[360px]:p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-primary">Dress Code (Optional)</h3>
+                  <p className="text-xs text-secondary">Add a note and up to 5 suggested colours.</p>
+                </div>
+                <button type="button" disabled={dressCodeColors.length >= 5} onClick={() => setDressCodeColors((colors) => [...colors, createDressCodeColor()])} className="btn-outline shrink-0 px-3 disabled:cursor-not-allowed disabled:opacity-50">
+                  <Plus className="h-4 w-4" /> Add Colour
+                </button>
+              </div>
+              <input value={dressCodeText} onChange={(event) => setDressCodeText(event.target.value)} placeholder="e.g. Formal / Earth tones" className="input-maiya" />
+              {dressCodeColors.map((color, index) => (
+                <div key={index} className="grid grid-cols-[3rem_1fr_2.75rem] items-center gap-2">
+                  <input type="color" aria-label={`Dress code colour ${index + 1}`} value={/^#[0-9a-f]{6}$/i.test(color.hex) ? color.hex : '#9B7B63'} onChange={(event) => setDressCodeColors((colors) => colors.map((item, itemIndex) => itemIndex === index ? { ...item, hex: event.target.value } : item))} className="h-11 w-12 cursor-pointer rounded-lg border border-system bg-white p-1" />
+                  <input value={color.name} onChange={(event) => setDressCodeColors((colors) => colors.map((item, itemIndex) => itemIndex === index ? { ...item, name: event.target.value } : item))} placeholder="Colour name" className="input-maiya" />
+                  <button type="button" aria-label={`Remove dress code colour ${index + 1}`} onClick={() => setDressCodeColors((colors) => colors.filter((_, itemIndex) => itemIndex !== index))} className="flex h-11 w-11 items-center justify-center rounded-xl text-rose-700 hover:bg-rose-50"><Trash2 className="h-4 w-4" /></button>
+                </div>
+              ))}
             </div>
 
             <div>
