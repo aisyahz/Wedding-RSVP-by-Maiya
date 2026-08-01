@@ -127,7 +127,7 @@ export const GuestBottomSheet: React.FC<GuestBottomSheetProps> = ({
 
   const beginDrag = (event: React.PointerEvent<HTMLElement>) => {
     if (event.button !== 0 || !liveHeight) return;
-    if ((event.target as HTMLElement).closest('button, a, input, select, textarea')) return;
+    if ((event.target as HTMLElement).closest('button, a, input, select, textarea, [contenteditable="true"]')) return;
     const now = performance.now();
     dragRef.current = {
       pointerId: event.pointerId,
@@ -206,7 +206,7 @@ export const GuestBottomSheet: React.FC<GuestBottomSheetProps> = ({
 
   const beginContentTouch = (event: React.TouchEvent<HTMLDivElement>) => {
     if (!liveHeight || !contentRef.current || contentRef.current.scrollTop > 0) return;
-    if ((event.target as HTMLElement).closest('button, a, input, select, textarea')) return;
+    if ((event.target as HTMLElement).closest('button, a, input, select, textarea, [contenteditable="true"]')) return;
     const touch = event.touches[0];
     const now = performance.now();
     contentTouchRef.current = {

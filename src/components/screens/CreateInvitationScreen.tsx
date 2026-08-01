@@ -419,8 +419,8 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
             </h2>
 
             <div className="space-y-3">
-              <div className="flex items-center justify-between gap-3">
-                <div>
+              <div className="flex flex-col items-start gap-3 min-[390px]:flex-row min-[390px]:items-center min-[390px]:justify-between">
+                <div className="min-w-0">
                   <h3 className="text-sm font-semibold text-primary">Guest Contacts</h3>
                   <p className="text-xs text-secondary">Up to 3 contacts. Only enabled contacts appear to guests.</p>
                 </div>
@@ -497,13 +497,13 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
                   <h3 className="text-sm font-semibold text-primary">Dress Code (Optional)</h3>
                   <p className="text-xs text-secondary">Add a note and up to 5 suggested colours.</p>
                 </div>
-                <button type="button" disabled={dressCodeColors.length >= 5} onClick={() => setDressCodeColors((colors) => [...colors, createDressCodeColor()])} className="btn-outline shrink-0 px-3 disabled:cursor-not-allowed disabled:opacity-50">
+                <button type="button" disabled={dressCodeColors.length >= 5} onClick={() => setDressCodeColors((colors) => [...colors, createDressCodeColor()])} className="btn-outline w-full shrink-0 px-3 min-[390px]:w-auto disabled:cursor-not-allowed disabled:opacity-50">
                   <Plus className="h-4 w-4" /> Add Colour
                 </button>
               </div>
               <input value={dressCodeText} onChange={(event) => setDressCodeText(event.target.value)} placeholder="e.g. Formal / Earth tones" className="input-maiya" />
               {dressCodeColors.map((color, index) => (
-                <div key={index} className="grid grid-cols-[3rem_1fr_2.75rem] items-center gap-2">
+                <div key={index} className="grid min-w-0 grid-cols-[3rem_minmax(0,1fr)_2.75rem] items-center gap-2">
                   <input type="color" aria-label={`Dress code colour ${index + 1}`} value={/^#[0-9a-f]{6}$/i.test(color.hex) ? color.hex : '#9B7B63'} onChange={(event) => setDressCodeColors((colors) => colors.map((item, itemIndex) => itemIndex === index ? { ...item, hex: event.target.value } : item))} className="h-11 w-12 cursor-pointer rounded-lg border border-system bg-white p-1" />
                   <input value={color.name} onChange={(event) => setDressCodeColors((colors) => colors.map((item, itemIndex) => itemIndex === index ? { ...item, name: event.target.value } : item))} placeholder="Colour name" className="input-maiya" />
                   <button type="button" aria-label={`Remove dress code colour ${index + 1}`} onClick={() => setDressCodeColors((colors) => colors.filter((_, itemIndex) => itemIndex !== index))} className="flex h-11 w-11 items-center justify-center rounded-xl text-rose-700 hover:bg-rose-50"><Trash2 className="h-4 w-4" /></button>

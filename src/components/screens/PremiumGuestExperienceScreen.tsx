@@ -408,9 +408,9 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
                 </div>
                 {attendance === 'attending' && (
                   <div className="rounded-xl border border-system bg-white/70 p-4">
-                    <div className="flex items-center justify-between gap-4">
-                      <div><span className="flex items-center gap-2 text-sm font-semibold"><Users className="h-4 w-4 text-accent" />{t('guestCount')}</span><span className="mt-1 block text-[11px] text-black/50">Maksimum {maxPax} pax</span></div>
-                      <div className="flex shrink-0 items-center gap-2">
+                    <div className="flex flex-col gap-3 min-[360px]:flex-row min-[360px]:items-center min-[360px]:justify-between min-[360px]:gap-4">
+                      <div className="min-w-0"><span className="flex items-center gap-2 text-sm font-semibold"><Users className="h-4 w-4 shrink-0 text-accent" />{t('guestCount')}</span><span className="mt-1 block text-[11px] text-black/50">Maksimum {maxPax} pax</span></div>
+                      <div className="flex shrink-0 items-center justify-center gap-2">
                         <button type="button" aria-label="Kurangkan tetamu" disabled={pax <= 1} onClick={() => setPax((value) => Math.max(1, value - 1))} className="flex h-11 w-11 items-center justify-center rounded-xl border border-system bg-white disabled:opacity-40"><Minus className="h-4 w-4" /></button>
                         <output className="min-w-10 text-center text-lg font-bold tabular-nums" aria-live="polite">{pax}</output>
                         <button type="button" aria-label="Tambah tetamu" disabled={pax >= maxPax} onClick={() => setPax((value) => Math.min(maxPax, value + 1))} className="flex h-11 w-11 items-center justify-center rounded-xl border border-system bg-white disabled:opacity-40"><Plus className="h-4 w-4" /></button>

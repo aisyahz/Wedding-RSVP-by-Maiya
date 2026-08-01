@@ -124,6 +124,14 @@
     line-height: 1.5;
   }
 
+  input:not([type='button']):not([type='submit']):not([type='reset']),
+  textarea,
+  [contenteditable='true'] {
+    -webkit-user-select: text;
+    user-select: text;
+    touch-action: auto;
+  }
+
   label {
     font-size: var(--type-body-size);
     font-weight: var(--weight-semibold);
