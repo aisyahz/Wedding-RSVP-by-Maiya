@@ -201,6 +201,22 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
     }
   };
 
+  const handleFormPaste = (event: React.ClipboardEvent<HTMLFormElement>) => {
+    const field = event.target;
+    if (!(field instanceof HTMLInputElement) && !(field instanceof HTMLTextAreaElement)) return;
+    if (field.disabled || field.readOnly) return;
+    if (field instanceof HTMLInputElement && !['text', 'tel', 'url', 'email', 'search'].includes(field.type)) return;
+
+    const pastedText = event.clipboardData.getData('text/plain');
+    if (!pastedText) return;
+
+    event.preventDefault();
+    const start = field.selectionStart ?? field.value.length;
+    const end = field.selectionEnd ?? start;
+    field.setRangeText(pastedText, start, end, 'end');
+    field.dispatchEvent(new Event('input', { bubbles: true }));
+  };
+
   return (
     <div className="max-w-2xl min-w-0 w-full mx-auto space-y-4 min-[360px]:space-y-6">
       {/* Top Header Navigation */}
@@ -247,6 +263,7 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
       <form
         ref={formRef}
         onSubmit={handleNext}
+        onPasteCapture={handleFormPaste}
         onInvalidCapture={(event) => {
           if (step !== 1) return;
           const target = event.target as HTMLInputElement;

@@ -44,7 +44,6 @@ export const GuestBottomSheet: React.FC<GuestBottomSheetProps> = ({
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const sheetRef = useRef<HTMLElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
-  const contentTouchRef = useRef<DragSession | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
@@ -204,51 +203,6 @@ export const GuestBottomSheet: React.FC<GuestBottomSheetProps> = ({
     finishDrag(drag, event?.clientY ?? drag.previousY);
   };
 
-  const beginContentTouch = (event: React.TouchEvent<HTMLDivElement>) => {
-    if (!liveHeight || !contentRef.current || contentRef.current.scrollTop > 0) return;
-    if ((event.target as HTMLElement).closest('button, a, input, select, textarea, [contenteditable="true"]')) return;
-    const touch = event.touches[0];
-    const now = performance.now();
-    contentTouchRef.current = {
-      pointerId: -1,
-      startY: touch.clientY,
-      previousY: touch.clientY,
-      previousTime: now,
-      velocity: 0,
-      startHeight: liveHeight,
-    };
-  };
-
-  const moveContentTouch = (event: React.TouchEvent<HTMLDivElement>) => {
-    const drag = contentTouchRef.current;
-    const touch = event.touches[0];
-    if (!drag || !touch || !contentRef.current || contentRef.current.scrollTop > 0) return;
-    const distance = touch.clientY - drag.startY;
-    if (distance <= 6) return;
-    event.preventDefault();
-    setIsDragging(true);
-    const now = performance.now();
-    const elapsed = Math.max(1, now - drag.previousTime);
-    drag.velocity = (touch.clientY - drag.previousY) / elapsed;
-    drag.previousY = touch.clientY;
-    drag.previousTime = now;
-
-    if (drag.startHeight > compactHeight + 8) {
-      setLiveHeight(Math.max(compactHeight, drag.startHeight - distance));
-      setDragTranslate(Math.max(0, distance - (drag.startHeight - compactHeight)));
-    } else {
-      setDragTranslate(distance);
-    }
-  };
-
-  const endContentTouch = (event: React.TouchEvent<HTMLDivElement>) => {
-    const drag = contentTouchRef.current;
-    if (!drag) return;
-    const endY = event.changedTouches[0]?.clientY ?? drag.previousY;
-    contentTouchRef.current = null;
-    finishDrag(drag, endY);
-  };
-
   const handleHeaderKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
     if (event.key === 'ArrowUp') {
       event.preventDefault();
@@ -323,10 +277,6 @@ export const GuestBottomSheet: React.FC<GuestBottomSheetProps> = ({
 
         <div
           ref={contentRef}
-          onTouchStart={beginContentTouch}
-          onTouchMove={moveContentTouch}
-          onTouchEnd={endContentTouch}
-          onTouchCancel={endContentTouch}
           className={`min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-4 py-5 min-[360px]:px-6 ${contentClassName}`}
         >
           {children}
