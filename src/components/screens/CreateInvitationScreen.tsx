@@ -752,7 +752,7 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
         )}
 
         {/* Footer Actions */}
-        <div className="sticky bottom-0 z-20 -mx-4 flex min-h-[68px] items-center justify-end border-t border-system/40 bg-white/95 px-4 py-3 backdrop-blur-sm md:static md:mx-0 md:min-h-0 md:border-t-0 md:bg-transparent md:px-0 md:py-0">
+        <div className="flex justify-end border-t border-system/40 pt-5">
           {step < 5 ? (
             <button type="submit" className="w-full sm:w-auto btn-primary cursor-pointer">
               <span>Continue to Step {step + 1}</span>
