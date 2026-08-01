@@ -105,7 +105,7 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
       setVideoFileName(editingInvitation.videoFileName || '');
       setPrivatePin(editingInvitation.privatePin || '');
     }
-  }, [editingInvitation]);
+  }, [editingInvitation?.id]);
 
   useEffect(() => {
     return () => {
@@ -213,8 +213,17 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
     event.preventDefault();
     const start = field.selectionStart ?? field.value.length;
     const end = field.selectionEnd ?? start;
-    field.setRangeText(pastedText, start, end, 'end');
+    const nextValue = `${field.value.slice(0, start)}${pastedText}${field.value.slice(end)}`;
+    const prototype = field instanceof HTMLTextAreaElement
+      ? HTMLTextAreaElement.prototype
+      : HTMLInputElement.prototype;
+    const nativeValueSetter = Object.getOwnPropertyDescriptor(prototype, 'value')?.set;
+    nativeValueSetter?.call(field, nextValue);
     field.dispatchEvent(new Event('input', { bubbles: true }));
+    window.requestAnimationFrame(() => {
+      const caretPosition = start + pastedText.length;
+      field.setSelectionRange(caretPosition, caretPosition);
+    });
   };
 
   return (
