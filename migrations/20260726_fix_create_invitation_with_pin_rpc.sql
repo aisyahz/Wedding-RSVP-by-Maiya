@@ -15,7 +15,7 @@ ALTER TABLE public.invitations
 CREATE TABLE IF NOT EXISTS public.invitation_secrets (
     invitation_id UUID PRIMARY KEY
         REFERENCES public.invitations(id) ON DELETE CASCADE,
-    private_pin_hash TEXT NOT NULL,
+    private_pin TEXT NOT NULL CHECK (private_pin ~ '^[0-9]{6}$'),
     created_at TIMESTAMPTZ NOT NULL DEFAULT pg_catalog.now()
 );
 
@@ -64,7 +64,6 @@ DECLARE
     v_invitation_id UUID;
     v_slug TEXT;
     v_plain_pin TEXT;
-    v_pin_hash TEXT;
 BEGIN
     IF auth.uid() IS NULL THEN
         RAISE EXCEPTION 'Unauthorized. Authenticated access required.'
@@ -83,19 +82,13 @@ BEGIN
         END IF;
         v_plain_pin := p_custom_pin;
     ELSE
-        -- pgcrypto-backed random 32-bit value, reduced to a zero-padded
-        -- six-digit PIN. The plain PIN is returned once and is never stored.
+        -- Generate a zero-padded six-digit PIN.
         v_plain_pin := pg_catalog.lpad(
     pg_catalog.floor(pg_catalog.random() * 1000000)::text,
     6,
     '0'
 );
     END IF;
-
-    v_pin_hash := extensions.crypt(
-        v_plain_pin,
-        extensions.gen_salt('bf')
-    );
 
     INSERT INTO public.invitations AS invitation (
         slug,
@@ -146,11 +139,11 @@ BEGIN
 
     INSERT INTO public.invitation_secrets (
         invitation_id,
-        private_pin_hash
+        private_pin
     )
     VALUES (
         v_invitation_id,
-        v_pin_hash
+        v_plain_pin
     );
 
     RETURN QUERY

@@ -101,7 +101,6 @@ SET search_path = ''
 AS $$
 DECLARE
     v_pin TEXT;
-    v_pin_hash TEXT;
     v_id UUID;
     v_slug TEXT;
 BEGIN
@@ -117,8 +116,6 @@ BEGIN
         v_pin := public.generate_random_pin();
     END IF;
 
-    v_pin_hash := public.hash_pin(v_pin);
-
     INSERT INTO public.invitations (
         slug, bride_name, groom_name, wedding_date, wedding_time,
         venue_name, venue_address, google_maps_url, waze_url, whatsapp_contact,
@@ -133,8 +130,8 @@ BEGIN
     )
     RETURNING id, invitations.slug INTO v_id, v_slug;
 
-    INSERT INTO public.invitation_secrets (invitation_id, private_pin_hash)
-    VALUES (v_id, v_pin_hash);
+    INSERT INTO public.invitation_secrets (invitation_id, private_pin)
+    VALUES (v_id, v_pin);
 
     RETURN QUERY SELECT v_id, v_slug, v_pin;
 END;

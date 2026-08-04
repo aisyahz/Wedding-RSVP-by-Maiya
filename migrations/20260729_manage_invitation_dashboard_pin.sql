@@ -3,44 +3,8 @@ BEGIN;
 CREATE SCHEMA IF NOT EXISTS extensions;
 CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
 
-DO $block$
-BEGIN
-    IF EXISTS (
-        SELECT 1
-        FROM information_schema.columns
-        WHERE table_schema = 'public'
-          AND table_name = 'invitation_secrets'
-          AND column_name = 'private_pin_hash'
-    ) AND NOT EXISTS (
-        SELECT 1
-        FROM information_schema.columns
-        WHERE table_schema = 'public'
-          AND table_name = 'invitation_secrets'
-          AND column_name = 'legacy_private_pin_hash'
-    ) THEN
-        ALTER TABLE public.invitation_secrets
-            RENAME COLUMN private_pin_hash TO legacy_private_pin_hash;
-    END IF;
-END;
-$block$;
-
 ALTER TABLE public.invitation_secrets
     ADD COLUMN IF NOT EXISTS private_pin TEXT;
-
-DO $block$
-BEGIN
-    IF EXISTS (
-        SELECT 1
-        FROM information_schema.columns
-        WHERE table_schema = 'public'
-          AND table_name = 'invitation_secrets'
-          AND column_name = 'legacy_private_pin_hash'
-    ) THEN
-        ALTER TABLE public.invitation_secrets
-            ALTER COLUMN legacy_private_pin_hash DROP NOT NULL;
-    END IF;
-END;
-$block$;
 
 ALTER TABLE public.invitation_secrets
     DROP CONSTRAINT IF EXISTS invitation_secrets_private_pin_format;
@@ -243,20 +207,6 @@ BEGIN
     DO UPDATE SET
         private_pin = EXCLUDED.private_pin,
         created_at = pg_catalog.now();
-
-    IF EXISTS (
-        SELECT 1
-        FROM information_schema.columns
-        WHERE table_schema = 'public'
-          AND table_name = 'invitation_secrets'
-          AND column_name = 'legacy_private_pin_hash'
-    ) THEN
-        EXECUTE
-            'UPDATE public.invitation_secrets
-             SET legacy_private_pin_hash = NULL
-             WHERE invitation_id = $1'
-        USING p_invitation_id;
-    END IF;
 
     RETURN QUERY SELECT generated_pin, existing_pin;
 END;

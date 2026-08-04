@@ -62,7 +62,6 @@ DECLARE
     v_invitation_id UUID;
     v_slug TEXT;
     v_plain_pin TEXT;
-    v_pin_hash TEXT;
 BEGIN
     IF auth.uid() IS NULL THEN
         RAISE EXCEPTION 'Unauthorized. Authenticated access required.' USING ERRCODE = '42501';
@@ -81,8 +80,6 @@ BEGIN
         p_custom_pin,
         pg_catalog.lpad(pg_catalog.floor(pg_catalog.random() * 1000000)::TEXT, 6, '0')
     );
-    v_pin_hash := extensions.crypt(v_plain_pin, extensions.gen_salt('bf'));
-
     INSERT INTO public.invitations AS invitation (
         slug, bride_name, groom_name, wedding_date, wedding_time,
         venue_name, venue_address, google_maps_url, waze_url,
@@ -99,8 +96,8 @@ BEGIN
     )
     RETURNING invitation.id, invitation.slug INTO v_invitation_id, v_slug;
 
-    INSERT INTO public.invitation_secrets (invitation_id, private_pin_hash)
-    VALUES (v_invitation_id, v_pin_hash);
+    INSERT INTO public.invitation_secrets (invitation_id, private_pin)
+    VALUES (v_invitation_id, v_plain_pin);
 
     RETURN QUERY SELECT v_invitation_id, v_slug, v_plain_pin;
 END;

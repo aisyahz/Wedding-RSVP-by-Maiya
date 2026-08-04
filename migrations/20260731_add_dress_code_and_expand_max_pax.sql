@@ -31,7 +31,7 @@ RETURNS TABLE (invitation_id UUID, slug TEXT, plain_pin TEXT)
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = ''
 AS $function$
 DECLARE
-    v_invitation_id UUID; v_slug TEXT; v_plain_pin TEXT; v_pin_hash TEXT;
+    v_invitation_id UUID; v_slug TEXT; v_plain_pin TEXT;
 BEGIN
     IF auth.uid() IS NULL THEN RAISE EXCEPTION 'Unauthorized. Authenticated access required.' USING ERRCODE = '42501'; END IF;
     IF NULLIF(pg_catalog.btrim(p_slug), '') IS NULL THEN RAISE EXCEPTION 'Invitation slug is required.' USING ERRCODE = '22023'; END IF;
@@ -41,7 +41,6 @@ BEGIN
     END IF;
     IF p_custom_pin IS NOT NULL AND p_custom_pin !~ '^[0-9]{6}$' THEN RAISE EXCEPTION 'Custom PIN must contain exactly 6 digits.' USING ERRCODE = '22023'; END IF;
     v_plain_pin := COALESCE(p_custom_pin, pg_catalog.lpad(pg_catalog.floor(pg_catalog.random() * 1000000)::TEXT, 6, '0'));
-    v_pin_hash := extensions.crypt(v_plain_pin, extensions.gen_salt('bf'));
     INSERT INTO public.invitations AS invitation (
         slug, bride_name, groom_name, wedding_date, wedding_time, venue_name,
         venue_address, google_maps_url, waze_url, whatsapp_contact, contacts,
@@ -56,7 +55,7 @@ BEGIN
         p_wishlist_url, p_bank_name, p_bank_account_number, p_bank_account_holder,
         p_qr_code_url, p_rsvp_closing_date, p_video_key, NULL, p_video_file_name, p_status
     ) RETURNING invitation.id, invitation.slug INTO v_invitation_id, v_slug;
-    INSERT INTO public.invitation_secrets (invitation_id, private_pin_hash) VALUES (v_invitation_id, v_pin_hash);
+    INSERT INTO public.invitation_secrets (invitation_id, private_pin) VALUES (v_invitation_id, v_plain_pin);
     RETURN QUERY SELECT v_invitation_id, v_slug, v_plain_pin;
 END;
 $function$;
