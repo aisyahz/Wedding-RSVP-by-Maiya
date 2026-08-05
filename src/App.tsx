@@ -646,12 +646,11 @@ export default function App() {
   const handleUpdateVideo = async (
     invitationId: string,
     videoKey: string,
-    videoUrl: string,
+    _videoUrl: string,
     fileName: string
   ): Promise<{ success: boolean; error?: string }> => {
     const { data, error } = await updateInvitationInSupabase(invitationId, {
       videoKey,
-      videoUrl,
       videoFileName: fileName,
     });
     if (!data || error) {

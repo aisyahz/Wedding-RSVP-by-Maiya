@@ -44,6 +44,7 @@ interface SocialInvitation {
   bride_name?: string;
   groom_name?: string;
   poster_url?: string | null;
+  poster_key?: string | null;
 }
 
 function escapeHtml(value: string): string {
@@ -60,6 +61,19 @@ function publicImageUrl(value?: string | null): string {
   try {
     const url = new URL(candidate);
     return url.protocol === 'https:' ? url.toString() : '';
+  } catch {
+    return '';
+  }
+}
+
+function publicR2ImageUrl(publicDomain: string, objectKey?: string | null): string {
+  const domain = publicImageUrl(publicDomain);
+  const key = objectKey?.trim().replace(/^\/+/, '') || '';
+  if (!domain || !key || !key.startsWith('invitations/') || key.split('/').includes('..')) {
+    return '';
+  }
+  try {
+    return new URL(key, `${domain.replace(/\/+$/, '')}/`).toString();
   } catch {
     return '';
   }
@@ -121,7 +135,7 @@ async function invitationMetadataResponse(
   if (supabaseUrl && supabaseAnonKey) {
     try {
       const endpoint = new URL(`${supabaseUrl.replace(/\/+$/, '')}/rest/v1/invitations`);
-      endpoint.searchParams.set('select', 'bride_name,groom_name,poster_url');
+      endpoint.searchParams.set('select', 'bride_name,groom_name,poster_url,poster_key');
       endpoint.searchParams.set('slug', `eq.${slug}`);
       endpoint.searchParams.set('status', 'eq.active');
       endpoint.searchParams.set('limit', '1');
@@ -146,7 +160,10 @@ async function invitationMetadataResponse(
   const title = brideName && groomName
     ? `${brideName} & ${groomName} | Digital Wedding Invitation`
     : 'Digital Card by Maiya | Digital Wedding Invitation';
-  const image = publicImageUrl(invitation?.poster_url) || defaultImage;
+  const image =
+    publicImageUrl(invitation?.poster_url) ||
+    publicR2ImageUrl(env.CLOUDFLARE_R2_PUBLIC_DOMAIN, invitation?.poster_key) ||
+    defaultImage;
   const html = (await assetResponse.text()).replace(
     /<!-- SEO_DYNAMIC_START -->[\s\S]*?<!-- SEO_DYNAMIC_END -->/,
     socialHead(
