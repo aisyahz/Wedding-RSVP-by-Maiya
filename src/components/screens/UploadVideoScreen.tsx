@@ -251,7 +251,7 @@ export const UploadVideoScreen: React.FC<UploadVideoScreenProps> = ({
   const handleProceed = async () => {
     const ok = await performR2Upload();
     if (!ok) return;
-    onNavigate('generate_link');
+    onNavigate('generate_link', activeInvitation?.id);
   };
 
   const activeVideoSrc = localPreviewUrl || currentVideoUrl;

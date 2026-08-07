@@ -1,29 +1,33 @@
 ﻿import React, { useState } from 'react';
 import { ScreenId, Invitation, RsvpEntry } from '../../types';
 import { Plus, Mail, Users, Eye, Edit3, MessageSquare, ArrowRight, Trash2, Copy, Loader2, AlertTriangle, X } from 'lucide-react';
+import { copyText } from '../../lib/clipboard';
 
 interface DashboardScreenProps {
   currentScreen?: ScreenId;
   onNavigate: (screen: ScreenId, slugOrId?: string) => void;
   invitations: Invitation[];
   rsvps: RsvpEntry[];
-  onSelectInvitationForPreview: (invitationId: string) => void;
-  onEditInvitation?: (invitation: Invitation | null) => void;
   onDeleteInvitation?: (id: string) => void;
-  onDuplicateInvitation?: (invitation: Invitation) => void;
 }
 
 export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   onNavigate,
   invitations,
   rsvps,
-  onSelectInvitationForPreview,
-  onEditInvitation,
   onDeleteInvitation,
-  onDuplicateInvitation,
 }) => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteModalTarget, setDeleteModalTarget] = useState<Invitation | null>(null);
+  const [copiedInvitationId, setCopiedInvitationId] = useState<string | null>(null);
+
+  const handleCopyInvitationUrl = async (invitation: Invitation) => {
+    const url = `${window.location.origin.replace(/\/+$/, '')}/invite/${encodeURIComponent(invitation.slug)}`;
+    if (await copyText(url)) {
+      setCopiedInvitationId(invitation.id);
+      window.setTimeout(() => setCopiedInvitationId((current) => current === invitation.id ? null : current), 2500);
+    }
+  };
 
   const activeCount = invitations.filter((i) => i.status === 'active').length;
   const totalRsvpCount = rsvps.length;
@@ -146,10 +150,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
 
                 <div className="grid grid-cols-2 min-[430px]:flex min-[430px]:flex-wrap items-center gap-2 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-0 border-system/40">
                   <button
-                    onClick={() => {
-                      onSelectInvitationForPreview(inv.id);
-                      onNavigate('generate_link');
-                    }}
+                    onClick={() => onNavigate('guest_opening', inv.slug)}
                     className="btn-outline h-9 px-3 text-xs gap-1.5 cursor-pointer"
                     title="Preview Invitation"
                   >
@@ -158,14 +159,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                   </button>
 
                   <button
-                    onClick={() => {
-                      if (onEditInvitation) {
-                        onEditInvitation(inv);
-                      } else {
-                        onSelectInvitationForPreview(inv.id);
-                      }
-                      onNavigate('create_invitation', inv.id);
-                    }}
+                    onClick={() => onNavigate('create_invitation', inv.id)}
                     className="btn-outline h-9 px-3 text-xs gap-1.5 cursor-pointer"
                     title="Edit Invitation"
                   >
@@ -173,22 +167,17 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                     <span>Edit</span>
                   </button>
 
-                  {onDuplicateInvitation && (
-                    <button
-                      onClick={() => onDuplicateInvitation(inv)}
-                      className="btn-outline h-9 px-3 text-xs gap-1.5 cursor-pointer"
-                      title="Duplicate / Copy Card"
-                    >
-                      <Copy className="w-3.5 h-3.5 text-accent" />
-                      <span>Copy</span>
-                    </button>
-                  )}
+                  <button
+                    onClick={() => void handleCopyInvitationUrl(inv)}
+                    className="btn-outline h-9 px-3 text-xs gap-1.5 cursor-pointer"
+                    title="Copy Invitation URL"
+                  >
+                    <Copy className="w-3.5 h-3.5 text-accent" />
+                    <span>{copiedInvitationId === inv.id ? 'Copied!' : 'Copy'}</span>
+                  </button>
 
                   <button
-                    onClick={() => {
-                      onSelectInvitationForPreview(inv.id);
-                      onNavigate('admin_rsvp');
-                    }}
+                    onClick={() => onNavigate('private_rsvp_report', inv.slug)}
                     className="btn-outline h-9 px-3 text-xs gap-1.5 cursor-pointer"
                     title="View RSVPs"
                   >

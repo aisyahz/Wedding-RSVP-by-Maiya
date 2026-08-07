@@ -17,7 +17,7 @@ import { generateInvitationPin, getInvitationPin } from '../../lib/supabase';
 
 
 interface GenerateLinkScreenProps {
-  onNavigate: (screen: ScreenId) => void;
+  onNavigate: (screen: ScreenId, slugOrId?: string) => void;
   activeInvitation: Invitation | null;
 }
 
@@ -200,7 +200,7 @@ export const GenerateLinkScreen: React.FC<GenerateLinkScreenProps> = ({
           <div className="grid grid-cols-1 gap-3 min-[390px]:grid-cols-2">
             <button
               type="button"
-              onClick={() => onNavigate('guest_opening')}
+              onClick={() => onNavigate('guest_opening', slug)}
               className="w-full btn-primary cursor-pointer"
             >
               <Eye className="w-4 h-4" />
@@ -336,7 +336,7 @@ export const GenerateLinkScreen: React.FC<GenerateLinkScreenProps> = ({
 
               <button
                 type="button"
-                onClick={() => onNavigate('private_rsvp_report')}
+                onClick={() => onNavigate('private_rsvp_report', slug)}
                 className="btn-primary w-full cursor-pointer"
               >
                 <ExternalLink className="h-4 w-4" />

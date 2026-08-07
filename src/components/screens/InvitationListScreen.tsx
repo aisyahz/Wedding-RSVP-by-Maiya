@@ -1,31 +1,35 @@
 ﻿import React, { useState } from 'react';
 import { ScreenId, Invitation, RsvpEntry } from '../../types';
 import { Search, Plus, Eye, Edit3, Trash2, Copy, Calendar, MapPin, Loader2, AlertTriangle, X } from 'lucide-react';
+import { copyText } from '../../lib/clipboard';
 
 interface InvitationListScreenProps {
   currentScreen?: ScreenId;
   onNavigate: (screen: ScreenId, slugOrId?: string) => void;
   invitations: Invitation[];
   rsvps: RsvpEntry[];
-  onSelectInvitation: (invitationId: string) => void;
-  onEditInvitation: (invitation: Invitation | null) => void;
   onDeleteInvitation: (id: string) => void;
-  onDuplicateInvitation: (invitation: Invitation) => void;
 }
 
 export const InvitationListScreen: React.FC<InvitationListScreenProps> = ({
   onNavigate,
   invitations,
   rsvps,
-  onSelectInvitation,
-  onEditInvitation,
   onDeleteInvitation,
-  onDuplicateInvitation,
 }) => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteModalTarget, setDeleteModalTarget] = useState<Invitation | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'draft' | 'expired'>('all');
+  const [copiedInvitationId, setCopiedInvitationId] = useState<string | null>(null);
+
+  const handleCopyInvitationUrl = async (invitation: Invitation) => {
+    const url = `${window.location.origin.replace(/\/+$/, '')}/invite/${encodeURIComponent(invitation.slug)}`;
+    if (await copyText(url)) {
+      setCopiedInvitationId(invitation.id);
+      window.setTimeout(() => setCopiedInvitationId((current) => current === invitation.id ? null : current), 2500);
+    }
+  };
 
   const filteredInvitations = invitations.filter((inv) => {
     const matchesSearch =
@@ -70,7 +74,6 @@ export const InvitationListScreen: React.FC<InvitationListScreenProps> = ({
 
         <button
           onClick={() => {
-            onEditInvitation(null);
             onNavigate('create_invitation');
           }}
           className="btn-primary w-full sm:w-auto cursor-pointer self-start sm:self-auto"
@@ -174,10 +177,7 @@ export const InvitationListScreen: React.FC<InvitationListScreenProps> = ({
                 {/* Actions */}
                 <div className="grid grid-cols-2 min-[430px]:flex min-[430px]:flex-wrap items-center gap-2 w-full md:w-auto pt-2 md:pt-0 border-t md:border-0 border-system/40">
                   <button
-                    onClick={() => {
-                      onSelectInvitation(inv.id);
-                      onNavigate('generate_link');
-                    }}
+                    onClick={() => onNavigate('guest_opening', inv.slug)}
                     className="btn-outline h-9 px-3 text-xs gap-1.5 cursor-pointer"
                     title="Preview Invitation"
                   >
@@ -186,10 +186,7 @@ export const InvitationListScreen: React.FC<InvitationListScreenProps> = ({
                   </button>
 
                   <button
-                    onClick={() => {
-                      onEditInvitation(inv);
-                      onNavigate('create_invitation', inv.id);
-                    }}
+                    onClick={() => onNavigate('create_invitation', inv.id)}
                     className="btn-outline h-9 px-3 text-xs gap-1.5 cursor-pointer"
                     title="Edit Invitation"
                   >
@@ -198,12 +195,12 @@ export const InvitationListScreen: React.FC<InvitationListScreenProps> = ({
                   </button>
 
                   <button
-                    onClick={() => onDuplicateInvitation(inv)}
+                    onClick={() => void handleCopyInvitationUrl(inv)}
                     className="btn-outline h-9 px-3 text-xs gap-1.5 cursor-pointer"
-                    title="Duplicate Card"
+                    title="Copy Invitation URL"
                   >
                     <Copy className="w-3.5 h-3.5 text-accent" />
-                    <span>Copy</span>
+                    <span>{copiedInvitationId === inv.id ? 'Copied!' : 'Copy'}</span>
                   </button>
 
                   <button

@@ -75,36 +75,37 @@ function NavigationAdapter({
       case 'create_invitation':
         target = slugOrId ? `/invitations/${slugOrId}/edit` : '/invitations/new';
         break;
-      case 'upload_video': target = `/invitations/${slugOrId || selectedInvitationId}/upload-video`; break;
-      case 'generate_link': target = `/invitations/${slugOrId || selectedInvitationId}/generate-link`; break;
+      case 'upload_video':
+        if (!slugOrId) return;
+        target = `/invitations/${slugOrId}/upload-video`;
+        break;
+      case 'generate_link':
+        if (!slugOrId) return;
+        target = `/invitations/${slugOrId}/generate-link`;
+        break;
       case 'guest_opening': {
-        const slug = slugOrId || activeInvitation?.slug;
-        if (!slug) return;
-        target = `/invite/${slug}`;
+        if (!slugOrId) return;
+        target = `/invite/${slugOrId}`;
         break;
       }
       case 'guest_invitation': {
-        const slug = slugOrId || activeInvitation?.slug;
-        if (!slug) return;
-        target = `/invite/${slug}/details`;
+        if (!slugOrId) return;
+        target = `/invite/${slugOrId}/details`;
         break;
       }
       case 'guest_rsvp_form': {
-        const slug = slugOrId || activeInvitation?.slug;
-        if (!slug) return;
-        target = `/invite/${slug}/rsvp`;
+        if (!slugOrId) return;
+        target = `/invite/${slugOrId}/rsvp`;
         break;
       }
       case 'thank_you': {
-        const slug = slugOrId || activeInvitation?.slug;
-        if (!slug) return;
-        target = `/invite/${slug}/thank-you`;
+        if (!slugOrId) return;
+        target = `/invite/${slugOrId}/thank-you`;
         break;
       }
       case 'private_rsvp_report': {
-        const slug = slugOrId || activeInvitation?.slug;
-        if (!slug) return;
-        target = `/report/${slug}`;
+        if (!slugOrId) return;
+        target = `/report/${slugOrId}`;
         break;
       }
       case 'admin_rsvp': target = '/rsvp'; break;
@@ -152,13 +153,13 @@ function GuestRouteWrapper({
       setLoading(true);
       const { data, error } = await getInvitationBySlug(slug);
       if (!isMounted) return;
-      if (data) {
+      if (data?.slug === slug) {
         setFetchedInv(data);
         setSeoInvitation(data);
         setErrorMsg('');
       } else {
         setSeoInvitation(null);
-        setErrorMsg(error || 'Kad jemputan tidak dijumpai atau telah tamat tempoh.');
+        setErrorMsg(error || 'Rekod yang diterima tidak sepadan dengan slug jemputan pada URL.');
       }
       setLoading(false);
     }
@@ -203,35 +204,27 @@ function uniqueById<T extends { id: string }>(items: T[]): T[] {
 interface EditInvitationRouteProps {
   selectedInvitationId: string;
   setInvitations: React.Dispatch<React.SetStateAction<Invitation[]>>;
-  setEditingInvitation: React.Dispatch<React.SetStateAction<Invitation | null>>;
   setSelectedInvitationId: React.Dispatch<React.SetStateAction<string>>;
   onSaveInvitation: (invitation: Partial<Invitation>, targetInvitationId?: string) => Promise<Invitation | null>;
   onVideoFileSelected: React.Dispatch<React.SetStateAction<File | null>>;
 }
 
 interface GenerateLinkRouteProps {
-  invitations: Invitation[];
-  activeInvitation: Invitation | null;
   selectedInvitationId: string;
   setInvitations: React.Dispatch<React.SetStateAction<Invitation[]>>;
   setSelectedInvitationId: React.Dispatch<React.SetStateAction<string>>;
 }
 
 function GenerateLinkRoute({
-  invitations,
-  activeInvitation,
   selectedInvitationId,
   setInvitations,
   setSelectedInvitationId,
 }: GenerateLinkRouteProps) {
   const { id: invitationId } = useParams<{ id: string }>();
-  const invitationFromState =
-    invitations.find((invitation) => invitation.id === invitationId) ||
-    (activeInvitation?.id === invitationId ? activeInvitation : null);
-  const [fetchedInvitation, setFetchedInvitation] = useState<Invitation | null>(invitationFromState);
+  const [fetchedInvitation, setFetchedInvitation] = useState<Invitation | null>(null);
   const [fetchError, setFetchError] = useState('');
-  const [isFetching, setIsFetching] = useState(!invitationFromState);
-  const invitation = invitationFromState || fetchedInvitation;
+  const [isFetching, setIsFetching] = useState(true);
+  const invitation = fetchedInvitation?.id === invitationId ? fetchedInvitation : null;
 
   useEffect(() => {
     if (!invitationId) {
@@ -242,6 +235,7 @@ function GenerateLinkRoute({
 
     let cancelled = false;
     async function loadInvitation() {
+      setFetchedInvitation(null);
       setIsFetching(true);
       setFetchError('');
       const { data, error } = await getInvitationById(invitationId!);
@@ -250,6 +244,10 @@ function GenerateLinkRoute({
       setIsFetching(false);
       if (!data) {
         setFetchError(error || 'Rekod jemputan tidak ditemui.');
+        return;
+      }
+      if (data.id !== invitationId) {
+        setFetchError('Rekod yang diterima tidak sepadan dengan ID jemputan pada URL.');
         return;
       }
 
@@ -288,7 +286,7 @@ function GenerateLinkRoute({
   }
 
   return (
-    <NavigationAdapter selectedInvitationId={selectedInvitationId} activeInvitation={invitation || activeInvitation}>
+    <NavigationAdapter selectedInvitationId={selectedInvitationId} activeInvitation={invitation}>
       {(onNavigate) => (
         <GenerateLinkScreen
           onNavigate={onNavigate}
@@ -302,7 +300,6 @@ function GenerateLinkRoute({
 function EditInvitationRoute({
   selectedInvitationId,
   setInvitations,
-  setEditingInvitation,
   setSelectedInvitationId,
   onSaveInvitation,
   onVideoFileSelected,
@@ -334,7 +331,6 @@ function EditInvitationRoute({
       }
 
       setFetchedInvitation(data);
-      setEditingInvitation(data);
       setSelectedInvitationId(data.id);
       setInvitations((previous) =>
         previous.some((item) => item.id === data.id)
@@ -347,7 +343,7 @@ function EditInvitationRoute({
     return () => {
       cancelled = true;
     };
-  }, [id, setEditingInvitation, setInvitations, setSelectedInvitationId]);
+  }, [id, setInvitations, setSelectedInvitationId]);
 
   if (isFetching && !inv) {
     return (
@@ -397,13 +393,11 @@ export default function App() {
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [rsvps, setRsvps] = useState<RsvpEntry[]>([]);
   const [selectedInvitationId, setSelectedInvitationId] = useState<string>('');
-  const [editingInvitation, setEditingInvitation] = useState<Invitation | null>(null);
   const [settings, setSettings] = useState<SystemSettings>(loadStoredSettings);
   const [isSettingsLoading, setIsSettingsLoading] = useState(false);
   const [settingsLoadError, setSettingsLoadError] = useState('');
   const [seoInvitation, setSeoInvitation] = useState<Invitation | null>(null);
   const [pendingVideoFile, setPendingVideoFile] = useState<File | null>(null);
-  const [pendingUploadInvitation, setPendingUploadInvitation] = useState<Invitation | null>(null);
 
   const [isLoadingData, setIsLoadingData] = useState<boolean>(true);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -525,7 +519,7 @@ export default function App() {
   };
 
   const activeInvitation =
-    invitations.find((i) => i.id === selectedInvitationId) || invitations[0] || null;
+    invitations.find((i) => i.id === selectedInvitationId) || null;
 
   const handleSaveInvitation = async (
     invData: Partial<Invitation>,
@@ -544,7 +538,6 @@ export default function App() {
       }
 
       setInvitations((prev) => prev.map((item) => (item.id === updatedInv.id ? updatedInv : item)));
-      setEditingInvitation(null);
       showToast('success', 'Tetapan kad jemputan berjaya dikemas kini!');
       return updatedInv;
     } else {
@@ -558,7 +551,6 @@ export default function App() {
       const { invitation: newInv, plainPin } = data;
       setInvitations((prev) => [newInv, ...prev]);
       setSelectedInvitationId(newInv.id);
-      setPendingUploadInvitation(newInv);
 
       // Show generated 6-digit PIN modal once after creation
       setCreatedPinModal({
@@ -570,13 +562,6 @@ export default function App() {
 
       showToast('success', 'Kad jemputan baharu & PIN keselamatan 6-digit berjaya dicipta!');
       return newInv;
-    }
-  };
-
-  const handleEditInvitation = (inv: Invitation | null) => {
-    setEditingInvitation(inv);
-    if (inv) {
-      setSelectedInvitationId(inv.id);
     }
   };
 
@@ -604,47 +589,6 @@ export default function App() {
     }
   };
 
-  const handleDuplicateInvitation = async (inv: Invitation) => {
-    const duplicatedData: Partial<Invitation> = {
-      brideName: `${inv.brideName} (Salinan)`,
-      groomName: inv.groomName,
-      slug: `${inv.slug}-salinan-${Date.now().toString().slice(-4)}`,
-      weddingDate: inv.weddingDate,
-      weddingTime: inv.weddingTime,
-      venueName: inv.venueName,
-      venueAddress: inv.venueAddress,
-      googleMapsUrl: inv.googleMapsUrl,
-      wazeUrl: inv.wazeUrl,
-      whatsappContact: inv.whatsappContact,
-      contacts: inv.contacts,
-      maxPax: inv.maxPax,
-      dressCodeText: inv.dressCodeText,
-      dressCodeColors: inv.dressCodeColors,
-      wishlistUrl: inv.wishlistUrl,
-      enableGiftSection: inv.enableGiftSection,
-      bankGift: inv.bankGift,
-      rsvpClosingDate: inv.rsvpClosingDate,
-      videoKey: inv.videoKey,
-      videoFileName: inv.videoFileName,
-      status: 'active',
-    };
-
-    const { data, error } = await createInvitationWithPin(duplicatedData);
-    if (error || !data) {
-      showToast('error', `Gagal menyalin kad: ${error}`);
-      return;
-    }
-
-    setInvitations((prev) => [data.invitation, ...prev]);
-    setCreatedPinModal({
-      brideName: data.invitation.brideName,
-      groomName: data.invitation.groomName,
-      pin: data.plainPin,
-      slug: data.invitation.slug,
-    });
-    showToast('success', 'Salinan kad jemputan berjaya dicipta!');
-  };
-
   const handleUpdateVideo = async (
     invitationId: string,
     videoKey: string,
@@ -663,7 +607,6 @@ export default function App() {
 
     setInvitations((prev) => prev.map((i) => (i.id === data.id ? data : i)));
     setPendingVideoFile(null);
-    setPendingUploadInvitation(null);
     showToast('success', 'Video kad jemputan berjaya dikemas kini!');
     return { success: true };
   };
@@ -702,11 +645,7 @@ export default function App() {
     const [fetchedInvitation, setFetchedInvitation] = useState<Invitation | null>(null);
     const [fetchError, setFetchError] = useState('');
     const [isFetching, setIsFetching] = useState(false);
-    const inv =
-      invitations.find((i) => i.id === id) ||
-      (pendingUploadInvitation?.id === id ? pendingUploadInvitation : null) ||
-      (activeInvitation?.id === id ? activeInvitation : null) ||
-      fetchedInvitation;
+    const inv = fetchedInvitation?.id === id ? fetchedInvitation : null;
 
     useEffect(() => {
       if (!id) {
@@ -714,15 +653,16 @@ export default function App() {
         return;
       }
       let cancelled = false;
+      setFetchedInvitation(null);
       setIsFetching(true);
       getInvitationById(id).then(({ data, error }) => {
         if (cancelled) return;
         setIsFetching(false);
-        if (data) {
+        if (data?.id === id) {
           setFetchedInvitation(data);
           setInvitations((prev) => prev.some((item) => item.id === data.id) ? prev : [data, ...prev]);
         } else {
-          setFetchError(error || 'Rekod jemputan tidak ditemui.');
+          setFetchError(error || 'Rekod yang diterima tidak sepadan dengan ID jemputan pada URL.');
         }
       });
       return () => {
@@ -748,7 +688,7 @@ export default function App() {
       );
     }
     return (
-      <NavigationAdapter selectedInvitationId={selectedInvitationId} activeInvitation={activeInvitation}>
+      <NavigationAdapter selectedInvitationId={selectedInvitationId} activeInvitation={inv}>
         {(onNavigate) => (
           <UploadVideoScreen
             onNavigate={onNavigate}
@@ -898,10 +838,7 @@ export default function App() {
                     onNavigate={onNavigate}
                     invitations={invitations}
                     rsvps={rsvps}
-                    onSelectInvitationForPreview={(id) => setSelectedInvitationId(id)}
-                    onEditInvitation={handleEditInvitation}
                     onDeleteInvitation={handleDeleteInvitation}
-                    onDuplicateInvitation={handleDuplicateInvitation}
                   />
                 )}
               </NavigationAdapter>
@@ -918,10 +855,7 @@ export default function App() {
                     onNavigate={onNavigate}
                     invitations={invitations}
                     rsvps={rsvps}
-                    onSelectInvitation={(id) => setSelectedInvitationId(id)}
-                    onEditInvitation={handleEditInvitation}
                     onDeleteInvitation={handleDeleteInvitation}
-                    onDuplicateInvitation={handleDuplicateInvitation}
                   />
                 )}
               </NavigationAdapter>
@@ -950,7 +884,6 @@ export default function App() {
               <EditInvitationRoute
                 selectedInvitationId={selectedInvitationId}
                 setInvitations={setInvitations}
-                setEditingInvitation={setEditingInvitation}
                 setSelectedInvitationId={setSelectedInvitationId}
                 onSaveInvitation={handleSaveInvitation}
                 onVideoFileSelected={setPendingVideoFile}
@@ -962,8 +895,6 @@ export default function App() {
             path="/invitations/:id/generate-link"
             element={
               <GenerateLinkRoute
-                invitations={invitations}
-                activeInvitation={activeInvitation}
                 selectedInvitationId={selectedInvitationId}
                 setInvitations={setInvitations}
                 setSelectedInvitationId={setSelectedInvitationId}
@@ -974,8 +905,6 @@ export default function App() {
             path="/invitations/:id/preview"
             element={
               <GenerateLinkRoute
-                invitations={invitations}
-                activeInvitation={activeInvitation}
                 selectedInvitationId={selectedInvitationId}
                 setInvitations={setInvitations}
                 setSelectedInvitationId={setSelectedInvitationId}
