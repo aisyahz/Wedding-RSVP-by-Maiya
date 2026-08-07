@@ -54,6 +54,7 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
   // Form State
   const [brideName, setBrideName] = useState(editingInvitation?.brideName || '');
   const [groomName, setGroomName] = useState(editingInvitation?.groomName || '');
+  const [openingTitle, setOpeningTitle] = useState(editingInvitation?.openingTitle || '');
   const [weddingDate, setWeddingDate] = useState(normalizeDateForInput(editingInvitation?.weddingDate));
   const [weddingTime, setWeddingTime] = useState(editingInvitation?.weddingTime || '');
   const [eventEndTime, setEventEndTime] = useState(editingInvitation?.eventEndTime || '');
@@ -140,6 +141,7 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
     const data: Partial<Invitation> = {
       id: editingInvitation?.id || `inv-${Date.now()}`,
       slug: generatedSlug,
+      openingTitle,
       brideName,
       groomName,
       weddingDate,
@@ -277,6 +279,24 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
             <h2 className="text-heading-3 text-primary border-b border-system/40 pb-3">
               Couple Information
             </h2>
+
+            <div>
+              <label className="form-label block">
+                Opening Title / Tajuk Utama
+              </label>
+              <input
+                id="opening-title"
+                data-field-label="Opening Title"
+                type="text"
+                value={openingTitle}
+                onChange={(e) => setOpeningTitle(e.target.value)}
+                placeholder="e.g. Raikan Cinta, Majlis Aqiqah, Annual Dinner"
+                className="w-full input-maiya"
+              />
+              <p className="mt-1 text-xs text-secondary">
+                Optional. If empty, the opening screen displays “Raikan Cinta”.
+              </p>
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
@@ -726,6 +746,7 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
                 Summary Overview
               </span>
               <p className="text-xl font-bold font-title text-primary">{brideName} & {groomName}</p>
+              <p className="text-xs text-secondary">Opening: {openingTitle.trim() || 'Raikan Cinta'}</p>
               <p className="text-xs text-secondary">Date: {weddingDate} • {weddingTime} – {eventEndTime}</p>
               <p className="text-xs text-secondary">Venue: {venueName}</p>
               <p className="text-xs font-title tabular-nums font-semibold text-accent pt-1">

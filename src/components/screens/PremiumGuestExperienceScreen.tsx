@@ -307,7 +307,7 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
 
           <div className={`absolute inset-0 flex min-w-0 flex-col items-center justify-center px-5 text-center transition-all duration-500 ${isOpening ? 'scale-95 opacity-0' : 'scale-100 opacity-100'}`}>
             <p className="guest-love-quote mb-6 text-[1.75rem] leading-none text-black/75">
-              {t('celebrateLove')}
+              {invitation?.openingTitle?.trim() || 'Raikan Cinta'}
             </p>
             <h1 className="guest-couple-name max-w-full break-words text-[clamp(1.75rem,9.25vw,2.8rem)] font-semibold uppercase leading-[1.08] tracking-[0.04em] text-black [overflow-wrap:anywhere]">
               {invitation?.brideName}

@@ -41,6 +41,7 @@ export interface DressCodeColor {
 export interface Invitation {
   id: string;
   slug: string;
+  openingTitle?: string;
   brideName: string;
   groomName: string;
   weddingDate: string; // YYYY-MM-DD

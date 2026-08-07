@@ -57,6 +57,7 @@ CREATE TRIGGER on_auth_user_created
 CREATE TABLE IF NOT EXISTS public.invitations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     slug TEXT UNIQUE NOT NULL CONSTRAINT check_slug_not_empty CHECK (length(trim(slug)) > 0),
+    opening_title TEXT,
     bride_name TEXT NOT NULL,
     groom_name TEXT NOT NULL,
     wedding_date DATE NOT NULL,
@@ -92,6 +93,9 @@ ADD COLUMN IF NOT EXISTS gift_qr_key TEXT;
 
 ALTER TABLE public.invitations
 ADD COLUMN IF NOT EXISTS event_end_time TIME;
+
+ALTER TABLE public.invitations
+ADD COLUMN IF NOT EXISTS opening_title TEXT;
 
 ALTER TABLE public.invitations
 DROP CONSTRAINT IF EXISTS invitations_event_time_order_check;

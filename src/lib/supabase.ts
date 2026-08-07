@@ -51,6 +51,7 @@ export function mapDbInvitationToApp(dbRow: any): Invitation {
   return {
     id: dbRow.id,
     slug: dbRow.slug || '',
+    openingTitle: dbRow.opening_title || '',
     brideName: dbRow.bride_name || '',
     groomName: dbRow.groom_name || '',
     weddingDate: dbRow.wedding_date || '',
@@ -348,6 +349,7 @@ export async function createInvitationWithPin(
 
     const payload = {
       p_slug: invData.slug || `wedding-${Date.now().toString().slice(-6)}`,
+      p_opening_title: invData.openingTitle?.trim() || null,
       p_bride_name: invData.brideName || '',
       p_groom_name: invData.groomName || '',
       p_wedding_date: formatDateForDb(invData.weddingDate),
@@ -506,6 +508,7 @@ export async function updateInvitationInSupabase(
 
     const payload: Record<string, any> = {
       ...(invData.slug ? { slug: invData.slug } : {}),
+      ...(has('openingTitle') ? { opening_title: invData.openingTitle?.trim() || null } : {}),
       ...(invData.brideName ? { bride_name: invData.brideName } : {}),
       ...(invData.groomName ? { groom_name: invData.groomName } : {}),
       ...(invData.weddingDate ? { wedding_date: formatDateForDb(invData.weddingDate) } : {}),
