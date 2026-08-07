@@ -121,7 +121,6 @@ function DiagnosticRedirect({ to }: { to: string; reason: string }) {
 }
 
 interface GuestRouteWrapperProps {
-  invitations: Invitation[];
   selectedInvitationId: string;
   activeInvitation: Invitation | null;
   setSeoInvitation: React.Dispatch<React.SetStateAction<Invitation | null>>;
@@ -134,17 +133,14 @@ interface GuestRouteWrapperProps {
 }
 
 function GuestRouteWrapper({
-  invitations,
   selectedInvitationId,
   activeInvitation,
   setSeoInvitation,
   renderScreen,
 }: GuestRouteWrapperProps) {
   const { slug } = useParams<{ slug: string }>();
-  const [fetchedInv, setFetchedInv] = useState<Invitation | null>(
-    invitations.find((invitation) => invitation.slug === slug) || null,
-  );
-  const [loading, setLoading] = useState<boolean>(!fetchedInv);
+  const [fetchedInv, setFetchedInv] = useState<Invitation | null>(null);
+  const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
@@ -152,14 +148,7 @@ function GuestRouteWrapper({
     async function loadBySlug() {
       if (!slug) return;
       setSeoInvitation(null);
-      const memoryInv = invitations.find((invitation) => invitation.slug === slug);
-      if (memoryInv) {
-        setFetchedInv(memoryInv);
-        setSeoInvitation(memoryInv);
-        setLoading(false);
-        return;
-      }
-
+      setFetchedInv(null);
       setLoading(true);
       const { data, error } = await getInvitationBySlug(slug);
       if (!isMounted) return;
@@ -178,7 +167,7 @@ function GuestRouteWrapper({
     return () => {
       isMounted = false;
     };
-  }, [slug, invitations, setSeoInvitation]);
+  }, [slug, setSeoInvitation]);
 
   return (
     <NavigationAdapter selectedInvitationId={selectedInvitationId} activeInvitation={activeInvitation}>
@@ -212,14 +201,11 @@ function uniqueById<T extends { id: string }>(items: T[]): T[] {
 }
 
 interface EditInvitationRouteProps {
-  invitations: Invitation[];
-  editingInvitation: Invitation | null;
-  activeInvitation: Invitation | null;
   selectedInvitationId: string;
   setInvitations: React.Dispatch<React.SetStateAction<Invitation[]>>;
   setEditingInvitation: React.Dispatch<React.SetStateAction<Invitation | null>>;
   setSelectedInvitationId: React.Dispatch<React.SetStateAction<string>>;
-  onSaveInvitation: (invitation: Partial<Invitation>) => Promise<Invitation | null>;
+  onSaveInvitation: (invitation: Partial<Invitation>, targetInvitationId?: string) => Promise<Invitation | null>;
   onVideoFileSelected: React.Dispatch<React.SetStateAction<File | null>>;
 }
 
@@ -314,9 +300,6 @@ function GenerateLinkRoute({
 }
 
 function EditInvitationRoute({
-  invitations,
-  editingInvitation,
-  activeInvitation,
   selectedInvitationId,
   setInvitations,
   setEditingInvitation,
@@ -328,14 +311,12 @@ function EditInvitationRoute({
   const [fetchedInvitation, setFetchedInvitation] = useState<Invitation | null>(null);
   const [fetchError, setFetchError] = useState('');
   const [isFetching, setIsFetching] = useState(false);
-  const inv =
-    invitations.find((item) => item.id === id) ||
-    (editingInvitation?.id === id ? editingInvitation : null) ||
-    (fetchedInvitation?.id === id ? fetchedInvitation : null);
+  const inv = fetchedInvitation?.id === id ? fetchedInvitation : null;
 
   useEffect(() => {
     if (!id) return;
     let cancelled = false;
+    setFetchedInvitation(null);
     setIsFetching(true);
     setFetchError('');
 
@@ -345,6 +326,10 @@ function EditInvitationRoute({
       setIsFetching(false);
       if (!data) {
         setFetchError(error || 'Rekod jemputan tidak ditemui.');
+        return;
+      }
+      if (data.id !== id) {
+        setFetchError('Rekod yang diterima tidak sepadan dengan ID jemputan pada URL.');
         return;
       }
 
@@ -382,13 +367,23 @@ function EditInvitationRoute({
     );
   }
 
+  if (!inv) {
+    return (
+      <div className="max-w-2xl mx-auto card-maiya p-6 flex items-center justify-center gap-3 text-sm text-secondary">
+        <Loader2 className="w-5 h-5 animate-spin text-accent" />
+        <span>Memuatkan maklumat jemputan…</span>
+      </div>
+    );
+  }
+
   return (
-    <NavigationAdapter selectedInvitationId={selectedInvitationId} activeInvitation={inv || activeInvitation}>
+    <NavigationAdapter selectedInvitationId={selectedInvitationId} activeInvitation={inv}>
       {(onNavigate) => (
         <CreateInvitationScreen
+          key={id}
           onNavigate={onNavigate}
           editingInvitation={inv}
-          onSaveInvitation={onSaveInvitation}
+          onSaveInvitation={(invitation) => onSaveInvitation(invitation, id)}
           onVideoFileSelected={onVideoFileSelected}
         />
       )}
@@ -532,12 +527,19 @@ export default function App() {
   const activeInvitation =
     invitations.find((i) => i.id === selectedInvitationId) || invitations[0] || null;
 
-  const handleSaveInvitation = async (invData: Partial<Invitation>): Promise<Invitation | null> => {
-    if (editingInvitation) {
+  const handleSaveInvitation = async (
+    invData: Partial<Invitation>,
+    targetInvitationId?: string,
+  ): Promise<Invitation | null> => {
+    if (targetInvitationId) {
       // EDIT EXISTING INVITATION
-      const { data: updatedInv, error } = await updateInvitationInSupabase(editingInvitation.id, invData);
+      const { data: updatedInv, error } = await updateInvitationInSupabase(targetInvitationId, invData);
       if (error || !updatedInv) {
         showToast('error', `Gagal mengemas kini kad: ${error || 'Ralat simpan'}`);
+        return null;
+      }
+      if (updatedInv.id !== targetInvitationId) {
+        showToast('error', 'Supabase memulangkan rekod jemputan yang tidak sepadan.');
         return null;
       }
 
@@ -946,9 +948,6 @@ export default function App() {
             path="/invitations/:id/edit"
             element={
               <EditInvitationRoute
-                invitations={invitations}
-                editingInvitation={editingInvitation}
-                activeInvitation={activeInvitation}
                 selectedInvitationId={selectedInvitationId}
                 setInvitations={setInvitations}
                 setEditingInvitation={setEditingInvitation}
@@ -1027,7 +1026,6 @@ export default function App() {
             path="/invite/:slug"
             element={
               <GuestRouteWrapper
-                invitations={invitations}
                 selectedInvitationId={selectedInvitationId}
                 activeInvitation={activeInvitation}
                 setSeoInvitation={setSeoInvitation}
@@ -1045,7 +1043,6 @@ export default function App() {
             path="/invite/:slug/opening"
             element={
               <GuestRouteWrapper
-                invitations={invitations}
                 selectedInvitationId={selectedInvitationId}
                 activeInvitation={activeInvitation}
                 setSeoInvitation={setSeoInvitation}
@@ -1063,7 +1060,6 @@ export default function App() {
             path="/invite/:slug/details"
             element={
               <GuestRouteWrapper
-                invitations={invitations}
                 selectedInvitationId={selectedInvitationId}
                 activeInvitation={activeInvitation}
                 setSeoInvitation={setSeoInvitation}
@@ -1082,7 +1078,6 @@ export default function App() {
             path="/invite/:slug/rsvp"
             element={
               <GuestRouteWrapper
-                invitations={invitations}
                 selectedInvitationId={selectedInvitationId}
                 activeInvitation={activeInvitation}
                 setSeoInvitation={setSeoInvitation}
@@ -1102,7 +1097,6 @@ export default function App() {
             path="/invite/:slug/thank-you"
             element={
               <GuestRouteWrapper
-                invitations={invitations}
                 selectedInvitationId={selectedInvitationId}
                 activeInvitation={activeInvitation}
                 setSeoInvitation={setSeoInvitation}
@@ -1116,7 +1110,6 @@ export default function App() {
             path="/report/:slug"
             element={
               <GuestRouteWrapper
-                invitations={invitations}
                 selectedInvitationId={selectedInvitationId}
                 activeInvitation={activeInvitation}
                 setSeoInvitation={setSeoInvitation}

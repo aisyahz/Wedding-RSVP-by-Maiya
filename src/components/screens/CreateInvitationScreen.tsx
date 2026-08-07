@@ -81,33 +81,6 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
   const [privatePin, setPrivatePin] = useState(editingInvitation?.privatePin || '');
 
   useEffect(() => {
-    if (editingInvitation) {
-      setBrideName(editingInvitation.brideName || '');
-      setGroomName(editingInvitation.groomName || '');
-      setWeddingDate(normalizeDateForInput(editingInvitation.weddingDate));
-      setWeddingTime(editingInvitation.weddingTime || '');
-      setVenueName(editingInvitation.venueName || '');
-      setVenueAddress(editingInvitation.venueAddress || '');
-      setGoogleMapsUrl(editingInvitation.googleMapsUrl || '');
-      setWazeUrl(editingInvitation.wazeUrl || '');
-      setContacts(initialContacts(editingInvitation));
-      setMaxPax(editingInvitation.maxPax || 6);
-      setDressCodeText(editingInvitation.dressCodeText || '');
-      setDressCodeColors(editingInvitation.dressCodeColors || []);
-      setRsvpClosingDate(editingInvitation.rsvpClosingDate || '');
-      setWishlistUrl(editingInvitation.wishlistUrl || '');
-      setEnableGiftSection(editingInvitation.enableGiftSection !== undefined ? editingInvitation.enableGiftSection : true);
-      setBankName(editingInvitation.bankGift?.bankName || '');
-      setAccountNumber(editingInvitation.bankGift?.accountNumber || '');
-      setAccountHolder(editingInvitation.bankGift?.accountHolder || '');
-      setQrCodeUrl(editingInvitation.bankGift?.qrCodeUrl || '');
-      setVideoUrl(editingInvitation.videoUrl || '');
-      setVideoFileName(editingInvitation.videoFileName || '');
-      setPrivatePin(editingInvitation.privatePin || '');
-    }
-  }, [editingInvitation?.id]);
-
-  useEffect(() => {
     return () => {
       if (selectedVideoPreviewUrl.startsWith('blob:')) {
         URL.revokeObjectURL(selectedVideoPreviewUrl);
@@ -354,11 +327,10 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
                 <input
                   id="wedding-time"
                   data-field-label="Event Time"
-                  type="text"
+                  type="time"
                   required
                   value={weddingTime}
                   onChange={(e) => setWeddingTime(e.target.value)}
-                  placeholder="e.g. 11:00 AM – 4:00 PM"
                   className="w-full input-maiya"
                 />
               </div>

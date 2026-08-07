@@ -36,6 +36,7 @@ export const GuestInvitationScreen: React.FC<GuestInvitationScreenProps> = ({
 
   // Live countdown state
   const targetDateStr = activeInvitation?.weddingDate || '';
+  const targetTimeStr = activeInvitation?.weddingTime || '11:00:00';
   const [timeLeft, setTimeLeft] = useState({ days: 36, hours: 22, minutes: 33, seconds: 17 });
 
   useEffect(() => {
@@ -44,7 +45,7 @@ export const GuestInvitationScreen: React.FC<GuestInvitationScreenProps> = ({
         setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
         return;
       }
-      const target = new Date(`${targetDateStr}T11:00:00`).getTime();
+      const target = new Date(`${targetDateStr}T${targetTimeStr}`).getTime();
       const now = new Date().getTime();
       const difference = target - now;
 
@@ -62,12 +63,18 @@ export const GuestInvitationScreen: React.FC<GuestInvitationScreenProps> = ({
     calculateTime();
     const interval = setInterval(calculateTime, 1000);
     return () => clearInterval(interval);
-  }, [targetDateStr]);
+  }, [targetDateStr, targetTimeStr]);
 
   const brideName = activeInvitation?.brideName || '';
   const groomName = activeInvitation?.groomName || '';
   const weddingDate = activeInvitation?.weddingDate || '';
-  const weddingTime = activeInvitation?.weddingTime || '';
+  const formatEventTime = (value?: string) => {
+    const match = String(value || '').match(/^(\d{1,2}):(\d{2})/);
+    if (!match) return value || '';
+    const hour = Number(match[1]);
+    return `${hour % 12 || 12}:${match[2]} ${hour >= 12 ? 'PM' : 'AM'}`;
+  };
+  const weddingTime = formatEventTime(activeInvitation?.weddingTime);
   const venueName = activeInvitation?.venueName || '';
   const venueAddress = activeInvitation?.venueAddress || '';
   const videoUrl = activeInvitation?.videoUrl || '';

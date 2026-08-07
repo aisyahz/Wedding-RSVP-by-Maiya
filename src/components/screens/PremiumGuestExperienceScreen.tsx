@@ -63,6 +63,14 @@ const toCalendarDate = (date: string, time: string, hoursToAdd = 0) => {
   return `${value.getFullYear()}${pad(value.getMonth() + 1)}${pad(value.getDate())}T${pad(value.getHours())}${pad(value.getMinutes())}00`;
 };
 
+const formatEventTime = (value?: string) => {
+  const match = String(value || '').match(/^(\d{1,2}):(\d{2})/);
+  if (!match) return value || '';
+  const hour = Number(match[1]);
+  const suffix = hour >= 12 ? 'PM' : 'AM';
+  return `${hour % 12 || 12}:${match[2]} ${suffix}`;
+};
+
 const formatInvitationDate = (value: string | undefined, locale: string) => {
   if (!value) return '';
   const date = new Date(`${value}T00:00:00`);
@@ -340,7 +348,11 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
             <div className="guest-glass-control rounded-[24px] p-5 text-center">
               <CalendarDays className="mx-auto mb-2 h-5 w-5 text-black/65" />
               <p className="guest-event-date text-lg font-semibold text-black">{formatInvitationDate(invitation?.weddingDate, language === 'bm' ? 'ms-MY' : 'en-MY')}</p>
-              {invitation?.weddingTime && <p className="mt-1 text-xs font-semibold uppercase tracking-[0.08em] text-black/55">{invitation.weddingTime}</p>}
+              {invitation?.weddingTime && (
+                <p className="mt-1 text-xs font-semibold uppercase tracking-[0.08em] text-black/55">
+                  {formatEventTime(invitation.weddingTime)}
+                </p>
+              )}
             </div>
             <div className="grid grid-cols-2 min-[360px]:grid-cols-4 gap-2">
               {[
