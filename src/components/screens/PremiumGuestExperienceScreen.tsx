@@ -184,7 +184,9 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
   };
 
   const calendarStart = toCalendarDate(invitation?.weddingDate || '', invitation?.weddingTime || '');
-  const calendarEnd = toCalendarDate(invitation?.weddingDate || '', invitation?.weddingTime || '', 4);
+  const calendarEnd = invitation?.eventEndTime
+    ? toCalendarDate(invitation.weddingDate || '', invitation.eventEndTime)
+    : toCalendarDate(invitation?.weddingDate || '', invitation?.weddingTime || '', 4);
   const eventTitle = t('eventTitle', { names: `${invitation?.brideName || ''} & ${invitation?.groomName || ''}` });
   const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventTitle)}&dates=${calendarStart}/${calendarEnd}&location=${encodeURIComponent(`${invitation?.venueName || ''}, ${invitation?.venueAddress || ''}`)}`;
 
@@ -351,6 +353,7 @@ export const PremiumGuestExperienceScreen: React.FC<PremiumGuestExperienceScreen
               {invitation?.weddingTime && (
                 <p className="mt-1 text-xs font-semibold uppercase tracking-[0.08em] text-black/55">
                   {formatEventTime(invitation.weddingTime)}
+                  {invitation.eventEndTime ? ` – ${formatEventTime(invitation.eventEndTime)}` : ''}
                 </p>
               )}
             </div>

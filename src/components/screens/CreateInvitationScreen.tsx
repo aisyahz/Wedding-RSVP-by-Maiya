@@ -56,6 +56,7 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
   const [groomName, setGroomName] = useState(editingInvitation?.groomName || '');
   const [weddingDate, setWeddingDate] = useState(normalizeDateForInput(editingInvitation?.weddingDate));
   const [weddingTime, setWeddingTime] = useState(editingInvitation?.weddingTime || '');
+  const [eventEndTime, setEventEndTime] = useState(editingInvitation?.eventEndTime || '');
 
   const [venueName, setVenueName] = useState(editingInvitation?.venueName || '');
   const [venueAddress, setVenueAddress] = useState(editingInvitation?.venueAddress || '');
@@ -104,6 +105,7 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
         { value: groomName, label: 'Groom Name', id: 'groom-name' },
         { value: weddingDate, label: 'Wedding Date', id: 'wedding-date' },
         { value: weddingTime, label: 'Event Time', id: 'wedding-time' },
+        { value: eventEndTime, label: 'Event End Time', id: 'event-end-time' },
       ];
       const missing = requiredFields.find((field) => !field.value.trim());
       if (missing) {
@@ -116,6 +118,11 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
       if (!/^\d{4}-\d{2}-\d{2}$/.test(weddingDate)) {
         setStepError('Wedding Date must be a valid date.');
         document.getElementById('wedding-date')?.focus();
+        return;
+      }
+      if (eventEndTime <= weddingTime) {
+        setStepError('Event End Time must be later than Event Start Time.');
+        document.getElementById('event-end-time')?.focus();
         return;
       }
     }
@@ -137,6 +144,7 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
       groomName,
       weddingDate,
       weddingTime,
+      eventEndTime,
       venueName,
       venueAddress,
       googleMapsUrl,
@@ -322,15 +330,30 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
 
               <div>
                 <label className="form-label block">
-                  Event Time *
+                  Event Start Time *
                 </label>
                 <input
                   id="wedding-time"
-                  data-field-label="Event Time"
+                  data-field-label="Event Start Time"
                   type="time"
                   required
                   value={weddingTime}
                   onChange={(e) => setWeddingTime(e.target.value)}
+                  className="w-full input-maiya"
+                />
+              </div>
+              <div>
+                <label className="form-label block">
+                  Event End Time *
+                </label>
+                <input
+                  id="event-end-time"
+                  data-field-label="Event End Time"
+                  type="time"
+                  required
+                  value={eventEndTime}
+                  min={weddingTime || undefined}
+                  onChange={(e) => setEventEndTime(e.target.value)}
                   className="w-full input-maiya"
                 />
               </div>
@@ -703,7 +726,7 @@ export const CreateInvitationScreen: React.FC<CreateInvitationScreenProps> = ({
                 Summary Overview
               </span>
               <p className="text-xl font-bold font-title text-primary">{brideName} & {groomName}</p>
-              <p className="text-xs text-secondary">Date: {weddingDate} • {weddingTime}</p>
+              <p className="text-xs text-secondary">Date: {weddingDate} • {weddingTime} – {eventEndTime}</p>
               <p className="text-xs text-secondary">Venue: {venueName}</p>
               <p className="text-xs font-title tabular-nums font-semibold text-accent pt-1">
                 Slug: /invite/{generatedSlug}

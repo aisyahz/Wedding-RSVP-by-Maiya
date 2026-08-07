@@ -45,6 +45,7 @@ export interface Invitation {
   groomName: string;
   weddingDate: string; // YYYY-MM-DD
   weddingTime: string;
+  eventEndTime?: string;
   venueName: string;
   venueAddress: string;
   googleMapsUrl: string;

@@ -55,6 +55,7 @@ export function mapDbInvitationToApp(dbRow: any): Invitation {
     groomName: dbRow.groom_name || '',
     weddingDate: dbRow.wedding_date || '',
     weddingTime: dbRow.wedding_time || '',
+    eventEndTime: dbRow.event_end_time || '',
     venueName: dbRow.venue_name || '',
     venueAddress: dbRow.venue_address || '',
     googleMapsUrl: dbRow.google_maps_url || '',
@@ -384,6 +385,24 @@ export async function createInvitationWithPin(
     const createdRow = data[0];
     const generatedPin = createdRow.plain_pin;
     const invitationId = createdRow.invitation_id;
+    if (invData.eventEndTime) {
+      const { error: endTimeError } = await supabase
+        .from('invitations')
+        .update({ event_end_time: formatTimeForDb(invData.eventEndTime) })
+        .eq('id', invitationId);
+      if (endTimeError) {
+        const { error: rollbackError } = await supabase
+          .from('invitations')
+          .delete()
+          .eq('id', invitationId);
+        return {
+          data: null,
+          error: rollbackError
+            ? `End time could not be saved and the incomplete invitation could not be rolled back: ${endTimeError.message}; rollback: ${rollbackError.message}`
+            : `End time could not be saved, so invitation creation was rolled back: ${endTimeError.message}`,
+        };
+      }
+    }
     const { data: fetchRow, error: fetchError } = await supabase
       .from('invitations')
       .select('*')
@@ -497,6 +516,9 @@ export async function updateInvitationInSupabase(
       ...(has('wazeUrl') ? { waze_url: invData.wazeUrl || null } : {}),
       ...(has('whatsappContact') ? { whatsapp_contact: invData.whatsappContact || '' } : {}),
       ...(has('contacts') ? { contacts: invData.contacts || [] } : {}),
+      ...(has('eventEndTime') ? {
+        event_end_time: invData.eventEndTime ? formatTimeForDb(invData.eventEndTime) : null,
+      } : {}),
       ...(has('maxPax') ? { max_pax: Math.min(999, Math.max(1, Number(invData.maxPax) || 6)) } : {}),
       ...(has('dressCodeText') ? { dress_code_text: invData.dressCodeText?.trim() || null } : {}),
       ...(has('dressCodeColors') ? { dress_code_colors: invData.dressCodeColors || [] } : {}),

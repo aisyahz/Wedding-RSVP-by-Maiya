@@ -74,7 +74,9 @@ export const GuestInvitationScreen: React.FC<GuestInvitationScreenProps> = ({
     const hour = Number(match[1]);
     return `${hour % 12 || 12}:${match[2]} ${hour >= 12 ? 'PM' : 'AM'}`;
   };
-  const weddingTime = formatEventTime(activeInvitation?.weddingTime);
+  const weddingTime = activeInvitation?.weddingTime
+    ? `${formatEventTime(activeInvitation.weddingTime)}${activeInvitation.eventEndTime ? ` – ${formatEventTime(activeInvitation.eventEndTime)}` : ''}`
+    : '';
   const venueName = activeInvitation?.venueName || '';
   const venueAddress = activeInvitation?.venueAddress || '';
   const videoUrl = activeInvitation?.videoUrl || '';

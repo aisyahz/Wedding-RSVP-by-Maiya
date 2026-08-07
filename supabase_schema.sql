@@ -61,6 +61,7 @@ CREATE TABLE IF NOT EXISTS public.invitations (
     groom_name TEXT NOT NULL,
     wedding_date DATE NOT NULL,
     wedding_time TIME NOT NULL,
+    event_end_time TIME,
     venue_name TEXT NOT NULL,
     venue_address TEXT NOT NULL,
     google_maps_url TEXT,
@@ -88,6 +89,16 @@ ADD COLUMN IF NOT EXISTS video_key TEXT,
 ADD COLUMN IF NOT EXISTS poster_url TEXT,
 ADD COLUMN IF NOT EXISTS poster_key TEXT,
 ADD COLUMN IF NOT EXISTS gift_qr_key TEXT;
+
+ALTER TABLE public.invitations
+ADD COLUMN IF NOT EXISTS event_end_time TIME;
+
+ALTER TABLE public.invitations
+DROP CONSTRAINT IF EXISTS invitations_event_time_order_check;
+
+ALTER TABLE public.invitations
+ADD CONSTRAINT invitations_event_time_order_check
+CHECK (event_end_time IS NULL OR event_end_time > wedding_time);
 
 
 -- Index for fast lookup by slug
